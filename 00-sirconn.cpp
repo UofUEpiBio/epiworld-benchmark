@@ -2,8 +2,14 @@
 #include "bmark.hpp"
 
 int main() {
+	int n = 1000;
 
-	TIME_START(con);
+
+
+	double total = 0.0;
+	REPLICATE(n)	
+	{	
+	TIME_START(model)
 	epiworld::epimodels::ModelSIRCONN<> model(
 			"VIRUS",
 			10000,
@@ -14,12 +20,15 @@ int main() {
 			);
 
 	model.init(50, 1010);
+	model.verbose_off();
 	model.run();
-	model.print();
+	TIME_END(model)
+	total += ELAPSED(model);
+	}
 
-	TIME_END(con);
 	
-	printf("\nElapsed time (%i reps): %.4f\n", 1, ELAPSED(con));
+	
+	printf("\nElapsed time (%i reps): %.4f\n", n, total/n);
 
 
 	return 0;
