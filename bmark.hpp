@@ -13,6 +13,6 @@ typedef std::chrono::time_point<std::chrono::system_clock> clocktime;
 #define ELAPSED(a) TOKENPASTE(a,_diff).count()
 
 
-#define REPLICATE(a) for(size_t i = 0u; i < a; ++i)
+#define REPLICATE(a) for(size_t i = 0u; i < static_cast<size_t>(a); ++i)
 
 #endif
