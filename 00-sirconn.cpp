@@ -27,11 +27,13 @@ int main(int argc, char * argv[]) {
   	TIME_END(model)
   	total += ELAPSED(model);
 
+    if (i == (nsim - 1))
+      model.print();
+
 	}
 
 	
-	
-	printf("\nElapsed time (%i reps, %i size): %.4f ms\n", nsim, npop, total/nsim);
+	//printf("\nElapsed time (%i reps, %i size): %.4f ms\n", nsim, npop, total/nsim);
 
 
 	return 0;
