@@ -1,0 +1,3 @@
+[submodule "epiworldR"]
+	path = epiworldR
+	url = git@github.com:UofUEpi/epiworldR.git
