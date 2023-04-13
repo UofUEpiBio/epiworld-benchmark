@@ -2,18 +2,19 @@
 library(epiworldR)
 library(data.table)
 
-N     <- 1000
-n     <- 10000
-ndays <- 100
+N     <- 2e3
+n     <- 2000
+ndays <- 50
 
 set.seed(1231)
 
 theta <- data.table(
-  preval = rbeta(N, 1, 19),        # Mean 1/(1 + 19) = 0.05
-  repnum = rgamma(N, 4, 4/1.5),    # Mean 4/(4 / 1.5) = 1.5
-  ptran  = rbeta(N, 19, 1),        # Mean 19/(1 + 19) = 0.95
+  preval = rbeta(N, 1, 19),        # Mean 10/(10 + 190) = 0.05
+  repnum = rgamma(N, 4, 4/1.5),    # Mean 4/(4 + 1.5) = 1.5
+  ptran  = rbeta(N, 7, 3),        # Mean 7/(3 + 7) = 0.7
   prec   = rbeta(N, 10, 10*2 - 10) # Mean 10 / (10 * 2 - 10) = .5
 )
+theta[, hist(repnum)]
 
 ans <- vector("list", N)
 for (i in 1:N) {
@@ -35,7 +36,7 @@ for (i in 1:N) {
   run(m, ndays = ndays)
   ans[[i]] <- get_hist_total(m)
   
-  if (!i %% 50) {
+  if (!i %% 100) {
     message("Model ", i, " done.")
     print(gc(full = TRUE))
 #    gc(full = TRUE)
@@ -62,14 +63,6 @@ matrices <- parallel::mclapply(
   mc.cores = 4L
   )
 
-# Flattening out each matrix to 1-D Arrays
-# Initialize a list to store the 1-dimensional arrays
-arrays_1d <- vector("list", length = N)
-# Iterate through each matrix
-for (i in 1:length(matrices)) {
-  arrays_1d[[i]] <- as.vector(matrices[[i]])
-}
-
 # Convolutional Neural Network
 library(keras)
 
@@ -78,15 +71,31 @@ library(keras)
 # total numbers. For the next step, we need to do it using % change, maybe...
 arrays_1d <- array(dim = c(N, 3, 50))
 for (i in seq_along(matrices))
-  arrays_1d[i,,] <- t(diff(t(matrices[[i]])))[,1:50]
+  arrays_1d[i,,] <-
+    t(diff(t(matrices[[i]])))[,1:50]
+    # t(diff(t(matrices[[i]])))/(
+    #   matrices[[i]][,-ncol(matrices[[i]])] + 1e-20
+    # )[,1:50]
 
 theta2 <- copy(theta)
 theta2[, repnum := plogis(repnum)]
 
+# N <- 200L
+
 # Reshaping
+N_train <- floor(N * .7)
+id_train <- 1:N_train
 train <- list(
-  x = array_reshape(arrays_1d, dim = c(N, 3, 50)),
-  y = array_reshape(as.matrix(theta2), dim = c(N, 4))
+  x = array_reshape(arrays_1d[id_train,,], dim = c(N_train, 3, 50)),
+  y = array_reshape(as.matrix(theta2)[id_train,], dim = c(N_train, 4))
+)
+
+N_test <- N - N_train
+id_test <- (N_train + 1):N
+
+test <- list(
+  x = array_reshape(arrays_1d[id_test,,], dim = c(N_test, 3, 50)),
+  y = array_reshape(as.matrix(theta2)[id_test,], dim = c(N_test, 4))
 )
 
 # Follow examples in: https://tensorflow.rstudio.com/tutorials/keras/classification
@@ -97,7 +106,7 @@ model %>%
   layer_conv_2d(
     filters     = 32,
     input_shape = c(3, 50, 1),
-    activation  = "relu",
+    activation  = "linear",
     kernel_size = c(3, 5)
     ) %>%
   layer_max_pooling_2d(
@@ -107,6 +116,7 @@ model %>%
   layer_flatten(
     input_shape = c(3, 50)
     ) %>%
+  # layer_normalization() %>%
   layer_dense(
     units = 4,
     activation = 'sigmoid'
@@ -120,20 +130,63 @@ model %>% compile(
 )
 
 # Running the model
+tensorflow::set_random_seed(331)
 model %>% fit(
   train$x,
   train$y,
-  epochs = 50,
+  epochs = 100,
   verbose = 2
   )
 
-pred <- predict(model, x = train$x)
-abs(pred - as.matrix(theta2)) |>
+pred <- predict(model, x = test$x) |>
+  as.data.table() |>
+  setnames(colnames(theta))
+
+abs(pred - as.matrix(test$y)) |>
   colMeans()
 
-# To recover the reproductive number, we use qlogis
-cbind(
-  predicted = qlogis(pred[, 2]),
-  truth     = theta$repnum
-) |> head()
+# Visualizing ------------------------------------------------------------------
+pred[, id := 1L:.N]
+pred[, repnum := qlogis(repnum)]
+pred_long <- melt(pred, id.vars = "id")
+
+theta_long <- test$y |> as.data.table()
+setnames(theta_long, names(theta))
+theta_long[, id := 1L:.N]
+theta_long[, repnum := qlogis(repnum)]
+theta_long <- melt(theta_long, id.vars = "id")
+
+alldat <- rbind(
+  cbind(pred_long, Type = "Predicted"),
+  cbind(theta_long, Type = "Observed")
+)
+
+library(ggplot2)
+ggplot(alldat, aes(x = value, colour = Type)) +
+  facet_wrap(~variable, scales = "free") +
+  geom_boxplot()
+
+alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
+
+vnames <- data.table(
+  variable = c("preval", "repnum", "ptran", "prec"),
+  Name     = c("Init. state", "Beta (repnum)", "P(transmit)", "P(recover)")
+)
+
+alldat_wide <- merge(alldat_wide, vnames, by = "variable")
+
+ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
+  facet_wrap(~ Name, scales = "free") +
+  geom_abline(slope = 1, intercept = 0) +
+  geom_point(alpha = .2) +
+  labs(
+    title    = "Observed vs Predicted (validation set)",
+    subtitle = sprintf(
+      "The model includes %i simulated datasets, of which %i were used for training.",
+      N,
+      N_train
+      ),
+    caption  = "Predictions made using a CNN as implemented with loss function MAE."
+    
+    )
 
