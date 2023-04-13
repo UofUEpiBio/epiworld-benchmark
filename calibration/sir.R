@@ -2,7 +2,7 @@
 library(epiworldR)
 library(data.table)
 
-N     <- 2e3
+N     <- 1e4
 n     <- 2000
 ndays <- 50
 
@@ -36,11 +36,8 @@ for (i in 1:N) {
   run(m, ndays = ndays)
   ans[[i]] <- get_hist_total(m)
   
-  if (!i %% 100) {
+  if (!i %% 100) 
     message("Model ", i, " done.")
-    print(gc(full = TRUE))
-#    gc(full = TRUE)
-  }
   
 }
 
@@ -145,6 +142,8 @@ pred <- predict(model, x = test$x) |>
 abs(pred - as.matrix(test$y)) |>
   colMeans()
 
+save_model_hdf5(model, "sir-keras")
+
 # Visualizing ------------------------------------------------------------------
 pred[, id := 1L:.N]
 pred[, repnum := qlogis(repnum)]
@@ -190,3 +189,4 @@ ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
     
     )
 
+ggsave(filename = "sir.png", width = 1280, height = 800, units = "px", scale = 3)
