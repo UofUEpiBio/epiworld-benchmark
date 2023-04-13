@@ -35,9 +35,10 @@ for (i in 1:N) {
   run(m, ndays = ndays)
   ans[[i]] <- get_hist_total(m)
   
-  if (!i %% 100) {
+  if (!i %% 50) {
     message("Model ", i, " done.")
-    gc(full = TRUE)
+    print(gc(full = TRUE))
+#    gc(full = TRUE)
   }
   
 }

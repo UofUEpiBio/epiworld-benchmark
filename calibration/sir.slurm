@@ -9,5 +9,7 @@
 
 module load R/4.2.2
 R --debugger=valgrind --debugger-args="--track-origins=yes" -f sir.R 
+#R -f sir.R 
+
 
 
