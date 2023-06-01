@@ -10,11 +10,11 @@ set.seed(1231)
 
 theta <- data.table(
   preval = rbeta(N, 1, 19),        # Mean 10/(10 + 190) = 0.05
-  repnum = rgamma(N, 4, 4/1.5),    # Mean 4/(4 + 1.5) = 1.5
+  crate  = rgamma(N, 4, 4/1.5),    # Mean 4/(4 + 1.5) = 1.5
   ptran  = rbeta(N, 7, 3),        # Mean 7/(3 + 7) = 0.7
   prec   = rbeta(N, 10, 10*2 - 10) # Mean 10 / (10 * 2 - 10) = .5
 )
-theta[, hist(repnum)]
+theta[, hist(crate)]
 
 ans <- vector("list", N)
 for (i in 1:N) {
@@ -22,11 +22,11 @@ for (i in 1:N) {
   m <- theta[i,
     ModelSIRCONN(
       "mycon",
-      prevalence          = preval,
-      reproductive_number = repnum,
-      prob_transmission   = ptran,
-      prob_recovery       = prec,
-      n = n
+      prevalence        = preval,
+      contact_rate      = crate,
+      prob_transmission = ptran,
+      prob_recovery     = prec,
+      n                 = n
       )
     ]
   
@@ -34,11 +34,17 @@ for (i in 1:N) {
   verbose_off(m)
   
   run(m, ndays = ndays)
-  ans[[i]] <- get_hist_total(m)
+  ans[[i]] <- list(
+    repnum = plot(get_reproductive_number(m), plot = FALSE),
+    incidence = plot(get_hist_transition_matrix(m), plot = FALSE),
+    gentime = plot(get_generation_time(m), plot = FALSE)
+  )
   
   if (!i %% 100) 
     message("Model ", i, " done.")
-  
+
+  stop()
+
 }
 
 # Setting up the data for tensorflow. Need to figure out how we would configure
