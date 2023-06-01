@@ -51,7 +51,7 @@ for (i in 1:N) {
   if (!i %% 100) 
     message("Model ", i, " done.")
 
-  # stop()
+  stop()
 
 }
 
