@@ -39,11 +39,19 @@ for (i in 1:N) {
     incidence = plot(get_hist_transition_matrix(m), plot = FALSE),
     gentime = plot(get_generation_time(m), plot = FALSE)
   )
+
+  # Filling
+  ans[[i]] <- lapply(ans[[i]], as.data.table)
+
+  # Replacing NaN and NAs with the previous value
+  # in each element in the list
+  ans[[i]]$repnum[, avg := nafill(avg, "locf"), by = .(variant)]
+  ans[[i]]$gentime[, gentime_avg := nafill(gentime_avg, "locf"), by = .(virus_id)]
   
   if (!i %% 100) 
     message("Model ", i, " done.")
 
-  stop()
+  # stop()
 
 }
 
