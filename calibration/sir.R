@@ -2,8 +2,8 @@
 library(epiworldR)
 library(data.table)
 
-N     <- 1e4
-n     <- 2000
+N     <- 2e3
+n     <- 5000
 ndays <- 50
 
 set.seed(1231)
@@ -16,63 +16,101 @@ theta <- data.table(
 )
 theta[, hist(crate)]
 
-ans <- vector("list", N)
-for (i in 1:N) {
-  
+ans <- parallel::mclapply(1:N, FUN = function(i) {
+
   m <- theta[i,
-    ModelSIRCONN(
-      "mycon",
-      prevalence        = preval,
-      contact_rate      = crate,
-      prob_transmission = ptran,
-      prob_recovery     = prec,
-      n                 = n
-      )
-    ]
-  
+      ModelSIRCONN(
+        "mycon",
+        prevalence        = preval,
+        contact_rate      = crate,
+        prob_transmission = ptran,
+        prob_recovery     = prec,
+        n                 = n
+        )
+      ]
+
   # Avoids printing
   verbose_off(m)
-  
+
   run(m, ndays = ndays)
-  ans[[i]] <- list(
-    repnum = plot(get_reproductive_number(m), plot = FALSE),
-    incidence = plot(get_hist_transition_matrix(m), plot = FALSE),
-    gentime = plot(get_generation_time(m), plot = FALSE)
+
+  err <- tryCatch({
+    ans <- list(
+      repnum    = plot_reproductive_number(m, plot = FALSE),
+      incidence = plot_incidence(m, plot = FALSE),
+      gentime   = plot_generation_time(m, plot = FALSE)
+    )
+
+    # Filling
+    ans <- lapply(ans, as.data.table)
+
+    # Replacing NaN and NAs with the previous value
+    # in each element in the list
+    ans$repnum[, avg := nafill(avg, "locf"), by = .(variant)]
+    ans$gentime[, avg := nafill(avg, "locf"), by = .(variant)]
+  }, error = function(e) e)
+
+  if (inherits(err, "error")) {
+    ans <- list()
+  }
+
+  return(ans)
+  
+}, mc.cores = 4L)
+
+ref_table <- data.table(
+  date = 0:ndays
+)
+
+ans <- parallel::mclapply(ans, function(a) {
+  if (length(a) == 0) {
+    return(NULL)
+  }
+
+  a$repnum <- merge(ref_table, a$repnum, by = "date", all.x = TRUE)
+  a$gentime <- merge(ref_table, a$gentime, by = "date", all.x = TRUE)
+
+  a
+}, mc.cores = 4L)
+
+# Generating arrays for the convolutional neural network
+matrices <- parallel::mclapply(ans, function(a) {
+
+  if (length(a) == 0)
+    return(NULL)
+
+  # Generating the arrays
+  res <- data.table(
+    infected =  a$incidence$Infected,
+    recovered = a$incidence$Recovered,
+    repnum    = a$repnum$avg,
+    gentime   = a$gentime$avg
   )
 
-  # Filling
-  ans[[i]] <- lapply(ans[[i]], as.data.table)
+  # Filling NAs with last obs
+  res[, infected := nafill(infected, "locf")]
+  res[, recovered := nafill(recovered, "locf")]
+  res[, repnum := nafill(repnum, "locf")]
+  res[, gentime := nafill(gentime, "locf")]
 
-  # Replacing NaN and NAs with the previous value
-  # in each element in the list
-  ans[[i]]$repnum[, avg := nafill(avg, "locf"), by = .(variant)]
-  ans[[i]]$gentime[, gentime_avg := nafill(gentime_avg, "locf"), by = .(virus_id)]
-  
-  if (!i %% 100) 
-    message("Model ", i, " done.")
+  # Returning without the first observation (which is mostly zero)
+  as.matrix(res[-1,])
 
-  stop()
+}, mc.cores = 4L)
 
-}
+# Keeping only the non-null elements
+is_not_null <- intersect(
+  which(!sapply(matrices, is.null)),
+  which(!sapply(matrices, \(x) any(is.na(x))))
+  )
+matrices <- matrices[is_not_null]
+theta    <- theta[is_not_null,]
+
+N <- length(is_not_null)
 
 # Setting up the data for tensorflow. Need to figure out how we would configure
 # this to store an array of shape 3 x 100 (three rows, S I R) and create the 
 # convolution.
-
-# 100 Matrices of 3x101 - SIR as rows 
-matrices <- parallel::mclapply(
-  X   = ans,
-  FUN = function(x) {
-    
-    susceptible <- x[x[,2] == "Susceptible",]$counts
-    infected    <- x[x[,2] == "Infected",]$counts
-    recovered   <- x[x[,2] == "Recovered",]$counts
-    
-    matrix(rbind(susceptible, infected, recovered), nrow = 3)
-    
-  },
-  mc.cores = 4L
-  )
 
 # Convolutional Neural Network
 library(keras)
@@ -80,33 +118,41 @@ library(keras)
 # (N obs, rows, cols)
 # Important note, it is better for the model to handle changes rather than
 # total numbers. For the next step, we need to do it using % change, maybe...
-arrays_1d <- array(dim = c(N, 3, 50))
+arrays_1d <- array(dim = c(N, 4, 49))
 for (i in seq_along(matrices))
   arrays_1d[i,,] <-
-    t(diff(t(matrices[[i]])))[,1:50]
+    t(diff(matrices[[i]]))[,1:49] #/(
+    #   t(matrices[[i]][-nrow(matrices[[i]]),]) + 1e-20
+    # )[,1:49]
+    
     # t(diff(t(matrices[[i]])))/(
     #   matrices[[i]][,-ncol(matrices[[i]])] + 1e-20
     # )[,1:50]
 
 theta2 <- copy(theta)
-theta2[, repnum := plogis(repnum)]
+theta2[, crate := plogis(crate)]
 
 # N <- 200L
 
 # Reshaping
+
 N_train <- floor(N * .7)
 id_train <- 1:N_train
 train <- list(
-  x = array_reshape(arrays_1d[id_train,,], dim = c(N_train, 3, 50)),
-  y = array_reshape(as.matrix(theta2)[id_train,], dim = c(N_train, 4))
-)
+  x = array_reshape(
+    arrays_1d[id_train,,], dim = c(N_train, dim(arrays_1d)[-1])
+    ),
+  y = array_reshape(
+    as.matrix(theta2)[id_train,], dim = c(N_train, ncol(theta2)))
+    )
+
 
 N_test <- N - N_train
 id_test <- (N_train + 1):N
 
 test <- list(
-  x = array_reshape(arrays_1d[id_test,,], dim = c(N_test, 3, 50)),
-  y = array_reshape(as.matrix(theta2)[id_test,], dim = c(N_test, 4))
+  x = array_reshape(arrays_1d[id_test,,], dim = c(N_test, dim(arrays_1d)[-1])),
+  y = array_reshape(as.matrix(theta2)[id_test,], dim = c(N_test, ncol(theta2)))
 )
 
 # Follow examples in: https://tensorflow.rstudio.com/tutorials/keras/classification
@@ -116,7 +162,7 @@ model <- keras_model_sequential()
 model %>%
   layer_conv_2d(
     filters     = 32,
-    input_shape = c(3, 50, 1),
+    input_shape = c(dim(arrays_1d)[-1], 1),
     activation  = "linear",
     kernel_size = c(3, 5)
     ) %>%
@@ -125,11 +171,11 @@ model %>%
     padding = 'same'
     ) %>%
   layer_flatten(
-    input_shape = c(3, 50)
+    input_shape = dim(arrays_1d)[-1]
     ) %>%
   # layer_normalization() %>%
   layer_dense(
-    units = 4,
+    units = ncol(theta2),
     activation = 'sigmoid'
     )
 
@@ -160,13 +206,13 @@ save_model_hdf5(model, "sir-keras")
 
 # Visualizing ------------------------------------------------------------------
 pred[, id := 1L:.N]
-pred[, repnum := qlogis(repnum)]
+pred[, crate := qlogis(crate)]
 pred_long <- melt(pred, id.vars = "id")
 
 theta_long <- test$y |> as.data.table()
 setnames(theta_long, names(theta))
 theta_long[, id := 1L:.N]
-theta_long[, repnum := qlogis(repnum)]
+theta_long[, crate := qlogis(crate)]
 theta_long <- melt(theta_long, id.vars = "id")
 
 alldat <- rbind(
@@ -182,8 +228,8 @@ ggplot(alldat, aes(x = value, colour = Type)) +
 alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
 
 vnames <- data.table(
-  variable = c("preval", "repnum", "ptran", "prec"),
-  Name     = c("Init. state", "Beta (repnum)", "P(transmit)", "P(recover)")
+  variable = c("preval", "crate", "ptran", "prec"),
+  Name     = c("Init. state", "Contact Rate", "P(transmit)", "P(recover)")
 )
 
 alldat_wide <- merge(alldat_wide, vnames, by = "variable")
