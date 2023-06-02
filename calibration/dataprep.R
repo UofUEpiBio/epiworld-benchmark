@@ -45,7 +45,9 @@ prepare_data <- function(m) {
             infected =  ans[["incidence"]][["Infected"]],
             recovered = ans[["incidence"]][["Recovered"]],
             repnum    = ans[["repnum"]][["avg"]],
-            gentime   = ans[["gentime"]][["avg"]]
+            gentime   = ans[["gentime"]][["avg"]],
+            repnum_sd = ans[["repnum"]][["sd"]],
+            gentime_sd = ans[["gentime"]][["sd"]]
         )
 
         # Filling NAs with last obs
@@ -57,6 +59,11 @@ prepare_data <- function(m) {
             .SDcols = "repnum"]
         ans[, "gentime" := data.table::nafill(.SD[[1]], "locf"),
             .SDcols = "gentime"]
+        ans[, "repnum_sd" := data.table::nafill(.SD[[1]], "locf"),
+            .SDcols = "repnum_sd"]
+        ans[, "gentime_sd" := data.table::nafill(.SD[[1]], "locf"),
+            .SDcols = "gentime_sd"]
+
     }, error = function(e) e)
 
     # If there is an error, return NULL
