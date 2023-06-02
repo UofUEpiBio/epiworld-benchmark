@@ -1,6 +1,5 @@
 library(keras)
-library(epiworldR)
-library(data.table)
+source("calibration/dataprep.R")
 
 # https://tensorflow.rstudio.com/tutorials/keras/save_and_load.html
 saved_model <- load_model_hdf5("sir-keras")
@@ -20,17 +19,15 @@ abm <- ModelSIRCONN(
 set.seed(100)
 run(abm, 50)
 
-abm_hist <- get_hist_total(abm)
-abm_hist_feat <- matrix(abm_hist$counts, nrow = 3)
-abm_hist_feat <- t(diff(t(abm_hist_feat)))[,1:50]
+dat_prep <- prepare_data(abm)
 
-a <- array(dim = c(1, 4, 50))
-a[1,,] <- abm_hist_feat
+a <- array(dim = c(1, dim(dat_prep)))
+a[1,,] <- dat_prep
 abm_hist_feat <- a
 
 abm_hist_feat <- array_reshape(
   abm_hist_feat,
-  dim = c(1, 3, 50)
+  dim = c(1, dim(dat_prep))
   )
 
 obspars <- predict(saved_model, x = abm_hist_feat)

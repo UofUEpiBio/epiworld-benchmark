@@ -1,11 +1,10 @@
 # devtools::install_github("UofUEpi/epiworldR")
-library(epiworldR)
-library(data.table)
+source("calibration/dataprep.R")
 
-N     <- 1e4
+N     <- 200
 n     <- 2000
 ndays <- 50
-ncores <- 20
+ncores <- 4
 
 set.seed(1231)
 
@@ -17,7 +16,7 @@ theta <- data.table(
 )
 theta[, hist(crate)]
 
-ans <- parallel::mclapply(1:N, FUN = function(i) {
+matrices <- parallel::mclapply(1:N, FUN = function(i) {
 
   m <- theta[i,
       ModelSIRCONN(
@@ -35,73 +34,15 @@ ans <- parallel::mclapply(1:N, FUN = function(i) {
 
   run(m, ndays = ndays)
 
-  err <- tryCatch({
-    ans <- list(
-      repnum    = plot_reproductive_number(m, plot = FALSE),
-      incidence = plot_incidence(m, plot = FALSE),
-      gentime   = plot_generation_time(m, plot = FALSE)
-    )
-
-    # Filling
-    ans <- lapply(ans, as.data.table)
-
-    # Replacing NaN and NAs with the previous value
-    # in each element in the list
-    ans$repnum[, avg := nafill(avg, "locf"), by = .(variant)]
-    ans$gentime[, avg := nafill(avg, "locf"), by = .(variant)]
-  }, error = function(e) e)
-
-  if (inherits(err, "error")) {
-    ans <- list()
-  }
-
-  return(ans)
-  
-}, mc.cores = ncores)
-
-ref_table <- data.table(
-  date = 0:ndays
-)
-
-ans <- parallel::mclapply(ans, function(a) {
-  if (length(a) == 0) {
-    return(NULL)
-  }
-
-  a$repnum <- merge(ref_table, a$repnum, by = "date", all.x = TRUE)
-  a$gentime <- merge(ref_table, a$gentime, by = "date", all.x = TRUE)
-
-  a
-}, mc.cores = ncores)
-
-# Generating arrays for the convolutional neural network
-matrices <- parallel::mclapply(ans, function(a) {
-
-  if (length(a) == 0)
-    return(NULL)
-
-  # Generating the arrays
-  res <- data.table(
-    infected =  a$incidence$Infected,
-    recovered = a$incidence$Recovered,
-    repnum    = a$repnum$avg,
-    gentime   = a$gentime$avg
-  )
-
-  # Filling NAs with last obs
-  res[, infected := nafill(infected, "locf")]
-  res[, recovered := nafill(recovered, "locf")]
-  res[, repnum := nafill(repnum, "locf")]
-  res[, gentime := nafill(gentime, "locf")]
-
-  # Returning without the first observation (which is mostly zero)
-  as.matrix(res[-1,])
+  # Using prepare_data
+  prepare_data(m)
 
 }, mc.cores = ncores)
+
 
 # Keeping only the non-null elements
 is_not_null <- intersect(
-  which(!sapply(matrices, is.null)),
+  which(!sapply(matrices, inherits, what = "error")),
   which(!sapply(matrices, \(x) any(is.na(x))))
   )
 matrices <- matrices[is_not_null]
@@ -119,10 +60,9 @@ library(keras)
 # (N obs, rows, cols)
 # Important note, it is better for the model to handle changes rather than
 # total numbers. For the next step, we need to do it using % change, maybe...
-arrays_1d <- array(dim = c(N, 4, 49))
+arrays_1d <- array(dim = c(N, dim(matrices[[1]])))
 for (i in seq_along(matrices))
-  arrays_1d[i,,] <-
-    t(diff(matrices[[i]]))[,1:49] #/(
+  arrays_1d[i,,] <- matrices[[i]]
     #   t(matrices[[i]][-nrow(matrices[[i]]),]) + 1e-20
     # )[,1:49]
     
