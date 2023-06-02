@@ -2,9 +2,10 @@
 library(epiworldR)
 library(data.table)
 
-N     <- 2e3
-n     <- 5000
+N     <- 1e4
+n     <- 2000
 ndays <- 50
+ncores <- 20
 
 set.seed(1231)
 
@@ -56,7 +57,7 @@ ans <- parallel::mclapply(1:N, FUN = function(i) {
 
   return(ans)
   
-}, mc.cores = 4L)
+}, mc.cores = ncores)
 
 ref_table <- data.table(
   date = 0:ndays
@@ -71,7 +72,7 @@ ans <- parallel::mclapply(ans, function(a) {
   a$gentime <- merge(ref_table, a$gentime, by = "date", all.x = TRUE)
 
   a
-}, mc.cores = 4L)
+}, mc.cores = ncores)
 
 # Generating arrays for the convolutional neural network
 matrices <- parallel::mclapply(ans, function(a) {
@@ -96,7 +97,7 @@ matrices <- parallel::mclapply(ans, function(a) {
   # Returning without the first observation (which is mostly zero)
   as.matrix(res[-1,])
 
-}, mc.cores = 4L)
+}, mc.cores = ncores)
 
 # Keeping only the non-null elements
 is_not_null <- intersect(

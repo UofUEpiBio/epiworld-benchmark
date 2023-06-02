@@ -2,7 +2,7 @@ library(keras)
 library(epiworldR)
 library(data.table)
 
-https://tensorflow.rstudio.com/tutorials/keras/save_and_load.html
+# https://tensorflow.rstudio.com/tutorials/keras/save_and_load.html
 saved_model <- load_model_hdf5("sir-keras")
 
 truth <- c(.1, 2, .7, .6)
@@ -10,11 +10,11 @@ truth <- c(.1, 2, .7, .6)
 # Simulating a SIR model
 abm <- ModelSIRCONN(
   "mycon",
-  prevalence          = truth[1],
-  reproductive_number = truth[2],
-  prob_transmission   = truth[3],
-  prob_recovery       = truth[4],
-  n                   = 2000
+  prevalence        = truth[1],
+  contact_rate      = truth[2],
+  prob_transmission = truth[3],
+  prob_recovery     = truth[4],
+  n                 = 2000
 )
 
 set.seed(100)
@@ -24,7 +24,7 @@ abm_hist <- get_hist_total(abm)
 abm_hist_feat <- matrix(abm_hist$counts, nrow = 3)
 abm_hist_feat <- t(diff(t(abm_hist_feat)))[,1:50]
 
-a <- array(dim = c(1, 3, 50))
+a <- array(dim = c(1, 4, 50))
 a[1,,] <- abm_hist_feat
 abm_hist_feat <- a
 
