@@ -34,21 +34,38 @@ obspars <- predict(saved_model, x = abm_hist_feat)
 obspars[2] <- qlogis(obspars[2])
 
 res <- data.table(
-  Parameter = c("Init. state", "Beta (repnum)", "P(transmit)", "P(recover)"),
+  Parameter = c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
   Predicted = round(obspars[1,], 2),
   Truth     = truth
 )
 
 # knitr::kable(res, format = "html")
+knitr::kable(res)
 
 plot(abm)
 
+set.seed(123)
+abm <- ModelSIRCONN(
+  "mycon",
+  prevalence        = truth[1],
+  contact_rate      = truth[2],
+  prob_transmission = truth[3],
+  prob_recovery     = truth[4],
+  n                 = 2000
+)
 
-run_multiple(abm, 50, 1000, nthreads = 4, saver = make_saver("total_hist"), reset = TRUE)
-abm_1000 <- run_multiple_get_results(abm)$total_hist
-abm_1000 <- abm_1000[abm_1000$date <= 20,]
+run_multiple(
+  abm, 50, 1000, nthreads = 4,
+  saver = make_saver("total_hist", "reproductive")
+  )
+abm_1000 <- run_multiple_get_results(abm)
+ggplotdata <- abm_1000$total_hist[abm_1000$total_hist$date <= 20,]
 
 library(ggplot2)
-ggplot(abm_1000, aes(group = date, y = counts)) +
+ggplot(ggplotdata, aes(group = date, y = counts, x = date)) +
   facet_wrap(~state, scales = "free") + 
   geom_boxplot()
+
+ggsave(filename = "calibration/sir-example.png", width = 1280/2, height = 500/2, units = "px", scale = 3)
+
+plot(abm_1000$reproductive)

@@ -1,10 +1,10 @@
 # devtools::install_github("UofUEpi/epiworldR")
 source("calibration/dataprep.R")
 
-N     <- 200
+N     <- 2e4
 n     <- 2000
 ndays <- 50
-ncores <- 4
+ncores <- 20
 
 set.seed(1231)
 
@@ -140,8 +140,9 @@ pred <- predict(model, x = test$x) |>
   as.data.table() |>
   setnames(colnames(theta))
 
-abs(pred - as.matrix(test$y)) |>
-  colMeans()
+MAEs <- abs(pred - as.matrix(test$y)) |>
+  colMeans() |>
+  print()
 
 save_model_hdf5(model, "sir-keras")
 
@@ -170,7 +171,10 @@ alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
 
 vnames <- data.table(
   variable = c("preval", "crate", "ptran", "prec"),
-  Name     = c("Init. state", "Contact Rate", "P(transmit)", "P(recover)")
+  Name     = paste(
+    c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
+    sprintf("(MAE: %.2f)", MAEs)
+    )
 )
 
 alldat_wide <- merge(alldat_wide, vnames, by = "variable")
@@ -190,4 +194,4 @@ ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
     
     )
 
-ggsave(filename = "sir.png", width = 1280, height = 800, units = "px", scale = 3)
+ggsave(filename = "calibration/sir.png", width = 1280, height = 800, units = "px", scale = 3)
