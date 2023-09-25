@@ -19,6 +19,7 @@ abm <- ModelSIRCONN(
 set.seed(100)
 run(abm, 50)
 
+# Sets up the data so we can pass it to the model
 abm_hist_feat <- prepare_data(abm)
 
 obspars <- predict(saved_model, x = abm_hist_feat)
