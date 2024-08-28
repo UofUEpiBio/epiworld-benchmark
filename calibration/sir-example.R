@@ -1,8 +1,7 @@
-library(keras)
 source("calibration/dataprep.R")
 
 # https://tensorflow.rstudio.com/tutorials/keras/save_and_load.html
-saved_model <- load_model_hdf5("sir-keras")
+saved_model <- keras::load_model_hdf5("sir-keras")
 
 truth <- c(.1, 2, .7, .6)
 
