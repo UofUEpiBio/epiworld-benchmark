@@ -23,8 +23,8 @@ matrices <- parallel::mclapply(1:N, FUN = function(i) {
         "mycon",
         prevalence        = preval,
         contact_rate      = crate,
-        prob_transmission = ptran,
-        prob_recovery     = prec,
+        transmission_rate = ptran,
+        recovery_rate     = prec, 
         n                 = n
         )
       ]
@@ -60,9 +60,9 @@ library(keras)
 # (N obs, rows, cols)
 # Important note, it is better for the model to handle changes rather than
 # total numbers. For the next step, we need to do it using % change, maybe...
-arrays_1d <- array(dim = c(N, dim(matrices[[1]])))
+arrays_1d <- array(dim = c(N, dim(matrices[[1]][1,,])))
 for (i in seq_along(matrices))
-  arrays_1d[i,,] <- matrices[[i]]
+  arrays_1d[i,,] <- matrices[[i]][1,,]
     #   t(matrices[[i]][-nrow(matrices[[i]]),]) + 1e-20
     # )[,1:49]
     

@@ -1,5 +1,6 @@
 library(epiworldR)
 library(data.table)
+library(tensorflow)
 
 prepare_data <- function(m, max_days = 50) {
 
