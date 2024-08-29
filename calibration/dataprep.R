@@ -96,10 +96,6 @@ prepare_data_infections_only <- function(m, ...) {
   UseMethod("prepare_data_infectios_only")
 }
 
-prepare_data_infections_only.default <- function(m, ...) {
-  stop("No method for the class(es) ", paste(class(m), collapse = ", "))
-}
-
 prepare_data_infections_only.epiworld_model <- function(m, ...) {
   ans <- epiworldR::plot_incidence(m, plot = FALSE) |>
     data.table::as.data.table()
@@ -110,15 +106,12 @@ prepare_data_infections_only.epiworld_model <- function(m, ...) {
   )
 }
 
-prepare_data_infections_only.data.table <- function(m, max_days = 50) {
+prepare_data_infections_only.default <- function(m, max_days = 50, ...) {
 
     err <- tryCatch({
       ans <- list(
-          incidence = m,
+          incidence = data.table(Infected=m)
       )
-
-      # Filling
-      ans <- lapply(ans, data.table::as.data.table)
 
       # Replacing NaN and NAs with the previous value
       # in each element in the list

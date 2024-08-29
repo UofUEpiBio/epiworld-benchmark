@@ -3,12 +3,12 @@ source("calibration/dataprep.R")
 
 n     <- 2000
 ndays <- 50
-ncores <- 20
+ncores <- 25
 
 # Retrieving simulation results
 sim_results <- readRDS("calibration/sir.rds")
 
-theta2 <- sim_results$theta
+theta <- sim_results$theta
 arrays_1d <- sim_results$simulations
 
 # Extracting infections only
@@ -132,4 +132,4 @@ ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
     
     )
 
-ggsave(filename = "calibration/sir.png", width = 1280, height = 800, units = "px", scale = 3)
+ggsave(filename = "calibration/sir_infections_only.png", width = 1280, height = 800, units = "px", scale = 3)
