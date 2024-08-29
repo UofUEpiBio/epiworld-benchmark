@@ -73,6 +73,16 @@ for (i in seq_along(matrices))
 theta2 <- copy(theta)
 theta2[, crate := plogis(crate)]
 
+# Saving the data 
+saveRDS(
+  list(
+    theta = theta2,
+    simulations = arrays_1d
+    ),
+  file = "calibration/sir.rds",
+  compress = TRUE
+)
+
 # N <- 200L
 
 # Reshaping
