@@ -2,21 +2,31 @@
 source("calibration/dataprep.R")
 
 N     <- 2e4
-n     <- 2000
+n     <- 50000
 ndays <- 50
-ncores <- 20
+ncores <- 49
 
 set.seed(1231)
 
 theta <- data.table(
-  preval = rbeta(N, 1, 19),        # Mean 10/(10 + 190) = 0.05
-  crate  = rgamma(N, 4, 4/1.5),    # Mean 4/(4 + 1.5) = 1.5
-  ptran  = rbeta(N, 7, 3),        # Mean 7/(3 + 7) = 0.7
+  preval = sample((100:2000)/n, N, TRUE),
+  crate  = rgamma(N, 5, 1),    # Mean 10
+  ptran  = rbeta(N, 3, 7),         # Mean 3/(3 + 7) = 0.3
   prec   = rbeta(N, 10, 10*2 - 10) # Mean 10 / (10 * 2 - 10) = .5
 )
+
 theta[, hist(crate)]
 
+seeds <- sample.int(.Machine$integer.max, N, TRUE)
+
 matrices <- parallel::mclapply(1:N, FUN = function(i) {
+
+  fn <- sprintf("calibration/simulated_data/sir-%06i.rds", i)
+
+  if (file.exists(fn))
+    return(readRDS(fn))
+
+  set.seed(seeds[i])
 
   m <- theta[i,
       ModelSIRCONN(
@@ -35,7 +45,10 @@ matrices <- parallel::mclapply(1:N, FUN = function(i) {
   run(m, ndays = ndays)
 
   # Using prepare_data
-  prepare_data(m)
+  ans <- prepare_data(m)
+  saveRDS(ans, fn)
+
+  ans
 
 }, mc.cores = ncores)
 
@@ -71,7 +84,7 @@ for (i in seq_along(matrices))
     # )[,1:50]
 
 theta2 <- copy(theta)
-theta2[, crate := plogis(crate)]
+theta2[, crate := plogis(crate / 10)]
 
 # Saving the data 
 saveRDS(
@@ -158,13 +171,13 @@ save_model_hdf5(model, "sir-keras")
 
 # Visualizing ------------------------------------------------------------------
 pred[, id := 1L:.N]
-pred[, crate := qlogis(crate)]
+pred[, crate := qlogis(crate) * 10]
 pred_long <- melt(pred, id.vars = "id")
 
 theta_long <- test$y |> as.data.table()
 setnames(theta_long, names(theta))
 theta_long[, id := 1L:.N]
-theta_long[, crate := qlogis(crate)]
+theta_long[, crate := qlogis(crate) * 10]
 theta_long <- melt(theta_long, id.vars = "id")
 
 alldat <- rbind(

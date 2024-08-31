@@ -4,6 +4,7 @@ utah_cases <- fread("data-raw/covid19-utah-cases.csv")
 
 saved_model <- keras::load_model_hdf5("sir-keras_infections_only")
 
+# Number of observations per chunk
 ntimes <- 50
 ids <- cbind(
   from = seq(1, nrow(utah_cases)-ntimes, by = 5),
@@ -40,6 +41,8 @@ calibrated_values <- lapply(
 # Assigning the ids
 calibrated_values[, id_start := ids[, 1]]
 calibrated_values[, id_end := ids[, 2]]
+calibrated_values[, initial_cases := utah_cases$cases[id_start]]
+calibrated_values[, final_cases := utah_cases$cases[id_end]]
 
 calibrated_values[, contact_rate :=  qlogis(contact_rate)]
 
@@ -55,5 +58,10 @@ calibrated_subset <- calibrated_subset[
 
 # Saving the preped-parameters
 fwrite(calibrated_subset, "forecast/calibrated-parameters.csv")
+
+
+# Now, generate a table using knitr of calibrated_subset
+# This is the table that will be used in the manuscript
+# to show the calibrated parameters
 
 

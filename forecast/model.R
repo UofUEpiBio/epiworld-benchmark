@@ -3,24 +3,29 @@ source("calibration/dataprep.R")
 calibrated_parameters <- fread("forecast/calibrated-parameters.csv")
 utah_cases <- fread("data-raw/covid19-utah-cases.csv")
 
-N     <- 2e4
-n     <- 2000
+n     <- 200000
 ndays <- 50
 ncores <- 20
 
-set.seed(1231)
-
 theta <- calibrated_parameters
 
-data.table(
-  preval = rbeta(N, 1, 19),        # Mean 10/(10 + 190) = 0.05
-  crate  = rgamma(N, 4, 4/1.5),    # Mean 4/(4 + 1.5) = 1.5
-  ptran  = rbeta(N, 7, 3),        # Mean 7/(3 + 7) = 0.7
-  prec   = rbeta(N, 10, 10*2 - 10) # Mean 10 / (10 * 2 - 10) = .5
-)
-theta[, hist(crate)]
+setnames(
+  theta,
+  1:4,
+  c("preval", "crate", "ptran", "prec"),
+  )
+
+
+# Replicate each row of theta 200 times-> ~10,000 rows
+nreplicates <- 10000 %/% nrow(theta)
+theta <- theta[rep(1:nrow(theta), each = nreplicates),]
+
+set.seed(1231)
 
 matrices <- parallel::mclapply(1:N, FUN = function(i) {
+
+  # Figuring out the prevalence
+  theta[i, preval] 
 
   m <- theta[i,
       ModelSIRCONN(

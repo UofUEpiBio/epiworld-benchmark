@@ -1,7 +1,7 @@
 # devtools::install_github("UofUEpi/epiworldR")
 source("calibration/dataprep.R")
 
-n     <- 2000
+n     <- 200000
 ndays <- 50
 ncores <- 25
 
@@ -23,7 +23,7 @@ train <- list(
     arrays_1d[id_train,,], dim = c(N_train, dim(arrays_1d)[-1])
     ),
   y = array_reshape(
-    as.matrix(theta2)[id_train,], dim = c(N_train, ncol(theta2)))
+    as.matrix(theta)[id_train,], dim = c(N_train, ncol(theta)))
     )
 
 N_test <- N - N_train

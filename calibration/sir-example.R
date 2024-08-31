@@ -3,7 +3,7 @@ source("calibration/dataprep.R")
 # https://tensorflow.rstudio.com/tutorials/keras/save_and_load.html
 saved_model <- keras::load_model_hdf5("sir-keras")
 
-truth <- c(.1, 2, .7, .6)
+truth <- c(.01, 8, .3, .3)
 
 # Simulating a SIR model
 abm <- ModelSIRCONN(
@@ -12,7 +12,7 @@ abm <- ModelSIRCONN(
   contact_rate      = truth[2],
   transmission_rate = truth[3],
   recovery_rate     = truth[4],
-  n                 = 2000
+  n                 = 50000
 )
 
 set.seed(100)
@@ -22,7 +22,7 @@ run(abm, 50)
 abm_hist_feat <- prepare_data(abm)
 
 obspars <- predict(saved_model, x = abm_hist_feat)
-obspars[2] <- qlogis(obspars[2])
+obspars[2] <- qlogis(obspars[2]) * 10
 
 res <- data.table(
   Parameter = c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
@@ -42,11 +42,11 @@ abm <- ModelSIRCONN(
   contact_rate      = truth[2],
   transmission_rate = truth[3],
   recovery_rate     = truth[4],
-  n                 = 2000
+  n                 = 50000
 )
 
 run_multiple(
-  abm, 50, 1000, nthreads = 4,
+  abm, 50, 500, nthreads = 40,
   saver = make_saver("total_hist", "reproductive")
   )
 
