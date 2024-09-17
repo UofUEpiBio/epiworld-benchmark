@@ -1,13 +1,101 @@
 # devtools::install_github("UofUEpi/epiworldR")
-source("calibration/dataprep.R")
-
-n     <- 200000
-ndays <- 50
-ncores <- 25
-
 # Retrieving simulation results
-sim_results <- readRDS("calibration/sir.rds")
+source("calibration/dataprep.R")
+N     <- 2e4
+n     <- 5000
+ndays <- 50
+ncores <- 20
 
+set.seed(1231)
+
+theta <- data.table(
+  preval = sample((100:2000)/n, N, TRUE),
+  crate  = rgamma(N, 5, 1),    # Mean 10
+  ptran  = rbeta(N, 3, 7),         # Mean 3/(3 + 7) = 0.3
+  prec   = rbeta(N, 10, 10*2 - 10) # Mean 10 / (10 * 2 - 10) = .5
+)
+
+theta[, hist(crate)]
+
+seeds <- sample.int(.Machine$integer.max, N, TRUE)
+
+matrices <- parallel::mclapply(1:N, FUN = function(i) {
+  
+  fn <- sprintf("calibration/simulated_data/sir-%06i.rds", i)
+  
+  if (file.exists(fn))
+    return(readRDS(fn))
+  
+  set.seed(seeds[i])
+  
+  m <- theta[i,
+             ModelSIRCONN(
+               "mycon",
+               prevalence        = preval,
+               contact_rate      = crate,
+               transmission_rate = ptran,
+               recovery_rate     = prec, 
+               n                 = n
+             )
+  ]
+  
+  # Avoids printing
+  verbose_off(m)
+  
+  run(m, ndays = ndays)
+  
+  # Using prepare_data
+  ans <- prepare_data(m)
+  saveRDS(ans, fn)
+  
+  ans
+  
+}, mc.cores = ncores)
+
+
+# Keeping only the non-null elements
+is_not_null <- intersect(
+  which(!sapply(matrices, inherits, what = "error")),
+  which(!sapply(matrices, \(x) any(is.na(x))))
+)
+matrices <- matrices[is_not_null]
+theta    <- theta[is_not_null,]
+
+N <- length(is_not_null)
+
+# Setting up the data for tensorflow. Need to figure out how we would configure
+# this to store an array of shape 3 x 100 (three rows, S I R) and create the 
+# convolution.
+
+# Convolutional Neural Network
+library(keras)
+
+# (N obs, rows, cols)
+# Important note, it is better for the model to handle changes rather than
+# total numbers. For the next step, we need to do it using % change, maybe...
+arrays_1d <- array(dim = c(N, dim(matrices[[1]][1,,])))
+for (i in seq_along(matrices))
+  arrays_1d[i,,] <- matrices[[i]][1,,]
+#   t(matrices[[i]][-nrow(matrices[[i]]),]) + 1e-20
+# )[,1:49]
+
+# t(diff(t(matrices[[i]])))/(
+#   matrices[[i]][,-ncol(matrices[[i]])] + 1e-20
+# )[,1:50]
+
+theta2 <- copy(theta)
+theta2[, crate := plogis(crate / 10)]
+
+# Saving the data 
+saveRDS(
+  list(
+    theta = theta2,
+    simulations = arrays_1d
+  ),
+  file = "calibration/sir.rds",
+  compress = TRUE
+)
+sim_results=readRDS("calibration/sir.rds")
 theta <- sim_results$theta
 arrays_1d <- sim_results$simulations
 
@@ -22,7 +110,7 @@ train <- list(
   x = array_reshape(
     arrays_1d[id_train,,], dim = c(N_train, dim(arrays_1d)[-1])
     ),
-  y = array_reshape(
+  y =  array_reshape(
     as.matrix(theta)[id_train,], dim = c(N_train, ncol(theta)))
     )
 
@@ -37,23 +125,23 @@ test <- list(
 # Follow examples in: https://tensorflow.rstudio.com/tutorials/keras/classification
 
 # Build the model
-model <- keras_model_sequential()
+model <- keras3::keras_model_sequential()
 model |>
-  layer_conv_2d(
+  keras3::layer_conv_2d(
     filters     = 32,
     input_shape = c(dim(arrays_1d)[-1], 1),
     activation  = "linear",
     kernel_size = c(1, 5)
     ) |>
-  layer_max_pooling_2d(
+  keras3::layer_max_pooling_2d(
     pool_size = 2,
     padding = 'same'
     ) |>
-  layer_flatten(
+  keras3::layer_flatten(
     input_shape = dim(arrays_1d)[-1]
     ) |>
   # layer_normalization() %>%
-  layer_dense(
+  keras3::layer_dense(
     units = ncol(theta2),
     activation = 'sigmoid'
     )

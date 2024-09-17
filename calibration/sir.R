@@ -2,9 +2,9 @@
 source("calibration/dataprep.R")
 
 N     <- 2e4
-n     <- 50000
+n     <- 5000
 ndays <- 50
-ncores <- 49
+ncores <- 20
 
 set.seed(1231)
 
@@ -120,25 +120,32 @@ test <- list(
 )
 
 # Follow examples in: https://tensorflow.rstudio.com/tutorials/keras/classification
-
-# Build the model
-model <- keras_model_sequential()
+#install.packages("keras3")
+## or, to install the development version
+# remotes::install_github("rstudio/keras")
+library(tensorflow)
+# reticulate::install_python()
+# keras3::install_keras()
+library(keras3)
+library(dplyr)
+#library(keras)
+model <- keras3::keras_model_sequential()
 model %>%
-  layer_conv_2d(
+  keras3::layer_conv_2d(
     filters     = 32,
     input_shape = c(dim(arrays_1d)[-1], 1),
     activation  = "linear",
     kernel_size = c(3, 5)
     ) %>%
-  layer_max_pooling_2d(
+  keras3::layer_max_pooling_2d(
     pool_size = 2,
     padding = 'same'
     ) %>%
-  layer_flatten(
+  keras3::layer_flatten(
     input_shape = dim(arrays_1d)[-1]
     ) %>%
   # layer_normalization() %>%
-  layer_dense(
+  keras3::layer_dense(
     units = ncol(theta2),
     activation = 'sigmoid'
     )
@@ -167,7 +174,7 @@ MAEs <- abs(pred - as.matrix(test$y)) |>
   colMeans() |>
   print()
 
-save_model_hdf5(model, "sir-keras")
+# save_model_hdf5(model, "sir-keras")
 
 # Visualizing ------------------------------------------------------------------
 pred[, id := 1L:.N]
