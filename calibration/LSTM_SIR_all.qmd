@@ -1,0 +1,539 @@
+# Using the LSTM model to Find the Best Parameters Used in Generating the SIR Model
+
+# Section 1:
+
+#### implementing LSTM model
+
+installing required packages:
+
+```{r}
+library(epiworldR)
+library(data.table)
+library(tensorflow)
+library(keras)
+library(parallel)
+library(keras3)
+library(dplyr)
+library(ggplot2)
+
+```
+
+## calling Preparation Function
+
+Now we call the source to prepare the data we want to generate in the next step.
+
+```{r}
+# devtools::install_github("UofUEpi/epiworldR")
+source("calibration/dataprep.R")
+```
+
+# Set parameters
+
+```{r}
+
+N     <- 2e4
+n     <- 5000
+ndays <- 50
+ncores <- 20
+```
+
+# Generate parameters (theta)
+
+The `generate_simulation_parameters` function generates a table of parameters (`theta`) for the SIR model simulations.
+
+```{r}
+set.seed(1231)
+generate_simulation_parameters <- function(N, n) {
+  theta <- data.table(
+    preval = sample((100:2000) / n, N, TRUE),
+    crate  = rgamma(N, 5, 1),  # Mean 10
+    ptran  = rbeta(N, 3, 7),   # Mean 3/(3 + 7) = 0.3
+    prec   = rbeta(N, 10, 10 * 2 - 10)  # Mean 10 / (10 * 2 - 10) = .5
+  )
+  theta[, hist(crate)]
+  return(theta)
+}
+```
+
+-   **Inputs**:
+
+    -   `N`: The number of simulations or rows of parameter sets to generate.
+
+    -   `n`: The population size used for prevalence calculations.
+
+-   **Outputs**:
+
+    -   The function returns a `data.table` containing four key epidemiological parameters:
+
+        1.  **`preval`**: Prevalence, or the initial proportion of the population that is infected. It is sampled from a range between `100/n` and `2000/n` (which corresponds to infection rates between 0.02% and 0.4%).
+
+        2.  **`crate`**: Contact rate, which is the rate at which individuals in the population come into contact with others. It is generated from a Gamma distribution with a shape parameter of 5 and a rate parameter of 1 (which gives a mean contact rate of 5).
+
+        3.  **`ptran`**: Transmission probability, or the likelihood of disease transmission upon contact, drawn from a Beta distribution with shape parameters 3 and 7. This gives a mean transmission rate of 0.3 (since 3 / (3 + 7) = 0.3).
+
+        4.  **`prec`**: Recovery probability, or the likelihood of recovery after infection. It is drawn from a Beta distribution with shape parameters of 10 and 10, giving a mean recovery rate of 0.5 (since 10 / (10 \* 2 - 10) = 0.5).
+
+# run epidemic model simulations in parallel
+
+`run_epidemic_simulations` Function runs SIR (Susceptible-Infectious-Recovered) model simulations in parallel for `N` iterations, using a set of parameters (`theta`) for each simulation.
+
+```{r}
+run_epidemic_simulations <- function(N, theta, seeds, n, ndays, ncores) {
+  matrices <- parallel::mclapply(1:N, FUN = function(i) {
+    fn <- sprintf("calibration/simulated_data/sir-%06i.rds", i)
+    if (file.exists(fn)) return(readRDS(fn))
+    set.seed(seeds[i])
+    m <- theta[i, ModelSIRCONN("mycon", prevalence = preval, contact_rate = crate, transmission_rate = ptran, recovery_rate = prec, n = n)]
+    verbose_off(m)
+    run(m, ndays = ndays)
+    ans <- prepare_data(m)
+    saveRDS(ans, fn)
+    return(ans)
+  }, mc.cores = ncores)
+  return(matrices)
+}
+```
+
+```{r}
+filter_valid_simulations <- function(matrices, theta) {
+  valid_indices <- intersect(
+    which(!sapply(matrices, inherits, what = "error")),
+    which(!sapply(matrices, \(x) any(is.na(x))))
+  )
+  matrices <- matrices[valid_indices]
+  theta <- theta[valid_indices, ]
+  return(list(matrices = matrices, theta = theta, N = length(valid_indices)))
+}
+```
+
+**Inputs**:
+
+-   `N`: Number of simulations to run.
+
+-   `theta`: A table containing the parameters for each simulation (prevalence, contact rate, transmission rate, and recovery rate).
+
+-   `seeds`: A set of random seeds to ensure each simulation has different random behavior.
+
+-   `n`: Population size for the simulation.
+
+-   `ndays`: Number of days to simulate.
+
+-   `ncores`: Number of CPU cores to use for parallel processing.
+
+# prepare simulation data for neural network training
+
+`prepare_neural_network_data` Function prepares the simulation data and parameters for use in training a neural network.
+
+```{r}
+# Function to prepare simulation data for neural network training
+prepare_neural_network_data <- function(N, matrices, theta) {
+  arrays_1d <- array(dim = c(N, dim(matrices[[1]][1, , ])))
+  for (i in seq_along(matrices)) {
+    arrays_1d[i, , ] <- matrices[[i]][1, , ]
+  }
+  theta2 <- copy(theta)
+  theta2[, crate := plogis(crate / 10)]
+  return(list(arrays_1d = arrays_1d, theta2 = theta2))
+}
+
+# Function to save the prepared data to an RDS file
+save_prepared_data <- function(theta2, arrays_1d) {
+  saveRDS(
+    list(
+      theta = theta2,
+      simulations = arrays_1d
+    ),
+    file = "calibration/sir.rds",
+    compress = TRUE
+  )
+}
+```
+
+# Split data into training and test sets
+
+```{r}
+split_train_test_data <- function(N, arrays_1d, theta2) {
+  N_train <- floor(N * 0.7)
+  id_train <- 1:N_train
+  id_test <- (N_train + 1):N
+  train <- list(
+    x = array_reshape(arrays_1d[id_train, , ], dim = c(N_train, dim(arrays_1d)[-1])),
+    y = array_reshape(as.matrix(theta2)[id_train, ], dim = c(N_train, ncol(theta2)))
+  )
+  test <- list(
+    x = array_reshape(arrays_1d[id_test, , ], dim = c(N - N_train, dim(arrays_1d)[-1])),
+    y = array_reshape(as.matrix(theta2)[id_test, ], dim = c(N - N_train, ncol(theta2)))
+  )
+  return(list(train = train, test = test))
+}
+```
+
+-   **Inputs**:
+
+    -   `N`: The number of valid simulations.
+
+    -   `matrices`: A list of simulation results (from `run_epidemic_simulations`).
+
+    -   `theta`: A table of parameters used for the simulations.
+
+-   **Functionality**:
+
+    -   **Creating an Array for Simulations**:
+
+        -   `arrays_1d`: A 3D array is created to store the first slice of data (e.g., infections) from each simulation result. The dimensions are `(N, rows, cols)` where `N` is the number of simulations.
+
+        -   Each simulation's result is extracted (`matrices[[i]][1, , ]`) and added to `arrays_1d`.
+
+    -   **Adjusting Parameters**:
+
+        -   `theta2`: A copy of `theta` is created, and the contact rate (`crate`) is transformed using the logistic function (`plogis(crate / 10)`) to map values into a probability range (0, 1).
+
+# Build and train the LSTM model
+
+`build_and_train_lstm` Function builds and trains an LSTM (Long Short-Term Memory) neural network model using the `keras3` package.
+
+```{r}
+build_and_train_lstm <- function(train, theta2, arrays_1d) {
+  model <- keras3::keras_model_sequential() %>%
+    keras3::layer_lstm(units = 64, input_shape = c(dim(arrays_1d)[2], dim(arrays_1d)[3]), return_sequences = FALSE) %>%
+    keras3::layer_dense(units = ncol(theta2), activation = 'sigmoid')
+  
+  model %>% compile(optimizer = 'adam', loss = 'mse', metrics = 'accuracy')
+  
+  tensorflow::set_random_seed(331)
+  model %>% fit(train$x, train$y, epochs = 100, verbose = 2)
+  
+  return(model)
+}
+```
+
+**Inputs**:
+
+-   `train`: The training dataset, consisting of `train$x` (input data) and `train$y` (target parameters).
+
+-   `theta2`: The adjusted table of parameters that the model will learn to predict.
+
+-   `arrays_1d`: The 3D array containing simulation data, which helps define the input shape of the LSTM.
+
+-   `lstm_units`: The number of LSTM units (default is 64) in the hidden layer.
+
+-   `epochs`: Number of training epochs (default is 100), i.e., how many times the model will iterate over the training data.
+
+-   `loss_function`: The loss function used to optimize the model (default is Mean Squared Error, `'mse'`).
+
+-   `optimizer`: The optimizer for training (default is Adam).
+
+-   `activation`: The activation function used in the output layer (default is `'sigmoid'`).
+
+# predict using the trained model
+
+```{r}
+# Function to predict using the trained model
+make_predictions <- function(model, test, theta) {
+  pred <- predict(model, x = test$x) |> as.data.table() |> setnames(colnames(theta))
+  return(pred)
+}
+
+# Function to compute the Mean Absolute Error (MAE)
+compute_mae <- function(pred, test) {
+  MAEs <- abs(pred - as.matrix(test$y)) |> colMeans() |> print()
+  return(MAEs)
+}
+```
+
+# Visualize model predictions against observed data
+
+```{r}
+visualize_predictions <- function(pred, test, MAEs, theta, N, N_train) {
+  pred[, id := 1L:.N]
+  pred[, crate := qlogis(crate) * 10]
+  pred_long <- melt(pred, id.vars = "id")
+  
+  theta_long <- test$y |> as.data.table()
+  setnames(theta_long, names(theta))
+  theta_long[, id := 1L:.N]
+  theta_long[, crate := qlogis(crate) * 10]
+  theta_long <- melt(theta_long, id.vars = "id")
+  
+  alldat <- rbind(cbind(pred_long, Type = "Predicted"), cbind(theta_long, Type = "Observed"))
+  
+  ggplot(alldat, aes(x = value, colour = Type)) +
+    facet_wrap(~variable, scales = "free") +
+    geom_boxplot()
+  
+  alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
+  
+  vnames <- data.table(
+    variable = c("preval", "crate", "ptran", "prec"),
+    Name     = paste(c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"), sprintf("(MAE: %.2f)", MAEs))
+  )
+  
+  alldat_wide <- merge(alldat_wide, vnames, by = "variable")
+  
+  ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
+    facet_wrap(~ Name, scales = "free") +
+    geom_abline(slope = 1, intercept = 0) +
+    geom_point(alpha = .2) +
+    labs(
+      title = "Observed vs Predicted (validation set)",
+      subtitle = sprintf("The model includes %i simulated datasets, of which %i were used for training.", N, N_train),
+      caption = "Predictions made using a CNN as implemented with loss function MAE."
+    )
+}
+```
+
+# Main execution block
+
+```{r}
+theta <- generate_simulation_parameters(N, n)
+seeds <- sample.int(.Machine$integer.max, N, TRUE)
+matrices <- run_epidemic_simulations(N, theta, seeds, n, ndays, ncores)
+
+# Filter and prepare data
+valid_data <- filter_valid_simulations(matrices, theta)
+N <- valid_data$N
+theta <- valid_data$theta
+matrices <- valid_data$matrices
+
+# Prepare for neural network
+nn_data <- prepare_neural_network_data(N, matrices, theta)
+arrays_1d <- nn_data$arrays_1d
+theta2 <- nn_data$theta2
+
+# Save data
+save_prepared_data(theta2, arrays_1d)
+
+# Split train and test data
+train_test_data <- split_train_test_data(N, arrays_1d, theta2)
+train <- train_test_data$train
+test <- train_test_data$test
+```
+
+```{r,epochs=FALSE}
+# Build, train, and evaluate the model
+model <- build_and_train_lstm(train, theta2, arrays_1d)
+```
+
+```{r}
+pred <- make_predictions(model, test, theta)
+```
+
+```{r}
+MAEs <- compute_mae(pred, test)
+print(MAEs)
+```
+
+```{r}
+# Visualize the results
+visualize_predictions(pred, test, MAEs, theta, N, floor(N * 0.7))
+
+```
+
+# Section 2:
+
+# Grid Search function for LSTM hyperparameters
+
+The `grid_search_lstm` function performs a grid search over different hyperparameter combinations for training an LSTM model.
+
+```{r}
+grid_search_lstm <- function(train, test, theta2, arrays_1d, lstm_units_options, epochs_options, loss_function_options, optimizer_options, activation_options) {
+  results <- list()
+  
+  for (lstm_units in lstm_units_options) {
+    for (epochs in epochs_options) {
+      for (loss_function in loss_function_options) {
+        for (optimizer in optimizer_options) {
+          for (activation in activation_options) {
+            
+            # Train the model with current hyperparameters
+            model <- build_and_train_lstm(train, theta2, arrays_1d, lstm_units, epochs, loss_function, optimizer, activation)
+            mae <- evaluate_model(model, test)
+            
+            # Store the results
+            results[[length(results) + 1]] <- list(
+              lstm_units = lstm_units, 
+              epochs = epochs, 
+              loss_function = loss_function,
+              optimizer = optimizer, 
+              activation = activation, 
+              mae = mae, 
+              model = model
+            )
+          }
+        }
+      }
+    }
+  }
+  return(results)
+}
+
+
+```
+
+**Inputs**:
+
+-   `train`, `test`: The training and testing datasets.
+
+-   `theta2`, `arrays_1d`: Additional parameters that might influence the model or input data (specific to the problem).
+
+-   `lstm_units_options`, `epochs_options`, `loss_function_options`, `optimizer_options`, `activation_options`: These are lists of possible values for each hyperparameter, which will be used in the grid search (LSTM units, epochs, loss functions, optimizers, and activation functions).
+
+# Find the best model based on MAE
+
+```{r}
+find_best_model <- function(results) {
+  best_result <- results[[which.min(sapply(results, function(x) x$mae))]]
+  return(best_result)
+}
+
+
+```
+
+# Main function to run everything and find the best model
+
+This `run_lstm_grid_search` function performs a grid search over a set of hyperparameters for an LSTM model to find the best-performing configuration based on Mean Absolute Error (MAE).
+
+```{r,epochs=FALSE}
+run_lstm_grid_search <- function(train, test, theta2, arrays_1d) {
+  
+  # Define the hyperparameter grid
+  lstm_units_options <- c(64, 128, 256)
+  epochs_options <- c(10)
+  loss_function_options <- c('mse', 'mae')
+  optimizer_options <- c('adam', 'rmsprop')
+  activation_options <- c('sigmoid', 'relu')
+  
+  # Run grid search
+  results <- grid_search_lstm(train, test, theta2, arrays_1d, lstm_units_options, epochs_options, loss_function_options, optimizer_options, activation_options)
+  
+  # Find the best model based on MAE
+  best_result <- find_best_model(results)
+  
+  # Print the best configuration and MAE
+  cat("Best model configuration:\n")
+  print(best_result)
+  
+  return(best_result)
+}
+
+# Assuming train, test, theta2, and arrays_1d are already defined
+best_model_result <- run_lstm_grid_search(train, test, theta2, arrays_1d)
+```
+
+**Define Hyperparameter Grid**:
+
+-   Lists of possible values for LSTM units, epochs, loss functions, optimizers, and activation functions are defined:
+
+    -   `lstm_units_options`: Number of units in the LSTM layer (64, 128, 256).
+
+    -   `epochs_options`: Number of training epochs (10).
+
+    -   `loss_function_options`: Loss functions ('mse' and 'mae').
+
+    -   `optimizer_options`: Optimizers ('adam' and 'rmsprop').
+
+    -   `activation_options`: Activation functions ('sigmoid' and 'relu').
+
+##### See the history of the best model
+
+```{r}
+best_model_result$model
+```
+
+# Run the best model and visualization
+
+```{r}
+# model <- best_model_result$model
+build_and_train_lstm <- function(train, theta2, arrays_1d) {
+  model <- keras3::keras_model_sequential() %>%
+    keras3::layer_lstm(units = 256, input_shape = c(dim(arrays_1d)[2], dim(arrays_1d)[3]), return_sequences = FALSE) %>%
+    keras3::layer_dense(units = ncol(theta2), activation = 'sigmoid')
+  
+  model %>% compile(optimizer = 'adam', loss = 'mse', metrics = 'accuracy')
+  
+  tensorflow::set_random_seed(331)
+  model %>% fit(train$x, train$y, epochs = 100, verbose = 2)
+  
+  return(model)
+}
+model=build_and_train_lstm(train, theta2, arrays_1d)
+model %>% fit(
+  train$x,
+  train$y,
+  epochs = 100,
+  verbose = 2
+  )
+
+pred <- predict(model, x = test$x) |>
+  as.data.table() |>
+  setnames(colnames(theta))
+
+MAEs <- abs(pred - as.matrix(test$y)) |>
+  colMeans() |>
+  print()
+
+# save_model_hdf5(model, "sir-keras")
+
+# Visualizing ------------------------------------------------------------------
+pred[, id := 1L:.N]
+pred[, crate := qlogis(crate) * 10]
+pred_long <- melt(pred, id.vars = "id")
+
+theta_long <- test$y |> as.data.table()
+setnames(theta_long, names(theta))
+theta_long[, id := 1L:.N]
+theta_long[, crate := qlogis(crate) * 10]
+theta_long <- melt(theta_long, id.vars = "id")
+
+alldat <- rbind(
+  cbind(pred_long, Type = "Predicted"),
+  cbind(theta_long, Type = "Observed")
+)
+
+library(ggplot2)
+
+```
+
+```{}
+```
+
+```{r}
+ggplot(alldat, aes(x = value, colour = Type)) +
+  facet_wrap(~variable, scales = "free") +
+  geom_boxplot()
+
+
+```
+
+```{r}
+alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
+
+vnames <- data.table(
+  variable = c("preval", "crate", "ptran", "prec"),
+  Name     = paste(
+    c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
+    sprintf("(MAE: %.2f)", MAEs)
+    )
+)
+
+alldat_wide <- merge(alldat_wide, vnames, by = "variable")
+```
+
+```{r}
+ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
+  facet_wrap(~ Name, scales = "free") +
+  geom_abline(slope = 1, intercept = 0) +
+  geom_point(alpha = .2) +
+  labs(
+    title    = "Observed vs Predicted (validation set)",
+    subtitle = sprintf(
+      "The model includes %i simulated datasets, of which %i were used for training.",
+      N,
+      N_train
+      ),
+    caption  = "Predictions made using a LSTM as implemented with loss function MAE."
+    
+    )
+
+
+```
