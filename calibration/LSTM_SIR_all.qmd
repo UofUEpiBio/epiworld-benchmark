@@ -11,7 +11,7 @@ format: gfm
 installing required packages:
 
 ```{r}
-#| label: setup
+#| label: installing packages
 library(epiworldR)
 library(data.table)
 library(tensorflow)
@@ -38,6 +38,7 @@ source("calibration/dataprep.R")
 # Set parameters
 
 ```{r}
+#| label: parameters
 
 N     <- 2e4
 n     <- 5000
@@ -50,6 +51,7 @@ ncores <- 20
 The `generate_simulation_parameters` function generates a table of parameters (`theta`) for the SIR model simulations.
 
 ```{r}
+#| label: generate theta
 set.seed(1231)
 generate_simulation_parameters <- function(N, n) {
   theta <- data.table(
@@ -86,6 +88,7 @@ generate_simulation_parameters <- function(N, n) {
 `run_epidemic_simulations` Function runs SIR (Susceptible-Infectious-Recovered) model simulations in parallel for `N` iterations, using a set of parameters (`theta`) for each simulation.
 
 ```{r}
+#| label: run simulations
 run_epidemic_simulations <- function(N, theta, seeds, n, ndays, ncores) {
   matrices <- parallel::mclapply(1:N, FUN = function(i) {
     fn <- sprintf("calibration/simulated_data/sir-%06i.rds", i)
@@ -103,6 +106,7 @@ run_epidemic_simulations <- function(N, theta, seeds, n, ndays, ncores) {
 ```
 
 ```{r}
+#| label:filtering the data
 filter_valid_simulations <- function(matrices, theta) {
   valid_indices <- intersect(
     which(!sapply(matrices, inherits, what = "error")),
@@ -133,6 +137,7 @@ filter_valid_simulations <- function(matrices, theta) {
 `prepare_neural_network_data` Function prepares the simulation data and parameters for use in training a neural network.
 
 ```{r}
+#| label: preparing data for tensorflow
 # Function to prepare simulation data for neural network training
 prepare_neural_network_data <- function(N, matrices, theta) {
   arrays_1d <- array(dim = c(N, dim(matrices[[1]][1, , ])))
@@ -160,6 +165,7 @@ save_prepared_data <- function(theta2, arrays_1d) {
 # Split data into training and test sets
 
 ```{r}
+#| label: train and test data
 split_train_test_data <- function(N, arrays_1d, theta2) {
   N_train <- floor(N * 0.7)
   id_train <- 1:N_train
@@ -201,6 +207,7 @@ split_train_test_data <- function(N, arrays_1d, theta2) {
 `build_and_train_lstm` Function builds and trains an LSTM (Long Short-Term Memory) neural network model using the `keras3` package.
 
 ```{r}
+#| label: build LSTM model
 build_and_train_lstm <- function(train, theta2, arrays_1d) {
   model <- keras3::keras_model_sequential() %>%
     keras3::layer_lstm(units = 64, input_shape = c(dim(arrays_1d)[2], dim(arrays_1d)[3]), return_sequences = FALSE) %>%
@@ -236,6 +243,7 @@ build_and_train_lstm <- function(train, theta2, arrays_1d) {
 # predict using the trained model
 
 ```{r}
+#| label: predictions and mae 
 # Function to predict using the trained model
 make_predictions <- function(model, test, theta) {
   pred <- predict(model, x = test$x) |> as.data.table() |> setnames(colnames(theta))
@@ -252,6 +260,7 @@ compute_mae <- function(pred, test) {
 # Visualize model predictions against observed data
 
 ```{r}
+#| label: visualize the model
 visualize_predictions <- function(pred, test, MAEs, theta, N, N_train) {
   pred[, id := 1L:.N]
   pred[, crate := qlogis(crate) * 10]
@@ -293,6 +302,7 @@ visualize_predictions <- function(pred, test, MAEs, theta, N, N_train) {
 # Main execution block
 
 ```{r}
+#| label: run the single LSTM model
 theta <- generate_simulation_parameters(N, n)
 seeds <- sample.int(.Machine$integer.max, N, TRUE)
 matrices <- run_epidemic_simulations(N, theta, seeds, n, ndays, ncores)
@@ -318,21 +328,24 @@ test <- train_test_data$test
 ```
 
 ```{r,epochs=FALSE}
+#| label: run the model
 # Build, train, and evaluate the model
 model <- build_and_train_lstm(train, theta2, arrays_1d)
 ```
 
 ```{r}
+#| label: prediction
 pred <- make_predictions(model, test, theta)
 ```
 
 ```{r}
+#| label: MAE
 MAEs <- compute_mae(pred, test)
 print(MAEs)
 ```
 
 ```{r}
-# Visualize the results
+#| label: Visualize the results
 visualize_predictions(pred, test, MAEs, theta, N, floor(N * 0.7))
 
 ```
@@ -341,9 +354,10 @@ visualize_predictions(pred, test, MAEs, theta, N, floor(N * 0.7))
 
 # Grid Search function for LSTM hyperparameters
 
-The `grid_search_lstm` function performs a grid search over different hyperparameter combinations for training an LSTM model.
+The `run_lstm_grid_search` function is designed to find the best-performing LSTM model by systematically exploring combinations of different hyperparameters—a process known as **grid search**. To perform a grid search over specified hyperparameters for an LSTM model and identify the best configuration based on the Mean Absolute Error (MAE) metric.
 
 ```{r}
+#| label: run lstm grid
 run_lstm_grid_search <- function(train, test, theta2, arrays_1d) {
   
   # Define the hyperparameter grid
@@ -376,7 +390,33 @@ run_lstm_grid_search <- function(train, test, theta2, arrays_1d) {
   return(best_result)
 }
 
-# Define the grid search function
+
+```
+
+-   **Define the Hyperparameter Grid:**
+
+    -   **`lstm_units_options`:** Number of units in the LSTM layer (e.g., 64, 128, 256).
+
+    -   **`epochs_options`:** Number of training epochs (e.g., 10, 20).
+
+    -   **`loss_function_options`:** Loss functions to optimize (e.g., 'mse' for Mean Squared Error, 'mae' for Mean Absolute Error).
+
+    -   **`optimizer_options`:** Optimization algorithms to use (e.g., 'adam', 'rmsprop').
+
+    -   **`activation_options`:** Activation functions for the output layer (e.g., 'sigmoid', 'relu').
+
+-   **Run Grid Search:**
+
+    -   **`grid_search_lstm`:** The function calls another function named `grid_search_lstm`, passing in the training and testing data along with all the hyperparameter options.
+
+    -   **Purpose of `grid_search_lstm`:** This function iterates over all possible combinations of the hyperparameters, trains an LSTM model for each combination, evaluates its performance on the test set, and collects the results.
+
+# Run Grid Search
+
+The `grid_search_lstm` function is designed to systematically explore various combinations of hyperparameters for training an LSTM model and evaluate their performance.
+
+```{r}
+#| label: Define the grid search function
 grid_search_lstm <- function(train, test, theta2, arrays_1d, lstm_units_options, epochs_options, loss_function_options, optimizer_options, activation_options) {
   results <- list()
   
@@ -406,14 +446,42 @@ grid_search_lstm <- function(train, test, theta2, arrays_1d, lstm_units_options,
   return(results)
 }
 
-# Function to find the best model based on the lowest MAE
+```
+
+**Parameters Passed:**
+
+-   **`train`:** Training dataset.
+
+-   **`theta2`, `arrays_1d`:** Additional data structures required for training (specific to your implementation).
+
+-   **`lstm_units`:** Number of units in the LSTM layer for this iteration.
+
+-   **`epochs`:** Number of epochs for training.
+
+-   **`loss_function`:** Loss function to use.
+
+-   **`optimizer`:** Optimization algorithm.
+
+-   **`activation`:** Activation function for the output layer.
+
+### Finding Best Model
+
+```{r}
+#| label: Function to find the best model based on the lowest MAE
 find_best_model <- function(results) {
   # Extract the model with the lowest MAE
   best_result <- results[[which.min(sapply(results, function(x) x$mae))]]
   return(best_result)
 }
 
-# Build and train the LSTM model
+```
+
+Build the LSTM Model
+
+The `build_and_train_lstm` function constructs and trains an LSTM (Long Short-Term Memory) neural network model using the Keras library in R
+
+```{r}
+#| label: Build and train the LSTM model
 build_and_train_lstm <- function(train, theta2, arrays_1d, lstm_units, epochs, loss_function, optimizer, activation) {
   model <- keras3::keras_model_sequential() %>%
     keras3::layer_lstm(units = lstm_units, input_shape = c(dim(arrays_1d)[2], dim(arrays_1d)[3]), return_sequences = FALSE) %>%
@@ -427,8 +495,13 @@ build_and_train_lstm <- function(train, theta2, arrays_1d, lstm_units, epochs, l
   return(model)
 }
 
-# Evaluate the model and return the Mean Absolute Error (MAE)
-# Evaluate the model and return the Mean Absolute Error (MAE)
+
+```
+
+Evaluation Part
+
+```{r}
+#| label: Evaluate the model and return the Mean Absolute Error (MAE)
 evaluate_model_lstm <- function(model, test_data) {
   pred <- predict(model, x = test_data$x)
   
@@ -446,7 +519,14 @@ evaluate_model_lstm <- function(model, test_data) {
   return(mean(MAEs))
 }
 
-# Run the best model and generate predictions
+
+```
+
+## Run the Model and Find the Best Parameters
+
+```{r,epochs=FALSE}
+
+#| label: Run the best model and generate predictions
 best_model_result <- run_lstm_grid_search(train, test, theta2, arrays_1d)
 
 # Ensure best_model_result is defined before proceeding
@@ -463,69 +543,19 @@ if (is.null(colnames(test$y))) {
   colnames(test$y) <- paste0("V", seq_len(ncol(test$y)))  # Create default names
 }
 
+```
+
+## Print the Results
+
+```{r}
+#| label: print the best results
 pred <- as.data.table(pred)
 setnames(pred, colnames(test$y))  # Set names to match test$y
 MAEs <- abs(pred - as.matrix(test$y)) |> colMeans()
-# Function to visualize LSTM model results
-plot_results_lstm <- function(pred, test_data, theta, MAEs) {
-  # Prepare predicted data for plotting
-  pred[, id := 1L:.N]
-  pred[, crate := qlogis(crate) * 10]  # Applying logit transformation to 'crate'
-  pred_long <- melt(pred, id.vars = "id")
-
-  # Prepare observed (test) data for plotting
-  theta_long <- as.data.table(test_data$y)
-  setnames(theta_long, colnames(theta))  # Ensure column names match theta
-  theta_long[, id := 1L:.N]
-  theta_long[, crate := qlogis(crate) * 10]  # Applying logit transformation to 'crate'
-  theta_long <- melt(theta_long, id.vars = "id")
-
-  # Combine predicted and observed data for plotting
-  alldat <- rbind(
-    cbind(pred_long, Type = "Predicted"),
-    cbind(theta_long, Type = "Observed")
-  )
-
-  # Boxplot: Predicted vs Observed
-  p1 <- ggplot(alldat, aes(x = value, colour = Type)) +
-    facet_wrap(~variable, scales = "free") +
-    geom_boxplot() +
-    labs(title = "Boxplot: Predicted vs Observed")
-
-  print(p1)
-
-  # Reshape data for scatter plot: Observed vs Predicted
-  alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
-
-  # Assign proper names to the variables for clarity
-  vnames <- data.table(
-    variable = c("preval", "crate", "ptran", "prec"),
-    Name     = paste(
-      c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
-      sprintf("(MAE: %.2f)", MAEs)
-    )
-  )
-
-  alldat_wide <- merge(alldat_wide, vnames, by = "variable")
-
-  # Scatter plot: Observed vs Predicted
-  p2 <- ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
-    facet_wrap(~ Name, scales = "free") +
-    geom_abline(slope = 1, intercept = 0) +  # Add y=x reference line
-    geom_point(alpha = .2) +
-    labs(
-      title = "Observed vs Predicted (Validation Set)",
-      subtitle = sprintf(
-        "The model includes %i simulated datasets.",
-        nrow(test_data$y)
-      ),
-      caption = "Predictions made using an LSTM model."
-    )
-
-  print(p2)
-}
-
-# Plot the results
-plot_results_lstm(pred, test, theta2, MAEs)
+print(MAEs)
 
 ```
+
+\`\`\`{# \# Function to visualize LSTM model results} \# plot_results_lstm \<- function(pred, test_data, theta, MAEs) { \# \# Prepare predicted data for plotting \# pred\[, id := 1L:.N\] \# pred\[, crate := qlogis(crate) \* 10\] \# Applying logit transformation to 'crate' \# pred_long \<- melt(pred, id.vars = "id") \# \# \# Prepare observed (test) data for plotting \# theta_long \<- as.data.table(test_data$y) # setnames(theta_long, colnames(theta)) # Ensure column names match theta # theta_long[, id := 1L:.N] # theta_long[, crate := qlogis(crate) * 10] # Applying logit transformation to 'crate' # theta_long <- melt(theta_long, id.vars = "id") # # # Combine predicted and observed data for plotting # alldat <- rbind( # cbind(pred_long, Type = "Predicted"), # cbind(theta_long, Type = "Observed") # ) # # # Boxplot: Predicted vs Observed # p1 <- ggplot(alldat, aes(x = value, colour = Type)) + # facet_wrap(~variable, scales = "free") + # geom_boxplot() + # labs(title = "Boxplot: Predicted vs Observed") # # print(p1) # # # Reshape data for scatter plot: Observed vs Predicted # alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value") # # # Assign proper names to the variables for clarity # vnames <- data.table( # variable = c("preval", "crate", "ptran", "prec"), # Name = paste( # c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"), # sprintf("(MAE: %.2f)", MAEs) # ) # ) # # alldat_wide <- merge(alldat_wide, vnames, by = "variable") # # # Scatter plot: Observed vs Predicted # p2 <- ggplot(alldat_wide, aes(x = Observed, y = Predicted)) + # facet_wrap(~ Name, scales = "free") + # geom_abline(slope = 1, intercept = 0) + # Add y=x reference line # geom_point(alpha = .2) + # labs( # title = "Observed vs Predicted (Validation Set)", # subtitle = sprintf( # "The model includes %i simulated datasets.", # nrow(test_data$y) \# ), \# caption = "Predictions made using an LSTM model." \# ) \# \# print(p2) \# } \# \# \# Plot the results \# plot_results_lstm(pred, test, theta2, MAEs)
+
+\`\`\`
