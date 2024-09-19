@@ -152,7 +152,7 @@ build_and_train_model <- function(train, test, arrays_1d, theta, N_train, seed =
   model |> fit(
     train$x,
     train$y,
-    epochs = 100,
+    epochs = 10,
     verbose = 2
   )
   
@@ -164,8 +164,7 @@ build_and_train_model <- function(train, test, arrays_1d, theta, N_train, seed =
     colMeans() |>
     print()
   
-  save_model_hdf5(model, save_model_file)
-  
+
   list(pred = pred, MAEs = MAEs)
 }
 
@@ -186,10 +185,10 @@ visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file =
     cbind(theta_long, Type = "Observed")
   )
   
-  ggplot(alldat, aes(x = value, colour = Type)) +
+  p1<-ggplot(alldat, aes(x = value, colour = Type)) +
     facet_wrap(~variable, scales = "free") +
     geom_boxplot()
-  
+ print(p1) 
   alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
   
   vnames <- data.table(
@@ -202,7 +201,7 @@ visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file =
   
   alldat_wide <- merge(alldat_wide, vnames, by = "variable")
   
-  ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
+  p2<-ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
     facet_wrap(~ Name, scales = "free") +
     geom_abline(slope = 1, intercept = 0) +
     geom_point(alpha = .2) +
@@ -215,6 +214,7 @@ visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file =
       ),
       caption  = "Predictions made using a CNN as implemented with loss function MAE."
     )
+  print(p2)
   
   ggsave(filename = output_file, width = 1280, height = 800, units = "px", scale = 3)
 }
@@ -239,11 +239,10 @@ main <- function() {
   MAEs <- model_results$MAEs
   
   # Visualize results
-  visualize_results(pred, test, theta, MAEs, N, N_train)
+  print(visualize_results(pred, test, theta, MAEs, N, N_train))
 }
 
 # Run the main function
 main()
-
 ```
 
