@@ -364,7 +364,28 @@ main_pipeline(N,n,ndays,ncores)
 Now we can Run a CNN model to find the best parameters we can use for our CNN model to perform
 
 ```{r}
-main_pipeline<- function(N, n, ndays, ncores) {
+build_cnn_model <- function(input_shape, output_units, filters, kernel_size, activation, dense_units) {
+  model <- keras3::keras_model_sequential() %>%
+    keras3::layer_conv_2d(
+      filters = filters,                      # Use dynamic filters
+      kernel_size = kernel_size,              # Use dynamic kernel size
+      activation = activation,                # Use dynamic activation
+      input_shape = c(input_shape, 1)         # Assuming single-channel input (e.g., grayscale)
+    ) %>%
+    keras3::layer_max_pooling_2d(pool_size = 2, padding = 'same') %>%
+    keras3::layer_flatten() %>%
+    keras3::layer_dense(units = dense_units, activation = activation) %>%
+    keras3::layer_dense(units = output_units, activation = 'sigmoid')  # Output layer
+
+  model %>% compile(
+    optimizer = 'adam', 
+    loss = 'mse', 
+    metrics = 'accuracy'
+  )
+
+  return(model)
+}
+main_pipeline <- function(N, n, ndays, ncores) {
   
   # Generate theta and seeds
   theta <- generate_theta(N, n)
@@ -384,7 +405,7 @@ main_pipeline<- function(N, n, ndays, ncores) {
   
   # Save theta and simulations data
   theta2 <- copy(theta)
-  theta2[, crate := plogis(crate / 10)]
+  theta2[, crate := plogis(crate / 10)]  # Apply logit transform to crate
   saveRDS(list(theta = theta2, simulations = arrays_1d), file = "calibration/sir.rds", compress = TRUE)
   
   # Split data into training and testing sets
@@ -405,10 +426,10 @@ The `main_pipeline` function streamlines the process of generating and preparing
 The `experiment_cnn_models` function systematically experiments with different configurations (hyperparameters) of a Convolutional Neural Network (CNN) to determine which combination yields the best performance, measured by the Mean Absolute Error (MAE) on the test dataset.
 
 ```{r}
-experiment_cnn_models <- function(train_data, test_data, theta, input_shape, output_units, epochs = 50) {
+experiment_cnn_models <- function(train_data, test_data, theta, input_shape, output_units, epochs = 10) {
   # Define the grid of hyperparameters to explore
   filter_sizes <- c(16, 32, 64)         # Number of filters
-  kernel_sizes <- list(c(3, 3), c(5, 5),c(3,5)) # Kernel sizes
+  kernel_sizes <- list(c(3, 3), c(5, 5), c(3,5)) # Kernel sizes
   activations <- c("relu", "linear")     # Activation functions
   dense_units <- c(32, 64, 128)          # Dense layer units
   
@@ -430,9 +451,14 @@ experiment_cnn_models <- function(train_data, test_data, theta, input_shape, out
                       filters, paste(kernel_size, collapse="x"), activation, dense))
           
           # Build the model with current hyperparameters
-          model <- build_cnn_model(input_shape = input_shape, output_units = output_units,
-                                   filters = filters, kernel_size = kernel_size,
-                                   activation = activation, dense_units = dense)
+          model <- build_cnn_model(
+            input_shape = input_shape, 
+            output_units = output_units,
+            filters = filters, 
+            kernel_size = kernel_size, 
+            activation = activation, 
+            dense_units = dense
+          )
           
           # Train the model
           train_model(model, train_data, epochs = epochs)
@@ -513,7 +539,7 @@ experiment_cnn_models <- function(train_data, test_data, theta, input_shape, out
 
 # Running the Process to Find the Best Model
 
-```{r}
+```{r,epochs=FALSE}
 N <- 2e4
 n <- 5000
 ndays <- 50
@@ -532,108 +558,129 @@ output_units <- ncol(theta2)
 
 # Run the CNN model experiments
 results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
+```
 
+
+```{r}
 # Display the results of all configurations and their MAEs
 print(results)
-
 ```
 
-# Find the best configuration
 
 ```{r}
-best_model <- results[which.min(MAE)]
-cat("Best model configuration:\n")
-print(best_model)
-```
-
-```{r}
-build_cnn_model <- function(input_shape, output_units, filters, kernel_size, activation, dense_units) {
-  model <- keras3::keras_model_sequential() %>%
-    keras3::layer_conv_2d(
-      filters = filters,                      # Use dynamic filters
-      kernel_size = kernel_size,              # Use dynamic kernel size
-      activation = activation,                # Use dynamic activation
-      input_shape = c(input_shape, 1)         # Assuming single-channel input (e.g., grayscale)
-    ) %>%
-    keras3::layer_max_pooling_2d(pool_size = 2, padding = 'same') %>%
-    keras3::layer_flatten() %>%
-    keras3::layer_dense(units = dense_units, activation = activation) %>%
-    keras3::layer_dense(units = output_units, activation = 'sigmoid')  # Output layer
-
-  model %>% compile(
-    optimizer = 'adam', 
-    loss = 'mse', 
-    metrics = 'accuracy'
-  )
-
-  return(model)
+# Find the best model configuration
+find_best_model <- function(results) {
+  # Select the row with the minimum MAE
+  best_model <- results[which.min(MAE)]
+  return(best_model)
 }
 
-main_pipeline <- function(N, n, ndays, ncores, best_filters, best_kernel_size, best_activation, best_dense_units, epochs = 50) {
+# Train and evaluate the best model
+train_and_evaluate_best_model <- function(best_model, train_data, test_data, theta, input_shape, output_units, epochs = 10) {
+  # Extract the best hyperparameters
+  best_filters <- best_model$filters
+  best_kernel_size <- as.integer(unlist(strsplit(best_model$kernel_size, "x")))
+  best_activation <- best_model$activation
+  best_dense_units <- best_model$dense_units
   
-  # Generate theta and seeds
-  theta <- generate_theta(N, n)
-  seeds <- sample.int(.Machine$integer.max, N, TRUE)
-  
-  # Run simulations
-  matrices <- run_simulations(N, n, ndays, ncores, theta, seeds)
-  
-  # Filter non-null elements
-  filtered_data <- filter_non_null(matrices, theta)
-  matrices <- filtered_data$matrices
-  theta <- filtered_data$theta
-  N <- filtered_data$N
-  
-  # Prepare data for TensorFlow
-  arrays_1d <- prepare_data_for_tensorflow(matrices, N)
-  
-  # Save theta and simulations data
-  theta2 <- copy(theta)
-  theta2[, crate := plogis(crate / 10)]
-  saveRDS(list(theta = theta2, simulations = arrays_1d), file = "calibration/sir.rds", compress = TRUE)
-  
-  # Split data into training and testing sets
-  data_split <- split_data(arrays_1d, theta2, N)
-  train <- data_split$train
-  test <- data_split$test
-  
-  # Build and train the CNN model with the best hyperparameters
+  # Build the best model
   model <- build_cnn_model(
-    input_shape = dim(arrays_1d)[-1],
-    output_units = ncol(theta2),
+    input_shape = input_shape,
+    output_units = output_units,
     filters = best_filters,
     kernel_size = best_kernel_size,
     activation = best_activation,
     dense_units = best_dense_units
   )
   
-  train_model(model, train, epochs = epochs)
+  # Train the best model
+  train_model(model, train_data, epochs = epochs)
   
-  # Evaluate the model
-  eval_results <- evaluate_model(model, test, theta)
-  pred <- eval_results$pred
-  MAEs <- eval_results$MAEs
-  
-  # Plot the results
-  plot_results(pred, test, theta, MAEs, N, floor(N * 0.7))
+  # Evaluate the best model
+  eval_results <- evaluate_model(model, test_data, theta)
+  return(list(model = model, eval_results = eval_results))
 }
 
-# Define the best hyperparameters from your experiments
-best_filters <- 32
-best_kernel_size <- c(5, 5)
-best_activation <- "relu"
-best_dense_units <- 64
+```
 
-# Run the main_pipeline function with the best hyperparameters
-main_pipeline(
-  N = 20000, 
-  n = 5000, 
-  ndays = 50, 
-  ncores = 20, 
-  best_filters = best_filters, 
-  best_kernel_size = best_kernel_size, 
-  best_activation = best_activation, 
-  best_dense_units = best_dense_units
-)
+```{r}
+plot_results <- function(pred, test_data, theta, MAEs, N, N_train) {
+  # Prepare the data for plotting
+  pred[, id := 1L:.N]
+  pred[, crate := qlogis(crate) * 10]
+  pred_long <- melt(pred, id.vars = "id")
+  
+  theta_long <- test_data$y |> as.data.table()
+  setnames(theta_long, names(theta))
+  theta_long[, id := 1L:.N]
+  theta_long[, crate := qlogis(crate) * 10]
+  theta_long <- melt(theta_long, id.vars = "id")
+  
+  alldat <- rbind(
+    cbind(pred_long, Type = "Predicted"),
+    cbind(theta_long, Type = "Observed")
+  )
+  
+  # Plot 1: Boxplot of Predicted vs Observed values
+  p1 <- ggplot(alldat, aes(x = value, colour = Type)) +
+    facet_wrap(~variable, scales = "free") +
+    geom_boxplot() +
+    labs(title = "Boxplot: Predicted vs Observed")
+  
+  print(p1)  # Display the first plot
+  
+  # Prepare data for second plot
+  alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
+  
+  vnames <- data.table(
+    variable = c("preval", "crate", "ptran", "prec"),
+    Name     = paste(
+      c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
+      sprintf("(MAE: %.2f)", MAEs)
+    )
+  )
+  
+  alldat_wide <- merge(alldat_wide, vnames, by = "variable")
+  
+  # Plot 2: Observed vs Predicted with MAE labels
+  p2 <- ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
+    facet_wrap(~ Name, scales = "free") +
+    geom_abline(slope = 1, intercept = 0) +
+    geom_point(alpha = .2) +
+    labs(
+      title    = "Observed vs Predicted (validation set)",
+      subtitle = sprintf(
+        "The model includes %i simulated datasets, of which %i were used for training.",
+        N, N_train
+      ),
+      caption  = "Predictions made using a CNN as implemented with loss function MAE."
+    )
+  
+  print(p2)  # Display the second plot
+}
+```
+
+```{r}
+
+best_model <- find_best_model(results)
+
+print(best_model)
+```
+
+
+```{r}
+# Step 6: Train and evaluate the best model
+best_model_results <- train_and_evaluate_best_model(best_model, train, test, theta2, input_shape, output_units)
+
+# Step 7: Evaluate and plot results
+pred <- best_model_results$eval_results$pred
+MAEs <- best_model_results$eval_results$MAEs
+print(MAEs)
+```
+
+
+```{r}
+# Step 8: Plot the results
+plot_results(pred, test, theta2, MAEs, N, floor(N * 0.7))
 
 ```
