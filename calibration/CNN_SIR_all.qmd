@@ -5,7 +5,9 @@ format: gfm
 # Using the CNN model to find the best parameters in SIR
 
 Installing Packages if necessary:
+
 ```{r,echo=FALSE}
+#| label: installing packages
 library(epiworldR)
 library(data.table)
 library(tensorflow)
@@ -23,6 +25,7 @@ library(ggplot2)
 Now we call the source to prepare the data we want to generate in the next step.
 
 ```{r}
+#| label: calling preparation source
 source("calibration/dataprep.R")
 ```
 
@@ -33,6 +36,7 @@ This function creates theta values which are needed parameters to generate the S
 Preval, contact, recovery, and transmission rates are generated from distributions.
 
 ```{r}
+#| label: generating theta
 generate_theta <- function(N, n) {
   set.seed(1231)
   theta <- data.table(
@@ -50,6 +54,7 @@ generate_theta <- function(N, n) {
 here a function simulates the SIR dataset with the EpiwolrdR package and with the values that are generated in the previous step.
 
 ```{r}
+#| label: simulations
 run_simulations <- function(N, n, ndays, ncores, theta, seeds) {
   matrices <- parallel::mclapply(1:N, FUN = function(i) {
     fn <- sprintf("calibration/simulated_data/sir-%06i.rds", i)
@@ -100,6 +105,7 @@ filter_non_null <- function(matrices, theta) {
 The function converts a list of matrices into a 3D array by extracting the first slice from each matrix and stacking them along a new dimension. This prepares the data for input into a TensorFlow model, which often requires data in a specific shape.
 
 ```{r}
+#| label: prepare data for tensorflow
 prepare_data_for_tensorflow <- function(matrices, N) {
   arrays_1d <- array(dim = c(N, dim(matrices[[1]][1,,])))
   
@@ -110,7 +116,13 @@ prepare_data_for_tensorflow <- function(matrices, N) {
   return(arrays_1d)
 }
 
+
+```
+
 # Function to split data into training and test sets
+
+```{r}
+#| label: train and test 
 split_data <- function(arrays_1d, theta2, N) {
   N_train <- floor(N * 0.7)
   id_train <- 1:N_train
@@ -136,6 +148,7 @@ split_data <- function(arrays_1d, theta2, N) {
 This function constructs a CNN model using the `keras3` package in R. The model is intended for regression tasks (since it uses 'mse' loss and 'sigmoid' activation in the output layer) and consists of convolutional, pooling, flattening, and dense layers.
 
 ```{r}
+#| label: building CNN model
 build_cnn_model <- function(input_shape, output_units) {
   model <- keras3::keras_model_sequential() %>%
     keras3::layer_conv_2d(
@@ -179,8 +192,6 @@ step 2
 
     step 3
 
-<!-- -->
-
 -   **`layer_flatten`**: Flattens the input into a one-dimensional vector.
 
 -   **`input_shape = input_shape`**: Specifies the input shape for the flatten layer (may be redundant if input shape is already defined).
@@ -198,6 +209,7 @@ step 2
 # Function to train the model
 
 ```{r}
+#| label: train the model
 train_model <- function(model, train_data, epochs = 100) {
   tensorflow::set_random_seed(331)
   model %>% fit(train_data$x, train_data$y, epochs = epochs, verbose = 2)
@@ -211,6 +223,7 @@ train_model <- function(model, train_data, epochs = 100) {
 This function evaluates the trained model on the test data, makes predictions, calculates the Mean Absolute Error (MAE) for each output variable, and returns the predictions along with the MAE values.
 
 ```{r}
+#| label: evaluation 
 evaluate_model <- function(model, test_data, theta) {
   pred <- predict(model, x = test_data$x) |>
     as.data.table() |>
@@ -226,6 +239,7 @@ evaluate_model <- function(model, test_data, theta) {
 # Function to plot the results
 
 ```{r}
+#| label: plotting the results
 plot_results <- function(pred, test_data, theta, MAEs, N, N_train) {
   # Prepare the data for plotting
   pred[, id := 1L:.N]
@@ -290,6 +304,7 @@ plot_results <- function(pred, test_data, theta, MAEs, N, N_train) {
 # The main function to orchestrate the entire process
 
 ```{r}
+#| label: running one CNN model
 main_pipeline <- function(N,n,ndays,ncores) {
   
   # Generate theta and seeds
@@ -350,6 +365,7 @@ The `main_pipeline` function automates the process of:
 # Run the whole process with given values
 
 ```{r}
+#| label: give parameters and run
 N <- 2e4
 n <- 5000
 ndays <- 50
@@ -385,6 +401,11 @@ build_cnn_model <- function(input_shape, output_units, filters, kernel_size, act
 
   return(model)
 }
+
+```
+
+```{r}
+#|label: main_pipeline for tuning
 main_pipeline <- function(N, n, ndays, ncores) {
   
   # Generate theta and seeds
@@ -426,6 +447,7 @@ The `main_pipeline` function streamlines the process of generating and preparing
 The `experiment_cnn_models` function systematically experiments with different configurations (hyperparameters) of a Convolutional Neural Network (CNN) to determine which combination yields the best performance, measured by the Mean Absolute Error (MAE) on the test dataset.
 
 ```{r}
+#| label: find different models with different parameters
 experiment_cnn_models <- function(train_data, test_data, theta, input_shape, output_units, epochs = 10) {
   # Define the grid of hyperparameters to explore
   filter_sizes <- c(16, 32, 64)         # Number of filters
@@ -540,6 +562,7 @@ experiment_cnn_models <- function(train_data, test_data, theta, input_shape, out
 # Running the Process to Find the Best Model
 
 ```{r,epochs=FALSE}
+#| label: finding best model
 N <- 2e4
 n <- 5000
 ndays <- 50
@@ -560,14 +583,13 @@ output_units <- ncol(theta2)
 results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
 ```
 
-
 ```{r}
 # Display the results of all configurations and their MAEs
 print(results)
 ```
 
-
-```{r}
+```{r,epochs=FALSE}
+#| label: find best parameters and run the model
 # Find the best model configuration
 find_best_model <- function(results) {
   # Select the row with the minimum MAE
@@ -604,6 +626,7 @@ train_and_evaluate_best_model <- function(best_model, train_data, test_data, the
 ```
 
 ```{r}
+#| label: visualize the best model
 plot_results <- function(pred, test_data, theta, MAEs, N, N_train) {
   # Prepare the data for plotting
   pred[, id := 1L:.N]
@@ -661,26 +684,28 @@ plot_results <- function(pred, test_data, theta, MAEs, N, N_train) {
 ```
 
 ```{r}
-
+#| label: print best model
 best_model <- find_best_model(results)
 
 print(best_model)
 ```
 
-
-```{r}
-# Step 6: Train and evaluate the best model
+```{r,epochs=FALSE}
+#| label: learn best model
 best_model_results <- train_and_evaluate_best_model(best_model, train, test, theta2, input_shape, output_units)
 
-# Step 7: Evaluate and plot results
+
+```
+
+```{r}
+#| label: print MAE for the best model
 pred <- best_model_results$eval_results$pred
 MAEs <- best_model_results$eval_results$MAEs
 print(MAEs)
 ```
 
-
 ```{r}
-# Step 8: Plot the results
+#| label: plotting the best results
 plot_results(pred, test, theta2, MAEs, N, floor(N * 0.7))
 
 ```
