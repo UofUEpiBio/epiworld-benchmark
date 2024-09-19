@@ -1,7 +1,10 @@
-# Using the CNN model to find the best parameters in SIR 
+---
+format: gfm
+---
+
+# Using the CNN model to find the best parameters in SIR
 
 Installing Packages if necessary:
-
 ```{r,echo=FALSE}
 library(epiworldR)
 library(data.table)
@@ -128,7 +131,7 @@ split_data <- function(arrays_1d, theta2, N) {
 
 ```
 
-# Building the CNN 
+# Building the CNN
 
 This function constructs a CNN model using the `keras3` package in R. The model is intended for regression tasks (since it uses 'mse' loss and 'sigmoid' activation in the output layer) and consists of convolutional, pooling, flattening, and dense layers.
 
@@ -158,7 +161,7 @@ step 1:
 
 -   filters=32: The number of convolution filters (kernels) to use.
 
--   **`input``_shape``= c(input_shape, 1)`**: Specifies the shape of the input data, which `1` represents a single channel (e.g., grayscale images).
+-   **``` input``_shape``= c(input_shape, 1) ```**: Specifies the shape of the input data, which `1` represents a single channel (e.g., grayscale images).
 
 -   **`activation = "linear"`**: Uses the linear activation function (no activation is applied).
 
@@ -176,9 +179,8 @@ step 2
 
     step 3
 
-```{=html}
 <!-- -->
-```
+
 -   **`layer_flatten`**: Flattens the input into a one-dimensional vector.
 
 -   **`input_shape = input_shape`**: Specifies the input shape for the flatten layer (may be redundant if input shape is already defined).
@@ -543,6 +545,7 @@ best_model <- results[which.min(MAE)]
 cat("Best model configuration:\n")
 print(best_model)
 ```
+
 ```{r}
 build_cnn_model <- function(input_shape, output_units, filters, kernel_size, activation, dense_units) {
   model <- keras3::keras_model_sequential() %>%
@@ -614,6 +617,7 @@ main_pipeline <- function(N, n, ndays, ncores, best_filters, best_kernel_size, b
   # Plot the results
   plot_results(pred, test, theta, MAEs, N, floor(N * 0.7))
 }
+
 # Define the best hyperparameters from your experiments
 best_filters <- 32
 best_kernel_size <- c(5, 5)
@@ -633,4 +637,3 @@ main_pipeline(
 )
 
 ```
-

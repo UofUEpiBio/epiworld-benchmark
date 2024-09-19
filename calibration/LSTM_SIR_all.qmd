@@ -1,3 +1,7 @@
+---
+format: gfm
+---
+
 # Using the LSTM model to Find the Best Parameters Used in Generating the SIR Model
 
 # Section 1:
@@ -7,6 +11,7 @@
 installing required packages:
 
 ```{r}
+#| label: setup
 library(epiworldR)
 library(data.table)
 library(tensorflow)
@@ -25,6 +30,7 @@ library(ggplot2)
 Now we call the source to prepare the data we want to generate in the next step.
 
 ```{r}
+#| label: sourcing-functions
 # devtools::install_github("UofUEpi/epiworldR")
 source("calibration/dataprep.R")
 ```
