@@ -1,8 +1,8 @@
 ---
+title: "Implementing the CNN Model by Knowing SIR Counts to Find the Closest Parameters to Simulate SIR Models"
 format: gfm
+editor: visual
 ---
-
-# Using the CNN model to find the best parameters in SIR
 
 Installing Packages if necessary:
 
