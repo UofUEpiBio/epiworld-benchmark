@@ -188,10 +188,10 @@ build_and_train_model <- function(train, test, theta, N_train, ndays, seed = 331
   history <- model %>% fit(
     x = train$x,
     y = train$y,
-    epochs = 10,
+    epochs = 50,
     batch_size = 64,
     validation_split = 0.2,
-    verbose = 2
+    verbose = 0
   )
   
   pred <- predict(model, x = test$x) %>%
