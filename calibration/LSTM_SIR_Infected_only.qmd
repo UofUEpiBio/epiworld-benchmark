@@ -321,207 +321,62 @@ Section 2
 find the best LSTM model
 
 ```{r}
-# Load required libraries
-library(data.table)
-library(parallel)
-library(keras)
-library(ggplot2)
-library(reshape2)
-library(tensorflow)
-library(keras3)
-
-# Function to simulate data
-simulate_data <- function(N = 2e4, n = 5000, ndays = 50, ncores = 20, seed = 1231, savefile = "calibration/sir.rds") {
-  source("calibration/dataprep.R")
-  
-  set.seed(seed)
-  
-  theta <- data.table(
-    preval = sample((100:2000)/n, N, TRUE),
-    crate  = rgamma(N, 5, 1),    # Mean 5
-    ptran  = rbeta(N, 3, 7),     # Mean 0.3
-    prec   = rbeta(N, 10, 10*2 - 10) # Mean 0.5
-  )
-  
-  seeds <- sample.int(.Machine$integer.max, N, TRUE)
-  
-  matrices <- parallel::mclapply(1:N, FUN = function(i) {
-    fn <- sprintf("calibration/simulated_data/sir-%06i.rds", i)
-    
-    if (file.exists(fn))
-      return(readRDS(fn))
-    
-    set.seed(seeds[i])
-    
-    m <- theta[i,
-               ModelSIRCONN(
-                 "mycon",
-                 prevalence        = preval,
-                 contact_rate      = crate,
-                 transmission_rate = ptran,
-                 recovery_rate     = prec, 
-                 n                 = n
-               )
-    ]
-    
-    verbose_off(m)
-    
-    run(m, ndays = ndays)
-    
-    ans <- prepare_data(m)
-    saveRDS(ans, fn)
-    
-    ans
-  }, mc.cores = ncores)
-  
-  is_not_null <- intersect(
-    which(!sapply(matrices, inherits, what = "error")),
-    which(!sapply(matrices, function(x) any(is.na(x))))
-  )
-  matrices <- matrices[is_not_null]
-  theta    <- theta[is_not_null,]
-  
-  N <- length(is_not_null)
-  
-  arrays_1d <- array(dim = c(N, dim(matrices[[1]][1,,])))
-  for (i in seq_along(matrices))
-    arrays_1d[i,,] <- matrices[[i]][1,,]
-  
-  theta2 <- copy(theta)
-  theta2[, crate := plogis(crate / 10)]
-  
-  saveRDS(
-    list(
-      theta = theta2,
-      simulations = arrays_1d
-    ),
-    file = savefile,
-    compress = TRUE
-  )
-}
-
-# Function to prepare training and testing data
-prepare_data_sets <- function(datafile = "calibration/sir.rds", train_fraction = 0.7, ndays = 50) {
-  sim_results <- readRDS(datafile)
-  theta <- sim_results$theta
-  arrays_1d <- sim_results$simulations
-  
-  arrays_1d <- arrays_1d[,1,,drop=FALSE]
-  N     <- dim(arrays_1d)[1]
-  
-  N_train <- floor(N * train_fraction)
-  id_train <- 1:N_train
-  
-  train_x <- arrays_1d[id_train,1,, drop = FALSE]
-  train_x <- aperm(train_x, c(1, 3, 2))
-  
-  train_y <- as.matrix(theta)[id_train,]
-  
-  N_test <- N - N_train
-  id_test <- (N_train + 1):N
-  
-  test_x <- arrays_1d[id_test,1,, drop = FALSE]
-  test_x <- aperm(test_x, c(1, 3, 2))
-  
-  test_y <- as.matrix(theta)[id_test,]
-  
-  list(
-    train = list(x = train_x, y = train_y),
-    test = list(x = test_x, y = test_y),
-    theta = theta,
-    arrays_1d = arrays_1d,
-    N = N,
-    N_train = N_train,
-    N_test = N_test,
-    ndays = ndays
-  )
-}
-
-# Function to build and train the LSTM model with different hyperparameters
-build_and_train_model <- function(train, test, theta, N_train, ndays, units = units, batch_size = batch_size, epochs = 10, seed = 331) {
+build_and_train_model <- function(train, test, theta, N_train, ndays, seed,
+                                  units, activation_lstm, activation_dense,
+                                  optimizer, loss, epochs, batch_size, verbose = 0) {
   # Build the LSTM model
   model <- keras_model_sequential() %>%
     layer_lstm(
       units = units,
+      activation = activation_lstm,
       input_shape = c(ndays, 1)
     ) %>%
     layer_dense(
       units = ncol(theta),
-      activation = 'sigmoid'
+      activation = activation_dense
     )
   
   # Compile the model
   model %>% compile(
-    optimizer = 'adam',
-    loss      = 'mse',
-    metrics    = 'mae'
+    optimizer = optimizer,
+    loss      = loss,
+    metrics   = 'mae'
   )
   
-  # Running the model
+  # Set random seed
   tensorflow::set_random_seed(seed)
+  
+  # Fit the model
   history <- model %>% fit(
     x = train$x,
     y = train$y,
     epochs = epochs,
     batch_size = batch_size,
     validation_split = 0.2,
-    verbose = 0  # Suppress output for parallelization
+    verbose = verbose
   )
   
+  # Make predictions
   pred <- predict(model, x = test$x) %>%
     as.data.table() %>%
     setnames(colnames(theta))
   
-  MAEs <- abs(pred - as.matrix(test$y)) %>%
-    colMeans() %>%
-    print()
+  # Calculate MAEs
+  MAEs <- abs(pred - test$y) %>%
+    colMeans()
   
-  list(pred = pred, MAEs = MAEs, history = history)
+  # Return the MAEs and predictions
+  list(pred = pred, MAEs = MAEs, model = model)
 }
 
-# Function to search for the best model parameters in parallel
-tune_lstm_hyperparameters <- function(train, test, theta, N_train, ndays, seed = 331) {
-  param_grid <- expand.grid(
-    units = c(50, 100),
-    batch_size = c(32, 64),
-    epochs = c(10, 20)
-  )
-  
-  results <- parallel::mclapply(1:nrow(param_grid), function(i) {
-    params <- param_grid[i, ]
-    build_and_train_model(
-      train, test, theta, N_train, ndays,
-      units = params$units,
-      batch_size = params$batch_size,
-      epochs = params$epochs,
-      seed = seed
-    )
-  }, mc.cores = 20)
-  
-  return(results)
-}
-
-# Function to evaluate all models and return the best one
-find_best_model <- function(results) {
-  MAEs <- sapply(results, function(res) mean(res$MAEs))
-  best_idx <- which.min(MAEs)
-  best_model <- results[[best_idx]]
-  
-  print(sprintf("Best model found at index %d with MAE: %.4f", best_idx, MAEs[best_idx]))
-  return(best_model)
-}
-
-# Visualize the best model's results
-visualize_best_model <- function(best_model, test, theta, MAEs, N, N_train) {
-  pred <- best_model$pred
+# Function to visualize results
+visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file = NULL) {
   pred[, id := 1L:.N]
-  pred[, crate := qlogis(crate)]
   pred_long <- melt(pred, id.vars = "id")
   
-  theta_long <- test$y %>% as.data.table()
+  theta_long <- as.data.table(test$y)
   setnames(theta_long, names(theta))
   theta_long[, id := 1L:.N]
-  theta_long[, crate := qlogis(crate)]
   theta_long <- melt(theta_long, id.vars = "id")
   
   alldat <- rbind(
@@ -529,17 +384,24 @@ visualize_best_model <- function(best_model, test, theta, MAEs, N, N_train) {
     cbind(theta_long, Type = "Observed")
   )
   
+  # Density plots
   p1 <- ggplot(alldat, aes(x = value, colour = Type)) +
     facet_wrap(~variable, scales = "free") +
-    geom_boxplot()
+    geom_density() +
+    labs(title = "Density Plots of Predicted vs Observed Values",
+         subtitle = "Comparing distributions of predicted and observed parameters",
+         x = "Parameter Value", y = "Density")
+  
   print(p1)
   
+  # Scatter plots of Observed vs Predicted
   alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
+  
   vnames <- data.table(
-    variable = c("preval", "crate", "ptran", "prec"),
+    variable = names(theta),
     Name     = paste(
-      c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
-      sprintf("(MAE: %.2f)", MAEs)
+      c("Initial Prevalence", "Contact Rate", "Transmission Probability", "Recovery Probability"),
+      sprintf("(MAE: %.4f)", MAEs)
     )
   )
   
@@ -547,22 +409,23 @@ visualize_best_model <- function(best_model, test, theta, MAEs, N, N_train) {
   
   p2 <- ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
     facet_wrap(~ Name, scales = "free") +
-    geom_abline(slope = 1, intercept = 0) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
     geom_point(alpha = .2) +
     labs(
-      title    = "Observed vs Predicted (validation set)",
+      title    = "Observed vs Predicted (Test Set)",
       subtitle = sprintf(
-        "The model includes %i simulated datasets, of which %i were used for training.",
-        N,
-        N_train
+        "Best Model with Mean MAE: %.4f",
+        mean(MAEs)
       ),
-      caption  = "Predictions made using an LSTM with tuned parameters."
+      x = "Observed Values",
+      y = "Predicted Values"
     )
+  
   print(p2)
 }
 
-# Main function to run everything
-main_with_hyperparameter_tuning <- function() {
+# Main execution function with hyperparameter tuning
+main <- function() {
   # Simulate data
   simulate_data()
   
@@ -575,20 +438,95 @@ main_with_hyperparameter_tuning <- function() {
   N_train <- data_sets$N_train
   ndays <- data_sets$ndays
   
-  # Perform hyperparameter tuning
-  results <- tune_lstm_hyperparameters(train, test, theta, N_train, ndays)
+  # Define hyperparameter grid
+  hyper_grid <- expand.grid(
+    units = c(32, 64),
+    activation_lstm = c( 'relu'),
+    activation_dense = c('sigmoid', 'linear'),
+    optimizer = c('adam'),
+    loss = c('mse', 'mae'),
+    epochs = c(10, 20),
+    batch_size = c(32, 64),
+    stringsAsFactors = FALSE
+  )
   
-  # Find the best model based on MAE
-  best_model <- find_best_model(results)
+  # Initialize variables to store the best model
+  best_MAE <- Inf
+  best_model <- NULL
+  best_pred <- NULL
+  best_MAEs <- NULL
+  best_params <- NULL
   
-  # Print the MAE of the best model
-  cat("Best model MAEs:", best_model$MAEs, "\n")
+  # Loop over hyperparameter combinations
+  for (i in 1:nrow(hyper_grid)) {
+    cat("Testing model", i, "of", nrow(hyper_grid), "\n")
+    
+    # Extract hyperparameters
+    units <- hyper_grid$units[i]
+    activation_lstm <- hyper_grid$activation_lstm[i]
+    activation_dense <- hyper_grid$activation_dense[i]
+    optimizer <- hyper_grid$optimizer[i]
+    loss <- hyper_grid$loss[i]
+    epochs <- hyper_grid$epochs[i]
+    batch_size <- hyper_grid$batch_size[i]
+    
+    # Set a seed for reproducibility
+    seed <- 331
+    
+    # Build and train the model
+    model_results <- tryCatch(
+      {
+        build_and_train_model(
+          train = train,
+          test = test,
+          theta = theta,
+          N_train = N_train,
+          ndays = ndays,
+          seed = seed,
+          units = units,
+          activation_lstm = activation_lstm,
+          activation_dense = activation_dense,
+          optimizer = optimizer,
+          loss = loss,
+          epochs = epochs,
+          batch_size = batch_size,
+          verbose = 0
+        )
+      },
+      error = function(e) {
+        cat("Error in model", i, ":", e$message, "\n")
+        return(NULL)
+      }
+    )
+    
+    # If the model failed, skip to the next iteration
+    if (is.null(model_results)) next
+    
+    # Get the MAEs
+    MAEs <- model_results$MAEs
+    
+    # Store the average MAE
+    hyper_grid$MAE[i] <- mean(MAEs)
+    
+    # If this is the best MAE so far, save the model and predictions
+    if (hyper_grid$MAE[i] < best_MAE) {
+      best_MAE <- hyper_grid$MAE[i]
+      best_model <- model_results$model
+      best_pred <- model_results$pred
+      best_MAEs <- MAEs
+      best_params <- hyper_grid[i,]
+    }
+  }
   
-  # Visualize results for the best model
-  visualize_best_model(best_model, test, theta, best_model$MAEs, N, N_train)
+  # Print the best hyperparameters
+  cat("Best model parameters:\n")
+  print(best_params)
+  cat("Best MAE:", best_MAE, "\n")
+  
+  # Visualize results
+  visualize_results(best_pred, test, theta, best_MAEs, N, N_train)
 }
 
-# Run the main function with hyperparameter tuning
-main_with_hyperparameter_tuning()
-
+# Run the main function
+main()
 ```
