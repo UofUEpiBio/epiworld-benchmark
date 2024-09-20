@@ -330,10 +330,10 @@ build_and_train_model <- function(train, test, theta, N_train, ndays, seed = 331
   history <- model %>% fit(
     x = train$x,
     y = train$y,
-    epochs = 10,
+    epochs = 50,
     batch_size = 64,
     validation_split = 0.2,
-    verbose = 2
+    verbose = 0
   )
   
   pred <- predict(model, x = test$x) %>%
@@ -471,30 +471,268 @@ main()
 
         clone_model
 
-    Epoch 1/10
-    175/175 - 4s - 23ms/step - loss: 0.0135 - mae: 0.0892 - val_loss: 0.0097 - val_mae: 0.0761
-    Epoch 2/10
-    175/175 - 2s - 13ms/step - loss: 0.0097 - mae: 0.0755 - val_loss: 0.0091 - val_mae: 0.0732
-    Epoch 3/10
-    175/175 - 2s - 13ms/step - loss: 0.0088 - mae: 0.0725 - val_loss: 0.0077 - val_mae: 0.0670
-    Epoch 4/10
-    175/175 - 2s - 13ms/step - loss: 0.0067 - mae: 0.0620 - val_loss: 0.0061 - val_mae: 0.0588
-    Epoch 5/10
-    175/175 - 2s - 13ms/step - loss: 0.0063 - mae: 0.0595 - val_loss: 0.0059 - val_mae: 0.0582
-    Epoch 6/10
-    175/175 - 2s - 13ms/step - loss: 0.0061 - mae: 0.0584 - val_loss: 0.0058 - val_mae: 0.0570
-    Epoch 7/10
-    175/175 - 2s - 13ms/step - loss: 0.0060 - mae: 0.0577 - val_loss: 0.0058 - val_mae: 0.0574
-    Epoch 8/10
-    175/175 - 2s - 14ms/step - loss: 0.0059 - mae: 0.0572 - val_loss: 0.0058 - val_mae: 0.0572
-    Epoch 9/10
-    175/175 - 2s - 12ms/step - loss: 0.0059 - mae: 0.0568 - val_loss: 0.0058 - val_mae: 0.0571
-    Epoch 10/10
-    175/175 - 2s - 13ms/step - loss: 0.0058 - mae: 0.0565 - val_loss: 0.0057 - val_mae: 0.0567
-    188/188 - 1s - 4ms/step
+    188/188 - 1s - 5ms/step
         preval      crate      ptran       prec 
-    0.04171957 0.03242305 0.07357263 0.07888087 
+    0.02247850 0.03132215 0.07144518 0.05799861 
 
 ![](LSTM_SIR_Infected_only_files/figure-commonmark/unnamed-chunk-9-1.png)
 
 ![](LSTM_SIR_Infected_only_files/figure-commonmark/unnamed-chunk-9-2.png)
+
+Section 2
+
+find the best LSTM model
+
+``` r
+build_and_train_model <- function(train, test, theta, N_train, ndays, seed,
+                                  units, activation_lstm, activation_dense,
+                                  optimizer, loss, epochs, batch_size, verbose = 0) {
+  # Build the LSTM model
+  model <- keras_model_sequential() %>%
+    layer_lstm(
+      units = units,
+      activation = activation_lstm,
+      input_shape = c(ndays, 1)
+    ) %>%
+    layer_dense(
+      units = ncol(theta),
+      activation = activation_dense
+    )
+  
+  # Compile the model
+  model %>% compile(
+    optimizer = optimizer,
+    loss      = loss,
+    metrics   = 'mae'
+  )
+  
+  # Set random seed
+  tensorflow::set_random_seed(seed)
+  
+  # Fit the model
+  history <- model %>% fit(
+    x = train$x,
+    y = train$y,
+    epochs = epochs,
+    batch_size = batch_size,
+    validation_split = 0.2,
+    verbose = verbose
+  )
+  
+  # Make predictions
+  pred <- predict(model, x = test$x) %>%
+    as.data.table() %>%
+    setnames(colnames(theta))
+  
+  # Calculate MAEs
+  MAEs <- abs(pred - test$y) %>%
+    colMeans()
+  
+  # Return the MAEs and predictions
+  list(pred = pred, MAEs = MAEs, model = model)
+}
+
+# Function to visualize results
+visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file = NULL) {
+  pred[, id := 1L:.N]
+  pred_long <- melt(pred, id.vars = "id")
+  
+  theta_long <- as.data.table(test$y)
+  setnames(theta_long, names(theta))
+  theta_long[, id := 1L:.N]
+  theta_long <- melt(theta_long, id.vars = "id")
+  
+  alldat <- rbind(
+    cbind(pred_long, Type = "Predicted"),
+    cbind(theta_long, Type = "Observed")
+  )
+  
+  # Density plots
+  p1 <- ggplot(alldat, aes(x = value, colour = Type)) +
+    facet_wrap(~variable, scales = "free") +
+    geom_density() +
+    labs(title = "Density Plots of Predicted vs Observed Values",
+         subtitle = "Comparing distributions of predicted and observed parameters",
+         x = "Parameter Value", y = "Density")
+  
+  print(p1)
+  
+  # Scatter plots of Observed vs Predicted
+  alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
+  
+  vnames <- data.table(
+    variable = names(theta),
+    Name     = paste(
+      c("Initial Prevalence", "Contact Rate", "Transmission Probability", "Recovery Probability"),
+      sprintf("(MAE: %.4f)", MAEs)
+    )
+  )
+  
+  alldat_wide <- merge(alldat_wide, vnames, by = "variable")
+  
+  p2 <- ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
+    facet_wrap(~ Name, scales = "free") +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+    geom_point(alpha = .2) +
+    labs(
+      title    = "Observed vs Predicted (Test Set)",
+      subtitle = sprintf(
+        "Best Model with Mean MAE: %.4f",
+        mean(MAEs)
+      ),
+      x = "Observed Values",
+      y = "Predicted Values"
+    )
+  
+  print(p2)
+}
+
+# Main execution function with hyperparameter tuning
+main <- function() {
+  # Simulate data
+  simulate_data()
+  
+  # Prepare data sets
+  data_sets <- prepare_data_sets()
+  train <- data_sets$train
+  test <- data_sets$test
+  theta <- data_sets$theta
+  N <- data_sets$N
+  N_train <- data_sets$N_train
+  ndays <- data_sets$ndays
+  
+  # Define hyperparameter grid
+  hyper_grid <- expand.grid(
+    units = c(50, 64),
+    activation_lstm = c( 'relu'),
+    activation_dense = c('sigmoid', 'linear'),
+    optimizer = c('adam'),
+    loss = c('mse', 'mae'),
+    epochs = c(20),
+    batch_size = c(32, 64),
+    stringsAsFactors = FALSE
+  )
+  
+  # Initialize variables to store the best model
+  best_MAE <- Inf
+  best_model <- NULL
+  best_pred <- NULL
+  best_MAEs <- NULL
+  best_params <- NULL
+  
+  # Loop over hyperparameter combinations
+  for (i in 1:nrow(hyper_grid)) {
+    cat("Testing model", i, "of", nrow(hyper_grid), "\n")
+    
+    # Extract hyperparameters
+    units <- hyper_grid$units[i]
+    activation_lstm <- hyper_grid$activation_lstm[i]
+    activation_dense <- hyper_grid$activation_dense[i]
+    optimizer <- hyper_grid$optimizer[i]
+    loss <- hyper_grid$loss[i]
+    epochs <- hyper_grid$epochs[i]
+    batch_size <- hyper_grid$batch_size[i]
+    
+    # Set a seed for reproducibility
+    seed <- 331
+    
+    # Build and train the model
+    model_results <- tryCatch(
+      {
+        build_and_train_model(
+          train = train,
+          test = test,
+          theta = theta,
+          N_train = N_train,
+          ndays = ndays,
+          seed = seed,
+          units = units,
+          activation_lstm = activation_lstm,
+          activation_dense = activation_dense,
+          optimizer = optimizer,
+          loss = loss,
+          epochs = epochs,
+          batch_size = batch_size,
+          verbose = 0
+        )
+      },
+      error = function(e) {
+        cat("Error in model", i, ":", e$message, "\n")
+        return(NULL)
+      }
+    )
+    
+    # If the model failed, skip to the next iteration
+    if (is.null(model_results)) next
+    
+    # Get the MAEs
+    MAEs <- model_results$MAEs
+    
+    # Store the average MAE
+    hyper_grid$MAE[i] <- mean(MAEs)
+    
+    # If this is the best MAE so far, save the model and predictions
+    if (hyper_grid$MAE[i] < best_MAE) {
+      best_MAE <- hyper_grid$MAE[i]
+      best_model <- model_results$model
+      best_pred <- model_results$pred
+      best_MAEs <- MAEs
+      best_params <- hyper_grid[i,]
+    }
+  }
+  
+  # Print the best hyperparameters
+  cat("Best model parameters:\n")
+  print(best_params)
+  cat("Best MAE:", best_MAE, "\n")
+  
+  # Visualize results
+  visualize_results(best_pred, test, theta, best_MAEs, N, N_train)
+}
+
+# Run the main function
+main()
+```
+
+    Testing model 1 of 16 
+    188/188 - 1s - 4ms/step
+    Testing model 2 of 16 
+    188/188 - 1s - 5ms/step
+    Testing model 3 of 16 
+    188/188 - 1s - 4ms/step
+    Testing model 4 of 16 
+    188/188 - 1s - 5ms/step
+    Testing model 5 of 16 
+    188/188 - 1s - 5ms/step
+    Testing model 6 of 16 
+    188/188 - 1s - 5ms/step
+    Testing model 7 of 16 
+    188/188 - 1s - 4ms/step
+    Testing model 8 of 16 
+    188/188 - 1s - 5ms/step
+    Testing model 9 of 16 
+    188/188 - 1s - 4ms/step
+    Testing model 10 of 16 
+    188/188 - 1s - 4ms/step
+    Testing model 11 of 16 
+    188/188 - 1s - 4ms/step
+    Testing model 12 of 16 
+    188/188 - 1s - 5ms/step
+    Testing model 13 of 16 
+    188/188 - 1s - 4ms/step
+    Testing model 14 of 16 
+    188/188 - 1s - 4ms/step
+    Testing model 15 of 16 
+    188/188 - 1s - 4ms/step
+    Testing model 16 of 16 
+    188/188 - 1s - 5ms/step
+    Best model parameters:
+      units activation_lstm activation_dense optimizer loss epochs batch_size
+    5    50            relu          sigmoid      adam  mae     20         32
+             MAE
+    5 0.04730755
+    Best MAE: 0.04730755 
+
+![](LSTM_SIR_Infected_only_files/figure-commonmark/unnamed-chunk-11-1.png)
+
+![](LSTM_SIR_Infected_only_files/figure-commonmark/unnamed-chunk-11-2.png)
