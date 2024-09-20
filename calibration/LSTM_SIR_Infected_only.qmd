@@ -445,7 +445,7 @@ main <- function() {
     activation_dense = c('sigmoid', 'linear'),
     optimizer = c('adam'),
     loss = c('mse', 'mae'),
-    epochs = c(10, 20),
+    epochs = c(20),
     batch_size = c(32, 64),
     stringsAsFactors = FALSE
   )
