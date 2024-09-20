@@ -6,7 +6,7 @@ editor: visual
 
 Load required libraries
 
-```{r}
+```{r,epochs=FALSE}
 #| label: Load required libraries
 library(data.table)
 library(parallel)
@@ -313,5 +313,282 @@ main <- function() {
 
 # Run the main function
 main()
+
+```
+
+Section 2
+
+find the best LSTM model
+
+```{r}
+# Load required libraries
+library(data.table)
+library(parallel)
+library(keras)
+library(ggplot2)
+library(reshape2)
+library(tensorflow)
+library(keras3)
+
+# Function to simulate data
+simulate_data <- function(N = 2e4, n = 5000, ndays = 50, ncores = 20, seed = 1231, savefile = "calibration/sir.rds") {
+  source("calibration/dataprep.R")
+  
+  set.seed(seed)
+  
+  theta <- data.table(
+    preval = sample((100:2000)/n, N, TRUE),
+    crate  = rgamma(N, 5, 1),    # Mean 5
+    ptran  = rbeta(N, 3, 7),     # Mean 0.3
+    prec   = rbeta(N, 10, 10*2 - 10) # Mean 0.5
+  )
+  
+  seeds <- sample.int(.Machine$integer.max, N, TRUE)
+  
+  matrices <- parallel::mclapply(1:N, FUN = function(i) {
+    fn <- sprintf("calibration/simulated_data/sir-%06i.rds", i)
+    
+    if (file.exists(fn))
+      return(readRDS(fn))
+    
+    set.seed(seeds[i])
+    
+    m <- theta[i,
+               ModelSIRCONN(
+                 "mycon",
+                 prevalence        = preval,
+                 contact_rate      = crate,
+                 transmission_rate = ptran,
+                 recovery_rate     = prec, 
+                 n                 = n
+               )
+    ]
+    
+    verbose_off(m)
+    
+    run(m, ndays = ndays)
+    
+    ans <- prepare_data(m)
+    saveRDS(ans, fn)
+    
+    ans
+  }, mc.cores = ncores)
+  
+  is_not_null <- intersect(
+    which(!sapply(matrices, inherits, what = "error")),
+    which(!sapply(matrices, function(x) any(is.na(x))))
+  )
+  matrices <- matrices[is_not_null]
+  theta    <- theta[is_not_null,]
+  
+  N <- length(is_not_null)
+  
+  arrays_1d <- array(dim = c(N, dim(matrices[[1]][1,,])))
+  for (i in seq_along(matrices))
+    arrays_1d[i,,] <- matrices[[i]][1,,]
+  
+  theta2 <- copy(theta)
+  theta2[, crate := plogis(crate / 10)]
+  
+  saveRDS(
+    list(
+      theta = theta2,
+      simulations = arrays_1d
+    ),
+    file = savefile,
+    compress = TRUE
+  )
+}
+
+# Function to prepare training and testing data
+prepare_data_sets <- function(datafile = "calibration/sir.rds", train_fraction = 0.7, ndays = 50) {
+  sim_results <- readRDS(datafile)
+  theta <- sim_results$theta
+  arrays_1d <- sim_results$simulations
+  
+  arrays_1d <- arrays_1d[,1,,drop=FALSE]
+  N     <- dim(arrays_1d)[1]
+  
+  N_train <- floor(N * train_fraction)
+  id_train <- 1:N_train
+  
+  train_x <- arrays_1d[id_train,1,, drop = FALSE]
+  train_x <- aperm(train_x, c(1, 3, 2))
+  
+  train_y <- as.matrix(theta)[id_train,]
+  
+  N_test <- N - N_train
+  id_test <- (N_train + 1):N
+  
+  test_x <- arrays_1d[id_test,1,, drop = FALSE]
+  test_x <- aperm(test_x, c(1, 3, 2))
+  
+  test_y <- as.matrix(theta)[id_test,]
+  
+  list(
+    train = list(x = train_x, y = train_y),
+    test = list(x = test_x, y = test_y),
+    theta = theta,
+    arrays_1d = arrays_1d,
+    N = N,
+    N_train = N_train,
+    N_test = N_test,
+    ndays = ndays
+  )
+}
+
+# Function to build and train the LSTM model with different hyperparameters
+build_and_train_model <- function(train, test, theta, N_train, ndays, units = units, batch_size = batch_size, epochs = 10, seed = 331) {
+  # Build the LSTM model
+  model <- keras_model_sequential() %>%
+    layer_lstm(
+      units = units,
+      input_shape = c(ndays, 1)
+    ) %>%
+    layer_dense(
+      units = ncol(theta),
+      activation = 'sigmoid'
+    )
+  
+  # Compile the model
+  model %>% compile(
+    optimizer = 'adam',
+    loss      = 'mse',
+    metrics    = 'mae'
+  )
+  
+  # Running the model
+  tensorflow::set_random_seed(seed)
+  history <- model %>% fit(
+    x = train$x,
+    y = train$y,
+    epochs = epochs,
+    batch_size = batch_size,
+    validation_split = 0.2,
+    verbose = 0  # Suppress output for parallelization
+  )
+  
+  pred <- predict(model, x = test$x) %>%
+    as.data.table() %>%
+    setnames(colnames(theta))
+  
+  MAEs <- abs(pred - as.matrix(test$y)) %>%
+    colMeans() %>%
+    print()
+  
+  list(pred = pred, MAEs = MAEs, history = history)
+}
+
+# Function to search for the best model parameters in parallel
+tune_lstm_hyperparameters <- function(train, test, theta, N_train, ndays, seed = 331) {
+  param_grid <- expand.grid(
+    units = c(50, 100),
+    batch_size = c(32, 64),
+    epochs = c(10, 20)
+  )
+  
+  results <- parallel::mclapply(1:nrow(param_grid), function(i) {
+    params <- param_grid[i, ]
+    build_and_train_model(
+      train, test, theta, N_train, ndays,
+      units = params$units,
+      batch_size = params$batch_size,
+      epochs = params$epochs,
+      seed = seed
+    )
+  }, mc.cores = 20)
+  
+  return(results)
+}
+
+# Function to evaluate all models and return the best one
+find_best_model <- function(results) {
+  MAEs <- sapply(results, function(res) mean(res$MAEs))
+  best_idx <- which.min(MAEs)
+  best_model <- results[[best_idx]]
+  
+  print(sprintf("Best model found at index %d with MAE: %.4f", best_idx, MAEs[best_idx]))
+  return(best_model)
+}
+
+# Visualize the best model's results
+visualize_best_model <- function(best_model, test, theta, MAEs, N, N_train) {
+  pred <- best_model$pred
+  pred[, id := 1L:.N]
+  pred[, crate := qlogis(crate)]
+  pred_long <- melt(pred, id.vars = "id")
+  
+  theta_long <- test$y %>% as.data.table()
+  setnames(theta_long, names(theta))
+  theta_long[, id := 1L:.N]
+  theta_long[, crate := qlogis(crate)]
+  theta_long <- melt(theta_long, id.vars = "id")
+  
+  alldat <- rbind(
+    cbind(pred_long, Type = "Predicted"),
+    cbind(theta_long, Type = "Observed")
+  )
+  
+  p1 <- ggplot(alldat, aes(x = value, colour = Type)) +
+    facet_wrap(~variable, scales = "free") +
+    geom_boxplot()
+  print(p1)
+  
+  alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
+  vnames <- data.table(
+    variable = c("preval", "crate", "ptran", "prec"),
+    Name     = paste(
+      c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
+      sprintf("(MAE: %.2f)", MAEs)
+    )
+  )
+  
+  alldat_wide <- merge(alldat_wide, vnames, by = "variable")
+  
+  p2 <- ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
+    facet_wrap(~ Name, scales = "free") +
+    geom_abline(slope = 1, intercept = 0) +
+    geom_point(alpha = .2) +
+    labs(
+      title    = "Observed vs Predicted (validation set)",
+      subtitle = sprintf(
+        "The model includes %i simulated datasets, of which %i were used for training.",
+        N,
+        N_train
+      ),
+      caption  = "Predictions made using an LSTM with tuned parameters."
+    )
+  print(p2)
+}
+
+# Main function to run everything
+main_with_hyperparameter_tuning <- function() {
+  # Simulate data
+  simulate_data()
+  
+  # Prepare data sets
+  data_sets <- prepare_data_sets()
+  train <- data_sets$train
+  test <- data_sets$test
+  theta <- data_sets$theta
+  N <- data_sets$N
+  N_train <- data_sets$N_train
+  ndays <- data_sets$ndays
+  
+  # Perform hyperparameter tuning
+  results <- tune_lstm_hyperparameters(train, test, theta, N_train, ndays)
+  
+  # Find the best model based on MAE
+  best_model <- find_best_model(results)
+  
+  # Print the MAE of the best model
+  cat("Best model MAEs:", best_model$MAEs, "\n")
+  
+  # Visualize results for the best model
+  visualize_best_model(best_model, test, theta, best_model$MAEs, N, N_train)
+}
+
+# Run the main function with hyperparameter tuning
+main_with_hyperparameter_tuning()
 
 ```
