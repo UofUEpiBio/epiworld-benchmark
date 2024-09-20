@@ -696,7 +696,7 @@ This grid allows for different combinations of hyperparameters to be tested and 
 # Run the main function
 
 ```{r}
-# Run the main function
+#|label: Run the main function
 N <- 2e4   # Adjust N as needed
 n <- 5000
 ndays <- 50
