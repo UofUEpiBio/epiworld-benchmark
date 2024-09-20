@@ -1,5 +1,5 @@
-
-# Using the CNN model to find the best parameters in SIR
+# Implementing the CNN Model by Knowing SIR Counts to Find the Closest
+Parameters to Simulate SIR Models
 
 Installing Packages if necessary:
 
@@ -513,208 +513,208 @@ main_pipeline(N,n,ndays,ncores)
 ```
 
     Epoch 1/100
-    438/438 - 1s - 3ms/step - accuracy: 0.7073 - loss: 0.0410
+    438/438 - 1s - 3ms/step - accuracy: 0.7245 - loss: 0.0579
     Epoch 2/100
-    438/438 - 1s - 1ms/step - accuracy: 0.7754 - loss: 0.0122
+    438/438 - 1s - 1ms/step - accuracy: 0.7501 - loss: 0.0303
     Epoch 3/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8285 - loss: 0.0059
+    438/438 - 1s - 1ms/step - accuracy: 0.8114 - loss: 0.0071
     Epoch 4/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8499 - loss: 0.0048
+    438/438 - 1s - 1ms/step - accuracy: 0.8412 - loss: 0.0052
     Epoch 5/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8659 - loss: 0.0043
+    438/438 - 1s - 1ms/step - accuracy: 0.8591 - loss: 0.0044
     Epoch 6/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8754 - loss: 0.0040
+    438/438 - 1s - 1ms/step - accuracy: 0.8706 - loss: 0.0040
     Epoch 7/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8808 - loss: 0.0037
+    438/438 - 1s - 1ms/step - accuracy: 0.8783 - loss: 0.0038
     Epoch 8/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8828 - loss: 0.0036
+    438/438 - 1s - 1ms/step - accuracy: 0.8847 - loss: 0.0036
     Epoch 9/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8877 - loss: 0.0035
+    438/438 - 1s - 1ms/step - accuracy: 0.8840 - loss: 0.0035
     Epoch 10/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8892 - loss: 0.0034
+    438/438 - 1s - 1ms/step - accuracy: 0.8866 - loss: 0.0034
     Epoch 11/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8910 - loss: 0.0033
+    438/438 - 1s - 1ms/step - accuracy: 0.8888 - loss: 0.0033
     Epoch 12/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8899 - loss: 0.0033
-    Epoch 13/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8922 - loss: 0.0033
-    Epoch 14/100
     438/438 - 1s - 1ms/step - accuracy: 0.8929 - loss: 0.0033
-    Epoch 15/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8925 - loss: 0.0032
-    Epoch 16/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8937 - loss: 0.0032
-    Epoch 17/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8929 - loss: 0.0032
-    Epoch 18/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8925 - loss: 0.0032
-    Epoch 19/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8934 - loss: 0.0032
-    Epoch 20/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8946 - loss: 0.0032
-    Epoch 21/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8945 - loss: 0.0032
-    Epoch 22/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8927 - loss: 0.0032
-    Epoch 23/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8931 - loss: 0.0032
-    Epoch 24/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8928 - loss: 0.0032
-    Epoch 25/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8932 - loss: 0.0032
-    Epoch 26/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8932 - loss: 0.0032
-    Epoch 27/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8937 - loss: 0.0032
-    Epoch 28/100
+    Epoch 13/100
+    438/438 - 1s - 1ms/step - accuracy: 0.8936 - loss: 0.0033
+    Epoch 14/100
     438/438 - 1s - 1ms/step - accuracy: 0.8952 - loss: 0.0032
-    Epoch 29/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8957 - loss: 0.0032
-    Epoch 30/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8932 - loss: 0.0032
-    Epoch 31/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8931 - loss: 0.0032
-    Epoch 32/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8941 - loss: 0.0032
-    Epoch 33/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8941 - loss: 0.0032
-    Epoch 34/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8944 - loss: 0.0032
-    Epoch 35/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8935 - loss: 0.0032
-    Epoch 36/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8968 - loss: 0.0031
-    Epoch 37/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8920 - loss: 0.0032
-    Epoch 38/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8945 - loss: 0.0032
-    Epoch 39/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8972 - loss: 0.0031
-    Epoch 40/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8947 - loss: 0.0031
-    Epoch 41/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8958 - loss: 0.0031
-    Epoch 42/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8974 - loss: 0.0031
-    Epoch 43/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8967 - loss: 0.0031
-    Epoch 44/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8960 - loss: 0.0031
-    Epoch 45/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8957 - loss: 0.0031
-    Epoch 46/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8958 - loss: 0.0031
-    Epoch 47/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8967 - loss: 0.0031
-    Epoch 48/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8948 - loss: 0.0031
-    Epoch 49/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8959 - loss: 0.0031
-    Epoch 50/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8962 - loss: 0.0031
-    Epoch 51/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8930 - loss: 0.0031
-    Epoch 52/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8954 - loss: 0.0031
-    Epoch 53/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8953 - loss: 0.0031
-    Epoch 54/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8964 - loss: 0.0031
-    Epoch 55/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8962 - loss: 0.0031
-    Epoch 56/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8972 - loss: 0.0031
-    Epoch 57/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8958 - loss: 0.0031
-    Epoch 58/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8964 - loss: 0.0031
-    Epoch 59/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8975 - loss: 0.0031
-    Epoch 60/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8992 - loss: 0.0031
-    Epoch 61/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8977 - loss: 0.0031
-    Epoch 62/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8951 - loss: 0.0031
-    Epoch 63/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8964 - loss: 0.0031
-    Epoch 64/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8964 - loss: 0.0031
-    Epoch 65/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8974 - loss: 0.0031
-    Epoch 66/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8977 - loss: 0.0031
-    Epoch 67/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8981 - loss: 0.0031
-    Epoch 68/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8979 - loss: 0.0031
-    Epoch 69/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8965 - loss: 0.0031
-    Epoch 70/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8985 - loss: 0.0031
-    Epoch 71/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8962 - loss: 0.0031
-    Epoch 72/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8964 - loss: 0.0031
-    Epoch 73/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8964 - loss: 0.0031
-    Epoch 74/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8977 - loss: 0.0031
-    Epoch 75/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8969 - loss: 0.0031
-    Epoch 76/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8967 - loss: 0.0031
-    Epoch 77/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8992 - loss: 0.0031
-    Epoch 78/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8984 - loss: 0.0031
-    Epoch 79/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8974 - loss: 0.0031
-    Epoch 80/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8977 - loss: 0.0031
-    Epoch 81/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8978 - loss: 0.0031
-    Epoch 82/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8977 - loss: 0.0031
-    Epoch 83/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8984 - loss: 0.0031
-    Epoch 84/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8980 - loss: 0.0031
-    Epoch 85/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8985 - loss: 0.0031
-    Epoch 86/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8980 - loss: 0.0031
-    Epoch 87/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9003 - loss: 0.0031
-    Epoch 88/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8976 - loss: 0.0031
-    Epoch 89/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8986 - loss: 0.0031
-    Epoch 90/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8988 - loss: 0.0031
-    Epoch 91/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8993 - loss: 0.0031
-    Epoch 92/100
+    Epoch 15/100
+    438/438 - 1s - 1ms/step - accuracy: 0.8956 - loss: 0.0032
+    Epoch 16/100
+    438/438 - 1s - 1ms/step - accuracy: 0.8964 - loss: 0.0032
+    Epoch 17/100
+    438/438 - 1s - 1ms/step - accuracy: 0.8982 - loss: 0.0032
+    Epoch 18/100
+    438/438 - 1s - 1ms/step - accuracy: 0.8996 - loss: 0.0032
+    Epoch 19/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9000 - loss: 0.0032
+    Epoch 20/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9018 - loss: 0.0031
+    Epoch 21/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9010 - loss: 0.0031
+    Epoch 22/100
     438/438 - 1s - 1ms/step - accuracy: 0.9005 - loss: 0.0031
-    Epoch 93/100
+    Epoch 23/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9014 - loss: 0.0031
+    Epoch 24/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9027 - loss: 0.0031
+    Epoch 25/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9011 - loss: 0.0031
+    Epoch 26/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9020 - loss: 0.0031
+    Epoch 27/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9020 - loss: 0.0031
+    Epoch 28/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9024 - loss: 0.0031
+    Epoch 29/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9018 - loss: 0.0031
+    Epoch 30/100
     438/438 - 1s - 1ms/step - accuracy: 0.8997 - loss: 0.0031
+    Epoch 31/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9030 - loss: 0.0031
+    Epoch 32/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9024 - loss: 0.0031
+    Epoch 33/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9025 - loss: 0.0031
+    Epoch 34/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9022 - loss: 0.0031
+    Epoch 35/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9030 - loss: 0.0031
+    Epoch 36/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9025 - loss: 0.0031
+    Epoch 37/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9022 - loss: 0.0031
+    Epoch 38/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9008 - loss: 0.0031
+    Epoch 39/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9037 - loss: 0.0031
+    Epoch 40/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9021 - loss: 0.0031
+    Epoch 41/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9012 - loss: 0.0031
+    Epoch 42/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9015 - loss: 0.0031
+    Epoch 43/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9010 - loss: 0.0031
+    Epoch 44/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9022 - loss: 0.0031
+    Epoch 45/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9004 - loss: 0.0031
+    Epoch 46/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9020 - loss: 0.0031
+    Epoch 47/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9025 - loss: 0.0030
+    Epoch 48/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9007 - loss: 0.0031
+    Epoch 49/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9025 - loss: 0.0030
+    Epoch 50/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9010 - loss: 0.0031
+    Epoch 51/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9020 - loss: 0.0030
+    Epoch 52/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9027 - loss: 0.0030
+    Epoch 53/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9015 - loss: 0.0030
+    Epoch 54/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9026 - loss: 0.0030
+    Epoch 55/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9030 - loss: 0.0030
+    Epoch 56/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9012 - loss: 0.0030
+    Epoch 57/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9004 - loss: 0.0030
+    Epoch 58/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9003 - loss: 0.0030
+    Epoch 59/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9025 - loss: 0.0030
+    Epoch 60/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9014 - loss: 0.0030
+    Epoch 61/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9019 - loss: 0.0030
+    Epoch 62/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9035 - loss: 0.0030
+    Epoch 63/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9044 - loss: 0.0030
+    Epoch 64/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9037 - loss: 0.0030
+    Epoch 65/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9045 - loss: 0.0030
+    Epoch 66/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9046 - loss: 0.0030
+    Epoch 67/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9037 - loss: 0.0030
+    Epoch 68/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9046 - loss: 0.0030
+    Epoch 69/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9048 - loss: 0.0030
+    Epoch 70/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9051 - loss: 0.0030
+    Epoch 71/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9047 - loss: 0.0030
+    Epoch 72/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9052 - loss: 0.0030
+    Epoch 73/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9041 - loss: 0.0030
+    Epoch 74/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9039 - loss: 0.0030
+    Epoch 75/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9036 - loss: 0.0030
+    Epoch 76/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9045 - loss: 0.0030
+    Epoch 77/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9042 - loss: 0.0030
+    Epoch 78/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9042 - loss: 0.0030
+    Epoch 79/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9039 - loss: 0.0030
+    Epoch 80/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9052 - loss: 0.0030
+    Epoch 81/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9033 - loss: 0.0030
+    Epoch 82/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9042 - loss: 0.0030
+    Epoch 83/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9035 - loss: 0.0030
+    Epoch 84/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9039 - loss: 0.0030
+    Epoch 85/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9049 - loss: 0.0030
+    Epoch 86/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9032 - loss: 0.0030
+    Epoch 87/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9048 - loss: 0.0030
+    Epoch 88/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9041 - loss: 0.0030
+    Epoch 89/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9042 - loss: 0.0030
+    Epoch 90/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9041 - loss: 0.0030
+    Epoch 91/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9054 - loss: 0.0030
+    Epoch 92/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9037 - loss: 0.0030
+    Epoch 93/100
+    438/438 - 1s - 1ms/step - accuracy: 0.9043 - loss: 0.0030
     Epoch 94/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8994 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.9035 - loss: 0.0030
     Epoch 95/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8987 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.9033 - loss: 0.0030
     Epoch 96/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9006 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.9032 - loss: 0.0030
     Epoch 97/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8986 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.9040 - loss: 0.0030
     Epoch 98/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8991 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.9035 - loss: 0.0030
     Epoch 99/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8983 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.9037 - loss: 0.0030
     Epoch 100/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8995 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.9047 - loss: 0.0030
     188/188 - 0s - 1ms/step
         preval      crate      ptran       prec 
-    0.01453681 0.03375051 0.07925867 0.02617058 
+    0.01401778 0.03254340 0.07920297 0.02653983 
 
 ![](CNN_SIR_all_files/figure-commonmark/give%20parameters%20and%20run-1.png)
 
@@ -997,7 +997,7 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
 
     Training model with filters=16, kernel_size=3x3, activation=relu, dense_units=128
     Epoch 1/10
-    438/438 - 2s - 3ms/step - accuracy: 0.7433 - loss: 0.0671
+    438/438 - 1s - 3ms/step - accuracy: 0.7433 - loss: 0.0671
     Epoch 2/10
     438/438 - 1s - 2ms/step - accuracy: 0.7874 - loss: 0.0174
     Epoch 3/10
@@ -1081,7 +1081,7 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
     Epoch 3/10
     438/438 - 1s - 1ms/step - accuracy: 0.8202 - loss: 0.1434
     Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8216 - loss: 0.1349
+    438/438 - 1s - 1ms/step - accuracy: 0.8216 - loss: 0.1349
     Epoch 5/10
     438/438 - 1s - 1ms/step - accuracy: 0.8208 - loss: 0.1327
     Epoch 6/10
@@ -1089,9 +1089,9 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
     Epoch 7/10
     438/438 - 1s - 1ms/step - accuracy: 0.8251 - loss: 0.1303
     Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8286 - loss: 0.1299
+    438/438 - 1s - 1ms/step - accuracy: 0.8286 - loss: 0.1299
     Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8056 - loss: 0.1230
+    438/438 - 1s - 1ms/step - accuracy: 0.8056 - loss: 0.1230
     Epoch 10/10
     438/438 - 1s - 1ms/step - accuracy: 0.7201 - loss: 0.0693
     188/188 - 0s - 1ms/step
@@ -1389,7 +1389,7 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
     Epoch 1/10
     438/438 - 1s - 3ms/step - accuracy: 0.8167 - loss: 0.1286
     Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.7216 - loss: 0.0649
+    438/438 - 1s - 1ms/step - accuracy: 0.7216 - loss: 0.0649
     Epoch 3/10
     438/438 - 1s - 1ms/step - accuracy: 0.8442 - loss: 0.0061
     Epoch 4/10
@@ -1397,11 +1397,11 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
     Epoch 5/10
     438/438 - 1s - 1ms/step - accuracy: 0.8739 - loss: 0.0042
     Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8746 - loss: 0.0040
+    438/438 - 1s - 1ms/step - accuracy: 0.8746 - loss: 0.0040
     Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8763 - loss: 0.0038
+    438/438 - 1s - 1ms/step - accuracy: 0.8763 - loss: 0.0038
     Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8804 - loss: 0.0036
+    438/438 - 1s - 1ms/step - accuracy: 0.8804 - loss: 0.0036
     Epoch 9/10
     438/438 - 1s - 1ms/step - accuracy: 0.8800 - loss: 0.0036
     Epoch 10/10
@@ -1497,19 +1497,19 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
     Epoch 3/10
     438/438 - 1s - 2ms/step - accuracy: 0.8140 - loss: 0.1270
     Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8203 - loss: 0.1242
+    438/438 - 1s - 1ms/step - accuracy: 0.8203 - loss: 0.1242
     Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8192 - loss: 0.1157
+    438/438 - 1s - 1ms/step - accuracy: 0.8192 - loss: 0.1157
     Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.7955 - loss: 0.0239
+    438/438 - 1s - 1ms/step - accuracy: 0.7955 - loss: 0.0239
     Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8719 - loss: 0.0042
+    438/438 - 1s - 1ms/step - accuracy: 0.8719 - loss: 0.0042
     Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8804 - loss: 0.0037
+    438/438 - 1s - 1ms/step - accuracy: 0.8804 - loss: 0.0037
     Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8837 - loss: 0.0035
+    438/438 - 1s - 1ms/step - accuracy: 0.8837 - loss: 0.0035
     Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8873 - loss: 0.0035
+    438/438 - 1s - 1ms/step - accuracy: 0.8873 - loss: 0.0035
     188/188 - 0s - 1ms/step
         preval      crate      ptran       prec 
     0.02188040 0.03264577 0.07962232 0.03052967 
@@ -1595,7 +1595,7 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
 
     Training model with filters=32, kernel_size=5x5, activation=relu, dense_units=64
     Epoch 1/10
-    438/438 - 2s - 3ms/step - accuracy: 0.7876 - loss: 0.0286
+    438/438 - 1s - 3ms/step - accuracy: 0.7876 - loss: 0.0286
     Epoch 2/10
     438/438 - 1s - 2ms/step - accuracy: 0.8561 - loss: 0.0046
     Epoch 3/10
@@ -1621,7 +1621,7 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
 
     Training model with filters=32, kernel_size=5x5, activation=relu, dense_units=128
     Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7454 - loss: 0.0402
+    438/438 - 2s - 3ms/step - accuracy: 0.7454 - loss: 0.0402
     Epoch 2/10
     438/438 - 1s - 2ms/step - accuracy: 0.8395 - loss: 0.0090
     Epoch 3/10
@@ -1679,17 +1679,17 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
     Epoch 3/10
     438/438 - 1s - 1ms/step - accuracy: 0.8661 - loss: 0.0044
     Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8749 - loss: 0.0040
+    438/438 - 1s - 1ms/step - accuracy: 0.8749 - loss: 0.0040
     Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8789 - loss: 0.0038
+    438/438 - 1s - 1ms/step - accuracy: 0.8789 - loss: 0.0038
     Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8812 - loss: 0.0037
+    438/438 - 1s - 1ms/step - accuracy: 0.8812 - loss: 0.0037
     Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8817 - loss: 0.0036
+    438/438 - 1s - 1ms/step - accuracy: 0.8817 - loss: 0.0036
     Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8832 - loss: 0.0035
+    438/438 - 1s - 1ms/step - accuracy: 0.8832 - loss: 0.0035
     Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8857 - loss: 0.0035
+    438/438 - 1s - 1ms/step - accuracy: 0.8857 - loss: 0.0035
     Epoch 10/10
     438/438 - 1s - 2ms/step - accuracy: 0.8857 - loss: 0.0034
     188/188 - 0s - 1ms/step
@@ -1725,7 +1725,7 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
 
     Training model with filters=32, kernel_size=3x5, activation=relu, dense_units=32
     Epoch 1/10
-    438/438 - 2s - 3ms/step - accuracy: 0.7747 - loss: 0.0168
+    438/438 - 1s - 3ms/step - accuracy: 0.7747 - loss: 0.0168
     Epoch 2/10
     438/438 - 1s - 2ms/step - accuracy: 0.8374 - loss: 0.0049
     Epoch 3/10
@@ -1807,11 +1807,11 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
     Epoch 2/10
     438/438 - 1s - 2ms/step - accuracy: 0.8461 - loss: 0.0063
     Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8711 - loss: 0.0043
+    438/438 - 1s - 1ms/step - accuracy: 0.8711 - loss: 0.0043
     Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8774 - loss: 0.0039
+    438/438 - 1s - 1ms/step - accuracy: 0.8774 - loss: 0.0039
     Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8806 - loss: 0.0038
+    438/438 - 1s - 1ms/step - accuracy: 0.8806 - loss: 0.0038
     Epoch 6/10
     438/438 - 1s - 2ms/step - accuracy: 0.8827 - loss: 0.0036
     Epoch 7/10
@@ -1821,7 +1821,7 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
     Epoch 9/10
     438/438 - 1s - 2ms/step - accuracy: 0.8832 - loss: 0.0035
     Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8832 - loss: 0.0035
+    438/438 - 1s - 1ms/step - accuracy: 0.8832 - loss: 0.0035
     188/188 - 0s - 1ms/step
         preval      crate      ptran       prec 
     0.02193437 0.03398649 0.08244270 0.02995348 
@@ -1829,7 +1829,7 @@ results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
 
     Training model with filters=32, kernel_size=3x5, activation=linear, dense_units=64
     Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8188 - loss: 0.1304
+    438/438 - 2s - 3ms/step - accuracy: 0.8188 - loss: 0.1304
     Epoch 2/10
     438/438 - 1s - 2ms/step - accuracy: 0.8136 - loss: 0.1249
     Epoch 3/10
