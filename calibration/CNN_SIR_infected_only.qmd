@@ -1,4 +1,8 @@
-# Implementing the CNN Model Just by Knowing the Infections Count to Find the Closest Parameters to Simulate SIR Models
+---
+title: "Implementing the CNN Model Just by Knowing the Infections Count to Find the Closest Parameters to Simulate SIR Models"
+format: gfm
+editor: visual
+---
 
 Load required libraries:
 
