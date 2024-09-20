@@ -1,5 +1,13 @@
+---
+title: "Implementing the LSTM Model Just by Knowing the Infections Count to Find the Closest Parameters to Simulate SIR Models"
+format: gfm
+editor: visual
+---
+
+Load required libraries
+
 ```{r}
-# Load required libraries
+#| label: Load required libraries
 library(data.table)
 library(parallel)
 library(keras)
@@ -7,8 +15,14 @@ library(ggplot2)
 library(reshape2)
 library(tensorflow)
 library(keras3)
+```
 
-# Function to simulate data
+# simulate data
+
+This simulate_data function simulates epidemiological data based on the SIR (Susceptible-Infected-Recovered) model across multiple iterations and saves the results.
+
+```{r}
+#| label: Function to simulate data
 simulate_data <- function(N = 2e4, n = 5000, ndays = 50, ncores = 20, seed = 1231, savefile = "calibration/sir.rds") {
   source("calibration/dataprep.R")
   
@@ -82,8 +96,28 @@ simulate_data <- function(N = 2e4, n = 5000, ndays = 50, ncores = 20, seed = 123
     compress = TRUE
   )
 }
+```
 
-# Function to prepare training and testing data
+### **Parameters**:
+
+-   `N`: Number of simulations to run (default 20,000).
+
+-   `n`: Population size in each simulation (default 5,000).
+
+-   `ndays`: Number of days to simulate (default 50).
+
+-   `ncores`: Number of CPU cores used for parallel processing (default 20).
+
+-   `seed`: Random seed for reproducibility (default 1231).
+
+-   `savefile`: The file path to save the output (default `"calibration/sir.rds"`).
+
+# prepare training and testing data
+
+This function prepares simulation data for training machine learning models. It splits the data into training and test sets based on the specified training fraction, reshapes the data, and returns it in a format ready for the LSTM model.
+
+```{r}
+#|label: Function to prepare training and testing data
 prepare_data_sets <- function(datafile = "calibration/sir.rds", train_fraction = 0.7, ndays = 50) {
   sim_results <- readRDS(datafile)
   theta <- sim_results$theta
@@ -122,9 +156,14 @@ prepare_data_sets <- function(datafile = "calibration/sir.rds", train_fraction =
     ndays = ndays
   )
 }
+```
 
+# build and train the model
 
-# Function to build and train the LSTM model
+The `build_and_train_model` function builds, trains, and evaluates a LSTM model using the `keras3` and `tensorflow` R packages.
+
+```{r}
+#|label: Function to build and train the LSTM model
 build_and_train_model <- function(train, test, theta, N_train, ndays, seed = 331, save_model_file = "sir-lstm_infections_only") {
   # Build the LSTM model
   model <- keras_model_sequential() %>%
@@ -167,8 +206,30 @@ build_and_train_model <- function(train, test, theta, N_train, ndays, seed = 331
 
   list(pred = pred, MAEs = MAEs, history = history)
 }
+```
 
-# Function to visualize results
+### **Parameters**:
+
+-   `train`: The training data, including inputs (`x`) and targets (`y`).
+
+-   `test`: The test data for model evaluation.
+
+-   `arrays_1d`: The 1D simulation data is used to define the input shape for the model.
+
+-   `theta`: The target variables from the simulations.
+
+-   `N_train`: Number of training samples.
+
+-   `seed`: A random seed for reproducibility (default: 331).
+
+-   `save_model_file`: Filename to save the model (currently unused in the code).
+
+# visualize results
+
+The `visualize_results` function generates visualizations to compare predicted values from a trained model with the test dataset's observed (true) values.
+
+```{r}
+#| label: Function to visualize results
 visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file = "calibration/sir_infections_only.png") {
   pred[, id := 1L:.N]
   pred[, crate := qlogis(crate)]
@@ -222,8 +283,12 @@ visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file =
   # Save the plot
   ggsave(filename = output_file, width = 1280, height = 800, units = "px", scale = 3)
 }
+```
 
-# Main execution function
+# Running the model
+
+```{r}
+#|label: Main execution function
 main <- function() {
   # Simulate data
   simulate_data()
@@ -250,4 +315,3 @@ main <- function() {
 main()
 
 ```
-
