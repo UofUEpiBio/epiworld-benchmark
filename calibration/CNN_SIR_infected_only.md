@@ -334,8 +334,8 @@ build_and_train_model <- function(train, test, arrays_1d, theta, N_train, seed =
   model |> fit(
     train$x,
     train$y,
-    epochs = 10,
-    verbose = 2
+    epochs = 50,
+    verbose = 0
   )
   
   pred <- predict(model, x = test$x) |>
@@ -470,32 +470,346 @@ main()
 
 ![](CNN_SIR_infected_only_files/figure-commonmark/Main%20execution%20function-1.png)
 
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.6966 - loss: 0.0806
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.6930 - loss: 0.0516
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7087 - loss: 0.0458
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7185 - loss: 0.0218
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7537 - loss: 0.0123
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7722 - loss: 0.0102
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7825 - loss: 0.0092
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7920 - loss: 0.0086
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7974 - loss: 0.0083
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8046 - loss: 0.0080
     188/188 - 0s - 1ms/step
         preval      crate      ptran       prec 
-    0.04298311 0.06563423 0.08307995 0.10607962 
+    0.03639818 0.03265657 0.07754360 0.08081101 
 
 ![](CNN_SIR_infected_only_files/figure-commonmark/Main%20execution%20function-2.png)
 
 ![](CNN_SIR_infected_only_files/figure-commonmark/Main%20execution%20function-3.png)
 
 ![](CNN_SIR_infected_only_files/figure-commonmark/Main%20execution%20function-4.png)
+
+# Section 2:
+
+# Finding the Best CNN model
+
+``` r
+build_and_train_model <- function(train, test, theta, seed,
+                                  filters, kernel_size, activation_conv,
+                                  activation_dense, pool_size, optimizer,
+                                  loss, epochs, verbose = 0) {
+  # Build the model
+  model <- keras::keras_model_sequential()
+  model %>%
+    keras::layer_conv_2d(
+      filters     = filters,
+      input_shape = c(dim(train$x)[2], dim(train$x)[3], 1),
+      activation  = activation_conv,
+      kernel_size = kernel_size
+    ) %>%
+    keras::layer_max_pooling_2d(
+      pool_size = pool_size,
+      padding = 'same'
+    ) %>%
+    keras::layer_flatten() %>%
+    keras::layer_dense(
+      units = ncol(theta),
+      activation = activation_dense
+    )
+  
+  # Compile the model
+  model %>% keras::compile(
+    optimizer = optimizer,
+    loss      = loss,
+    metrics   = 'mae'
+  )
+  
+  # Set random seed
+  tensorflow::set_random_seed(seed)
+  
+  # Fit the model
+  model %>% keras::fit(
+    train$x,
+    train$y,
+    epochs = epochs,
+    verbose = verbose
+  )
+  
+  # Make predictions
+  pred <- predict(model, x = test$x) %>%
+    as.data.table() %>%
+    setnames(colnames(theta))
+  
+  # Calculate MAEs
+  MAEs <- abs(pred - test$y) %>%
+    colMeans()
+  
+  # Return the MAEs and predictions
+  list(pred = pred, MAEs = MAEs, model = model)
+}
+
+# Function to visualize results
+visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file = NULL) {
+  pred[, id := 1L:.N]
+  pred_long <- melt(pred, id.vars = "id")
+  
+  theta_long <- as.data.table(test$y)
+  setnames(theta_long, names(theta))
+  theta_long[, id := 1L:.N]
+  theta_long <- melt(theta_long, id.vars = "id")
+  
+  alldat <- rbind(
+    cbind(pred_long, Type = "Predicted"),
+    cbind(theta_long, Type = "Observed")
+  )
+  
+  # Density plots
+  p1 <- ggplot(alldat, aes(x = value, colour = Type)) +
+    facet_wrap(~variable, scales = "free") +
+    geom_density() +
+    labs(title = "Density Plots of Predicted vs Observed Values",
+         subtitle = "Comparing distributions of predicted and observed parameters",
+         x = "Parameter Value", y = "Density")
+  
+  print(p1)
+  
+  # Scatter plots of Observed vs Predicted
+  alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
+  
+  vnames <- data.table(
+    variable = names(theta),
+    Name     = paste(
+      c("Initial Prevalence", "Contact Rate", "Transmission Probability", "Recovery Probability"),
+      sprintf("(MAE: %.4f)", MAEs)
+    )
+  )
+  
+  alldat_wide <- merge(alldat_wide, vnames, by = "variable")
+  
+  p2 <- ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
+    facet_wrap(~ Name, scales = "free") +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+    geom_point(alpha = .2) +
+    labs(
+      title    = "Observed vs Predicted (Test Set)",
+      subtitle = sprintf(
+        "Best Model with Mean MAE: %.4f",
+        mean(MAEs)
+      ),
+      x = "Observed Values",
+      y = "Predicted Values"
+    )
+  
+  print(p2)
+}
+
+# Main execution function with hyperparameter tuning
+main <- function() {
+  # Simulate data
+  simulate_data()
+  
+  # Prepare data sets
+  data_sets <- prepare_data_sets()
+  train <- data_sets$train
+  test <- data_sets$test
+  theta <- data_sets$theta
+  N <- data_sets$N
+  N_train <- data_sets$N_train
+  
+  # Reshape the data for Keras
+  train$x <- array(train$x, dim = c(dim(train$x)[1], dim(train$x)[2], dim(train$x)[3], 1))
+  test$x <- array(test$x, dim = c(dim(test$x)[1], dim(test$x)[2], dim(test$x)[3], 1))
+  
+  # Define hyperparameter grid
+  hyper_grid <- expand.grid(
+    filters = c(16, 32, 64),
+    kernel_size = list(c(1,3), c(1,5)),
+    activation_conv = c('relu', 'linear'),
+    activation_dense = c('sigmoid'),
+    pool_size = list(c(1,2), c(1,3)),
+    optimizer = c('adam'),
+    loss = c('mse', 'mae'),
+    epochs = c(50),
+    stringsAsFactors = FALSE
+  )
+  
+  # Initialize variables to store the best model
+  best_MAE <- Inf
+  best_model <- NULL
+  best_pred <- NULL
+  best_MAEs <- NULL
+  best_params <- NULL
+  
+  # Loop over hyperparameter combinations
+  for (i in 1:nrow(hyper_grid)) {
+    cat("Testing model", i, "of", nrow(hyper_grid), "\n")
+    
+    # Extract hyperparameters
+    filters <- hyper_grid$filters[i]
+    kernel_size <- hyper_grid$kernel_size[[i]]
+    activation_conv <- hyper_grid$activation_conv[i]
+    activation_dense <- hyper_grid$activation_dense[i]
+    pool_size <- hyper_grid$pool_size[[i]]
+    optimizer <- hyper_grid$optimizer[i]
+    loss <- hyper_grid$loss[i]
+    epochs <- hyper_grid$epochs[i]
+    
+    # Set a seed for reproducibility
+    seed <- 331
+    
+    # Build and train the model
+    model_results <- tryCatch(
+      {
+        build_and_train_model(
+          train = train,
+          test = test,
+          theta = theta,
+          seed = seed,
+          filters = filters,
+          kernel_size = kernel_size,
+          activation_conv = activation_conv,
+          activation_dense = activation_dense,
+          pool_size = pool_size,
+          optimizer = optimizer,
+          loss = loss,
+          epochs = epochs,
+          verbose = 0
+        )
+      },
+      error = function(e) {
+        cat("Error in model", i, ":", e$message, "\n")
+        return(NULL)
+      }
+    )
+    
+    # If the model failed, skip to the next iteration
+    if (is.null(model_results)) next
+    
+    # Get the MAEs
+    MAEs <- model_results$MAEs
+    
+    # Store the average MAE
+    hyper_grid$MAE[i] <- mean(MAEs)
+    
+    # If this is the best MAE so far, save the model and predictions
+    if (hyper_grid$MAE[i] < best_MAE) {
+      best_MAE <- hyper_grid$MAE[i]
+      best_model <- model_results$model
+      best_pred <- model_results$pred
+      best_MAEs <- MAEs
+      best_params <- hyper_grid[i,]
+    }
+  }
+  
+  # Print the best hyperparameters
+  cat("Best model parameters:\n")
+  print(best_params)
+  cat("Best MAE:", best_MAE, "\n")
+  
+  # Visualize results
+  visualize_results(best_pred, test, theta, best_MAEs, N, N_train)
+}
+
+# Run the main function
+main()
+```
+
+![](CNN_SIR_infected_only_files/figure-commonmark/unnamed-chunk-11-1.png)
+
+    Testing model 1 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 2 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 3 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 4 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 5 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 6 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 7 of 48 
+    188/188 - 0s - 1000us/step
+    Testing model 8 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 9 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 10 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 11 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 12 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 13 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 14 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 15 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 16 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 17 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 18 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 19 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 20 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 21 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 22 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 23 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 24 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 25 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 26 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 27 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 28 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 29 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 30 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 31 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 32 of 48 
+    188/188 - 0s - 997us/step
+    Testing model 33 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 34 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 35 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 36 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 37 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 38 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 39 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 40 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 41 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 42 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 43 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 44 of 48 
+    188/188 - 0s - 996us/step
+    Testing model 45 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 46 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 47 of 48 
+    188/188 - 0s - 1ms/step
+    Testing model 48 of 48 
+    188/188 - 0s - 1ms/step
+    Best model parameters:
+       filters kernel_size activation_conv activation_dense pool_size optimizer
+    39      64        1, 3            relu          sigmoid      1, 3      adam
+       loss epochs        MAE
+    39  mae     50 0.05267334
+    Best MAE: 0.05267334 
+
+![](CNN_SIR_infected_only_files/figure-commonmark/unnamed-chunk-11-2.png)
+
+![](CNN_SIR_infected_only_files/figure-commonmark/unnamed-chunk-11-3.png)
