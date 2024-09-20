@@ -216,7 +216,7 @@ build_and_train_lstm <- function(train, theta2, arrays_1d) {
   model %>% compile(optimizer = 'adam', loss = 'mse', metrics = 'accuracy')
   
   tensorflow::set_random_seed(331)
-  model %>% fit(train$x, train$y, epochs = 100, verbose = 2)
+  model %>% fit(train$x, train$y, epochs = 100, verbose = 0)
   
   return(model)
 }
@@ -352,206 +352,354 @@ visualize_predictions(pred, test, MAEs, theta, N, floor(N * 0.7))
 
 # Section 2:
 
-# Grid Search function for LSTM hyperparameters
+# Finding the Best Model 
 
-The `run_lstm_grid_search` function is designed to find the best-performing LSTM model by systematically exploring combinations of different hyperparameters—a process known as **grid search**. To perform a grid search over specified hyperparameters for an LSTM model and identify the best configuration based on the Mean Absolute Error (MAE) metric.
+Now we want to find the best model for LSTM.
+
+# build and train the LSTM model with hyperparameters
+
+The `build_and_train_model` function builds, trains, and evaluates an LSTM (Long Short-Term Memory) neural network using the `keras3` library in R for time-series or sequential data.
 
 ```{r}
-#| label: run lstm grid
-run_lstm_grid_search <- function(train, test, theta2, arrays_1d) {
+#|label: Function to build and train the LSTM model with hyperparameters
+build_and_train_model <- function(train, test, theta, seed,
+                                  units, activation_lstm, activation_dense,
+                                  optimizer, loss, epochs, batch_size, verbose = 0) {
+  # Build the LSTM model
+  model <- keras3::keras_model_sequential() %>%
+    keras3::layer_lstm(
+      units = units,
+      activation = activation_lstm,
+      input_shape = c(dim(train$x)[2], dim(train$x)[3]),
+      return_sequences = FALSE
+    ) %>%
+    keras3::layer_dense(
+      units = ncol(theta),
+      activation = activation_dense
+    )
   
-  # Define the hyperparameter grid
-  lstm_units_options <- c(64, 128, 256)
-  epochs_options <- c(10, 20)
-  loss_function_options <- c('mse', 'mae')
-  optimizer_options <- c('adam', 'rmsprop')
-  activation_options <- c('sigmoid', 'relu')
+  # Compile the model
+  model %>% keras3::compile(
+    optimizer = optimizer,
+    loss      = loss,
+    metrics   = 'mae'
+  )
   
-  # Run grid search
-  results <- grid_search_lstm(train, test, theta2, arrays_1d, lstm_units_options, epochs_options, loss_function_options, optimizer_options, activation_options)
+  # Set random seed
+  tensorflow::set_random_seed(seed)
   
-  # Check if any results were returned
-  if (length(results) == 0) {
-    stop("No results found during grid search")
-  }
+  # Fit the model
+  history <- model %>% keras3::fit(
+    x = train$x,
+    y = train$y,
+    epochs = epochs,
+    batch_size = batch_size,
+    validation_split = 0.2,
+    verbose = verbose
+  )
   
-  # Find the best model based on MAE
-  best_result <- find_best_model(results)
+  # Make predictions
+  pred <- predict(model, x = test$x) %>%
+    as.data.table() %>%
+    setnames(colnames(theta))
   
-  # Check if best_result is valid
-  if (is.null(best_result)) {
-    stop("No best model found")
-  }
+  # Calculate MAEs
+  MAEs <- abs(pred - test$y) %>%
+    colMeans()
   
-  # Print the best configuration and MAE
-  cat("Best model configuration:\n")
-  print(best_result)
+  # Return the MAEs and predictions
+  list(pred = pred, MAEs = MAEs, model = model)
+}
+
+```
+
+### **Building the LSTM Model**
+
+-   The function creates a sequential model using `keras3::keras_model_sequential()`.
+
+-   An LSTM layer (`keras3::layer_lstm()`) is added with customizable parameters:
+
+    -   `units`: the number of LSTM units (neurons) in the layer.
+
+    -   `activation_lstm`: the activation function applied within the LSTM units.
+
+    -   `input_shape`: the shape of the input data, which is defined as the number of time steps (`dim(train$x)[2]`) and features (`dim(train$x)[3]`).
+
+    -   `return_sequences = FALSE`: this flag means that only the final LSTM output (not a sequence) is passed to the next layer.
+
+-   A fully connected (dense) layer (`keras3::layer_dense()`) is added with:
+
+    -   `units = ncol(theta)`: the number of output neurons, which matches the number of columns in the `theta` matrix.
+
+    -   `activation_dense`: the activation function applied in the dense layer (e.g., 'sigmoid' or 'linear').
+
+# visualize results
+
+```{r}
+#| label: Function to visualize results
+visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file = NULL) {
+  pred[, id := 1L:.N]
+  pred[, crate := qlogis(crate) * 10]
+  pred_long <- melt(pred, id.vars = "id")
   
-  return(best_result)
+  theta_long <- as.data.table(test$y)
+  setnames(theta_long, names(theta))
+  theta_long[, id := 1L:.N]
+  theta_long[, crate := qlogis(crate) * 10]
+  theta_long <- melt(theta_long, id.vars = "id")
+  
+  alldat <- rbind(
+    cbind(pred_long, Type = "Predicted"),
+    cbind(theta_long, Type = "Observed")
+  )
+  
+  # Density plots
+  p1 <- ggplot(alldat, aes(x = value, colour = Type)) +
+    facet_wrap(~variable, scales = "free") +
+    geom_density() +
+    labs(title = "Density Plots of Predicted vs Observed Values",
+         subtitle = "Comparing distributions of predicted and observed parameters",
+         x = "Parameter Value", y = "Density")
+  
+  print(p1)
+  
+  # Scatter plots of Observed vs Predicted
+  alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
+  
+  vnames <- data.table(
+    variable = c("preval", "crate", "ptran", "prec"),
+    Name     = paste(
+      c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
+      sprintf("(MAE: %.4f)", MAEs)
+    )
+  )
+  
+  alldat_wide <- merge(alldat_wide, vnames, by = "variable")
+  
+  p2 <- ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
+    facet_wrap(~ Name, scales = "free") +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+    geom_point(alpha = .2) +
+    labs(
+      title    = "Observed vs Predicted (Test Set)",
+      subtitle = sprintf(
+        "Best Model with Mean MAE: %.4f",
+        mean(MAEs)
+      ),
+      x = "Observed Values",
+      y = "Predicted Values"
+    )
+  
+  print(p2)
 }
 
 
 ```
 
--   **Define the Hyperparameter Grid:**
+# Execution function with hyperparameter tuning
 
-    -   **`lstm_units_options`:** Number of units in the LSTM layer (e.g., 64, 128, 256).
-
-    -   **`epochs_options`:** Number of training epochs (e.g., 10, 20).
-
-    -   **`loss_function_options`:** Loss functions to optimize (e.g., 'mse' for Mean Squared Error, 'mae' for Mean Absolute Error).
-
-    -   **`optimizer_options`:** Optimization algorithms to use (e.g., 'adam', 'rmsprop').
-
-    -   **`activation_options`:** Activation functions for the output layer (e.g., 'sigmoid', 'relu').
-
--   **Run Grid Search:**
-
-    -   **`grid_search_lstm`:** The function calls another function named `grid_search_lstm`, passing in the training and testing data along with all the hyperparameter options.
-
-    -   **Purpose of `grid_search_lstm`:** This function iterates over all possible combinations of the hyperparameters, trains an LSTM model for each combination, evaluates its performance on the test set, and collects the results.
-
-# Run Grid Search
-
-The `grid_search_lstm` function is designed to systematically explore various combinations of hyperparameters for training an LSTM model and evaluate their performance.
+This `main` function performs a full workflow to generate and train an LSTM-based neural network model using hyperparameter tuning.
 
 ```{r}
-#| label: Define the grid search function
-grid_search_lstm <- function(train, test, theta2, arrays_1d, lstm_units_options, epochs_options, loss_function_options, optimizer_options, activation_options) {
-  results <- list()
+#| label: Main execution function with hyperparameter tuning
+main <- function(N, n, ndays, ncores) {
+  # Generate parameters (theta)
+  theta <- generate_simulation_parameters(N, n)
+  seeds <- sample.int(.Machine$integer.max, N, TRUE)
   
-  # Iterate over all hyperparameter combinations
-  for (lstm_units in lstm_units_options) {
-    for (epochs in epochs_options) {
-      for (loss_function in loss_function_options) {
-        for (optimizer in optimizer_options) {
-          for (activation in activation_options) {
-            
-            # Train the model with the current combination
-            model <- build_and_train_lstm(train, theta2, arrays_1d, lstm_units, epochs, loss_function, optimizer, activation)
-            
-            # Evaluate the model
-            mae <- evaluate_model_lstm(model, test)
-            
-            # Store the result
-            results <- append(results, list(list(model = model, lstm_units = lstm_units, epochs = epochs, 
-                                                 loss_function = loss_function, optimizer = optimizer, 
-                                                 activation = activation, mae = mae)))
-          }
-        }
+  # Run simulations
+  matrices <- run_epidemic_simulations(N, theta, seeds, n, ndays, ncores)
+  
+  # Filter and prepare data
+  valid_data <- filter_valid_simulations(matrices, theta)
+  N <- valid_data$N
+  theta <- valid_data$theta
+  matrices <- valid_data$matrices
+  
+  # Prepare for neural network
+  nn_data <- prepare_neural_network_data(N, matrices, theta)
+  arrays_1d <- nn_data$arrays_1d
+  theta2 <- nn_data$theta2
+  
+  # Save data
+  save_prepared_data(theta2, arrays_1d)
+  
+  # Split train and test data
+  train_test_data <- split_train_test_data(N, arrays_1d, theta2)
+  train <- train_test_data$train
+  test <- train_test_data$test
+  N_train <- train_test_data$N_train
+  
+  # Define hyperparameter grid
+  hyper_grid <- expand.grid(
+    units = c(50, 64),
+    activation_lstm = c('relu'),
+    activation_dense = c('sigmoid',"linear"),
+    optimizer = c('adam'),
+    loss = c('mse', 'mae'),
+    epochs = c(20),
+    batch_size = c(32, 64),
+    stringsAsFactors = FALSE
+  )
+  
+  # Initialize variables to store the best model
+  best_MAE <- Inf
+  best_model <- NULL
+  best_pred <- NULL
+  best_MAEs <- NULL
+  best_params <- NULL
+  
+  # Loop over hyperparameter combinations
+  for (i in 1:nrow(hyper_grid)) {
+    cat("Testing model", i, "of", nrow(hyper_grid), "\n")
+    
+    # Extract hyperparameters
+    units <- hyper_grid$units[i]
+    activation_lstm <- hyper_grid$activation_lstm[i]
+    activation_dense <- hyper_grid$activation_dense[i]
+    optimizer <- hyper_grid$optimizer[i]
+    loss <- hyper_grid$loss[i]
+    epochs <- hyper_grid$epochs[i]
+    batch_size <- hyper_grid$batch_size[i]
+    
+    # Set a seed for reproducibility
+    seed <- 331
+    
+    # Build and train the model
+    model_results <- tryCatch(
+      {
+        build_and_train_model(
+          train = train,
+          test = test,
+          theta = theta2,
+          seed = seed,
+          units = units,
+          activation_lstm = activation_lstm,
+          activation_dense = activation_dense,
+          optimizer = optimizer,
+          loss = loss,
+          epochs = epochs,
+          batch_size = batch_size,
+          verbose = 0
+        )
+      },
+      error = function(e) {
+        cat("Error in model", i, ":", e$message, "\n")
+        return(NULL)
       }
+    )
+    
+    # If the model failed, skip to the next iteration
+    if (is.null(model_results)) next
+    
+    # Get the MAEs
+    MAEs <- model_results$MAEs
+    
+    # Store the average MAE
+    hyper_grid$MAE[i] <- mean(MAEs)
+    
+    # If this is the best MAE so far, save the model and predictions
+    if (hyper_grid$MAE[i] < best_MAE) {
+      best_MAE <- hyper_grid$MAE[i]
+      best_model <- model_results$model
+      best_pred <- model_results$pred
+      best_MAEs <- MAEs
+      best_params <- hyper_grid[i,]
     }
   }
   
-  return(results)
+  # Print the best hyperparameters
+  cat("Best model parameters:\n")
+  print(best_params)
+  cat("Best MAE:", best_MAE, "\n")
+  
+  # Visualize results
+  visualize_results(best_pred, test, theta2, best_MAEs, N, N_train)
 }
 
 ```
 
-**Parameters Passed:**
+### 1. **Parameter Generation**
 
--   **`train`:** Training dataset.
+-   `generate_simulation_parameters(N, n)`: This function generates simulation parameters (`theta`) for the epidemic simulations based on the input parameters `N` and `n`. The exact nature of `theta` depends on the simulation context.
 
--   **`theta2`, `arrays_1d`:** Additional data structures required for training (specific to your implementation).
+-   `sample.int(.Machine$integer.max, N, TRUE)`: This generates a set of random seeds for reproducibility across `N` simulations.
 
--   **`lstm_units`:** Number of units in the LSTM layer for this iteration.
+### 2. **Run Simulations**
 
--   **`epochs`:** Number of epochs for training.
+-   `run_epidemic_simulations(N, theta, seeds, n, ndays, ncores)`: This runs the epidemic simulations using the parameters (`theta`) and seeds across `ncores` processing cores. The results are stored in `matrices`, which likely contain simulated data for different scenarios.
 
--   **`loss_function`:** Loss function to use.
+### 3. **Filter and Prepare Data**
 
--   **`optimizer`:** Optimization algorithm.
+-   `filter_valid_simulations(matrices, theta)`: This function filters out invalid or null simulations. It adjusts `matrices`, `theta`, and `N` to ensure only valid simulations are used for further processing.
 
--   **`activation`:** Activation function for the output layer.
+-   `prepare_neural_network_data(N, matrices, theta)`: Prepares the data for input into the LSTM neural network, converting the simulation results (`matrices`) and parameters (`theta`) into appropriate arrays (`arrays_1d`) for TensorFlow.
 
-### Finding Best Model
+### 4. **Save Prepared Data**
+
+-   `save_prepared_data(theta2, arrays_1d)`: Saves the prepared data (optional), possibly as `.rds` or some other serialized format, allowing you to reload it later.
+
+### 5. **Split Train and Test Data**
+
+-   `split_train_test_data(N, arrays_1d, theta2)`: Splits the dataset into training and test sets. `train_test_data` includes `train`, `test`, and the number of training samples (`N_train`).
+
+### 6. **Define Hyperparameter Grid**
+
+-   `expand.grid()`: Creates a grid of hyperparameters for tuning. The parameters include:
+
+    -   `units`: Number of LSTM units (50 or 64).
+
+    -   `activation_lstm`: Activation function for LSTM (e.g., `'relu'`).
+
+    -   `activation_dense`: Activation function for the dense output layer (`'sigmoid'` or `'linear'`).
+
+    -   `optimizer`: Optimizer used for training (`'adam'`).
+
+    -   `loss`: Loss function for training (`'mse'` or `'mae'`).
+
+    -   `epochs`: Number of training epochs (20).
+
+    -   `batch_size`: Batch size for training (32 or 64).
+
+This grid allows for different combinations of hyperparameters to be tested and tuned for the best model performance.
+
+### 7. **Hyperparameter Tuning Loop**
+
+-   The loop runs through all possible hyperparameter combinations:
+
+    -   Extracts the current hyperparameters from the grid (`units`, `activation_lstm`, `activation_dense`, `optimizer`, `loss`, `epochs`, `batch_size`).
+
+    -   Sets a reproducible seed (`seed = 331`).
+
+    -   Calls the `build_and_train_model` function to build, train, and test the model for each combination of hyperparameters.
+
+### 8. **Error Handling**
+
+-   A `tryCatch` block is used to handle errors during model building or training. If an error occurs, it moves to the next combination of hyperparameters without stopping the entire process.
+
+### 9. **Evaluating the Models**
+
+-   After each model is trained, the mean absolute errors (MAEs) are calculated.
+
+-   The average MAE is stored for each hyperparameter configuration.
+
+-   If the current model has the best MAE (lowest), it updates the stored `best_model`, `best_pred`, `best_MAEs`, and `best_params`.
+
+### 10. **Results**
+
+-   After testing all hyperparameter combinations, the function prints the best model's hyperparameters and the lowest MAE achieved.
+
+### 11. **Visualization**
+
+-   `visualize_results()`: This function visualizes the results, such as comparing predicted values (`best_pred`) to the actual values (`test$y`). It likely includes error analysis, plotting, and model diagnostics.
+
+# Run the main function
 
 ```{r}
-#| label: Function to find the best model based on the lowest MAE
-find_best_model <- function(results) {
-  # Extract the model with the lowest MAE
-  best_result <- results[[which.min(sapply(results, function(x) x$mae))]]
-  return(best_result)
-}
-
-```
-
-Build the LSTM Model
-
-The `build_and_train_lstm` function constructs and trains an LSTM (Long Short-Term Memory) neural network model using the Keras library in R
-
-```{r}
-#| label: Build and train the LSTM model
-build_and_train_lstm <- function(train, theta2, arrays_1d, lstm_units, epochs, loss_function, optimizer, activation) {
-  model <- keras3::keras_model_sequential() %>%
-    keras3::layer_lstm(units = lstm_units, input_shape = c(dim(arrays_1d)[2], dim(arrays_1d)[3]), return_sequences = FALSE) %>%
-    keras3::layer_dense(units = ncol(theta2), activation = activation)
-  
-  model %>% compile(optimizer = optimizer, loss = loss_function, metrics = 'accuracy')
-  
-  tensorflow::set_random_seed(331)
-  model %>% fit(train$x, train$y, epochs = epochs, verbose = 2)
-  
-  return(model)
-}
-
-
-```
-
-Evaluation Part
-
-```{r}
-#| label: Evaluate the model and return the Mean Absolute Error (MAE)
-evaluate_model_lstm <- function(model, test_data) {
-  pred <- predict(model, x = test_data$x)
-  
-  # Handle the case where test_data$y has no column names
-  if (is.null(colnames(test_data$y))) {
-    colnames(test_data$y) <- paste0("V", seq_len(ncol(test_data$y)))  # Create default names
-  }
-  
-  pred <- as.data.table(pred)
-  setnames(pred, colnames(test_data$y))  # Set names to match test_data$y
-  
-  MAEs <- abs(pred - as.matrix(test_data$y)) |> colMeans()
-  
-  # Return Mean Absolute Error
-  return(mean(MAEs))
-}
-
-
-```
-
-## Run the Model and Find the Best Parameters
-
-```{r,epochs=FALSE}
-
-#| label: Run the best model and generate predictions
-best_model_result <- run_lstm_grid_search(train, test, theta2, arrays_1d)
-
-# Ensure best_model_result is defined before proceeding
-if (is.null(best_model_result)) {
-  stop("Grid search failed to find the best model")
-}
-
-# Proceed with the predictions and plotting
-best_model <- best_model_result$model
-pred <- predict(best_model, x = test$x)
-
-# Handle the case where test$y has no column names
-if (is.null(colnames(test$y))) {
-  colnames(test$y) <- paste0("V", seq_len(ncol(test$y)))  # Create default names
-}
-
-```
-
-## Print the Results
-
-```{r}
-#| label: print the best results
-pred <- as.data.table(pred)
-setnames(pred, colnames(test$y))  # Set names to match test$y
-MAEs <- abs(pred - as.matrix(test$y)) |> colMeans()
-print(MAEs)
-
+# Run the main function
+N <- 2e4   # Adjust N as needed
+n <- 5000
+ndays <- 50
+ncores <- 20
+main(N, n, ndays, ncores)
 ```

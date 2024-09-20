@@ -513,208 +513,208 @@ main_pipeline(N,n,ndays,ncores)
 ```
 
     Epoch 1/100
-    438/438 - 1s - 3ms/step - accuracy: 0.7245 - loss: 0.0579
+    438/438 - 1s - 3ms/step - accuracy: 0.7161 - loss: 0.0390
     Epoch 2/100
-    438/438 - 1s - 1ms/step - accuracy: 0.7501 - loss: 0.0303
+    438/438 - 1s - 1ms/step - accuracy: 0.7998 - loss: 0.0089
     Epoch 3/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8114 - loss: 0.0071
+    438/438 - 1s - 1ms/step - accuracy: 0.8428 - loss: 0.0056
     Epoch 4/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8412 - loss: 0.0052
+    438/438 - 1s - 1ms/step - accuracy: 0.8634 - loss: 0.0046
     Epoch 5/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8591 - loss: 0.0044
+    438/438 - 1s - 1ms/step - accuracy: 0.8721 - loss: 0.0041
     Epoch 6/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8706 - loss: 0.0040
+    438/438 - 1s - 1ms/step - accuracy: 0.8789 - loss: 0.0039
     Epoch 7/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8783 - loss: 0.0038
+    438/438 - 1s - 1ms/step - accuracy: 0.8811 - loss: 0.0037
     Epoch 8/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8847 - loss: 0.0036
+    438/438 - 1s - 1ms/step - accuracy: 0.8837 - loss: 0.0036
     Epoch 9/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8840 - loss: 0.0035
+    438/438 - 1s - 1ms/step - accuracy: 0.8851 - loss: 0.0035
     Epoch 10/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8866 - loss: 0.0034
+    438/438 - 1s - 1ms/step - accuracy: 0.8869 - loss: 0.0034
     Epoch 11/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8888 - loss: 0.0033
+    438/438 - 1s - 1ms/step - accuracy: 0.8893 - loss: 0.0034
     Epoch 12/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8929 - loss: 0.0033
+    438/438 - 1s - 1ms/step - accuracy: 0.8904 - loss: 0.0034
     Epoch 13/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8936 - loss: 0.0033
+    438/438 - 1s - 1ms/step - accuracy: 0.8919 - loss: 0.0033
     Epoch 14/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8952 - loss: 0.0032
+    438/438 - 1s - 1ms/step - accuracy: 0.8920 - loss: 0.0033
     Epoch 15/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8956 - loss: 0.0032
+    438/438 - 1s - 1ms/step - accuracy: 0.8947 - loss: 0.0032
     Epoch 16/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8964 - loss: 0.0032
+    438/438 - 1s - 1ms/step - accuracy: 0.8937 - loss: 0.0032
     Epoch 17/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8982 - loss: 0.0032
+    438/438 - 1s - 1ms/step - accuracy: 0.8931 - loss: 0.0033
     Epoch 18/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8996 - loss: 0.0032
+    438/438 - 1s - 1ms/step - accuracy: 0.8938 - loss: 0.0032
     Epoch 19/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9000 - loss: 0.0032
+    438/438 - 1s - 1ms/step - accuracy: 0.8919 - loss: 0.0032
     Epoch 20/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9018 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8900 - loss: 0.0032
     Epoch 21/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9010 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8914 - loss: 0.0032
     Epoch 22/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9005 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8925 - loss: 0.0032
     Epoch 23/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9014 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8919 - loss: 0.0032
     Epoch 24/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9027 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8917 - loss: 0.0032
     Epoch 25/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9011 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8917 - loss: 0.0032
     Epoch 26/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9020 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8927 - loss: 0.0032
     Epoch 27/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9020 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8930 - loss: 0.0032
     Epoch 28/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9024 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8939 - loss: 0.0032
     Epoch 29/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9018 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8929 - loss: 0.0032
     Epoch 30/100
-    438/438 - 1s - 1ms/step - accuracy: 0.8997 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8935 - loss: 0.0032
     Epoch 31/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9030 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8938 - loss: 0.0032
     Epoch 32/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9024 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8957 - loss: 0.0032
     Epoch 33/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9025 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8928 - loss: 0.0032
     Epoch 34/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9022 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8927 - loss: 0.0032
     Epoch 35/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9030 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8946 - loss: 0.0032
     Epoch 36/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9025 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8944 - loss: 0.0032
     Epoch 37/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9022 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8959 - loss: 0.0032
     Epoch 38/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9008 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8929 - loss: 0.0032
     Epoch 39/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9037 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8958 - loss: 0.0032
     Epoch 40/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9021 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8923 - loss: 0.0032
     Epoch 41/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9012 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8933 - loss: 0.0032
     Epoch 42/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9015 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8943 - loss: 0.0032
     Epoch 43/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9010 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8940 - loss: 0.0032
     Epoch 44/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9022 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8949 - loss: 0.0032
     Epoch 45/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9004 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8944 - loss: 0.0032
     Epoch 46/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9020 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8941 - loss: 0.0032
     Epoch 47/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9025 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8931 - loss: 0.0032
     Epoch 48/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9007 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8939 - loss: 0.0032
     Epoch 49/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9025 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8949 - loss: 0.0032
     Epoch 50/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9010 - loss: 0.0031
+    438/438 - 1s - 1ms/step - accuracy: 0.8915 - loss: 0.0032
     Epoch 51/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9020 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8935 - loss: 0.0032
     Epoch 52/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9027 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8940 - loss: 0.0032
     Epoch 53/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9015 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8938 - loss: 0.0032
     Epoch 54/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9026 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8947 - loss: 0.0032
     Epoch 55/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9030 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8934 - loss: 0.0032
     Epoch 56/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9012 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8929 - loss: 0.0032
     Epoch 57/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9004 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8931 - loss: 0.0032
     Epoch 58/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9003 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8939 - loss: 0.0032
     Epoch 59/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9025 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8934 - loss: 0.0032
     Epoch 60/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9014 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8944 - loss: 0.0032
     Epoch 61/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9019 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8938 - loss: 0.0032
     Epoch 62/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9035 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8959 - loss: 0.0032
     Epoch 63/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9044 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8953 - loss: 0.0031
     Epoch 64/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9037 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8932 - loss: 0.0031
     Epoch 65/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9045 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8933 - loss: 0.0032
     Epoch 66/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9046 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8944 - loss: 0.0032
     Epoch 67/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9037 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8942 - loss: 0.0032
     Epoch 68/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9046 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8937 - loss: 0.0031
     Epoch 69/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9048 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8937 - loss: 0.0031
     Epoch 70/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9051 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8932 - loss: 0.0031
     Epoch 71/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9047 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8941 - loss: 0.0031
     Epoch 72/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9052 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8934 - loss: 0.0032
     Epoch 73/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9041 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8935 - loss: 0.0032
     Epoch 74/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9039 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8929 - loss: 0.0032
     Epoch 75/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9036 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8930 - loss: 0.0032
     Epoch 76/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9045 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8944 - loss: 0.0031
     Epoch 77/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9042 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8927 - loss: 0.0032
     Epoch 78/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9042 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8917 - loss: 0.0032
     Epoch 79/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9039 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8942 - loss: 0.0031
     Epoch 80/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9052 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8935 - loss: 0.0031
     Epoch 81/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9033 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8915 - loss: 0.0031
     Epoch 82/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9042 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8932 - loss: 0.0032
     Epoch 83/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9035 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8916 - loss: 0.0032
     Epoch 84/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9039 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8929 - loss: 0.0031
     Epoch 85/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9049 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8920 - loss: 0.0031
     Epoch 86/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9032 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8934 - loss: 0.0032
     Epoch 87/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9048 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8932 - loss: 0.0031
     Epoch 88/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9041 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8939 - loss: 0.0031
     Epoch 89/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9042 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8928 - loss: 0.0031
     Epoch 90/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9041 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8927 - loss: 0.0031
     Epoch 91/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9054 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8925 - loss: 0.0032
     Epoch 92/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9037 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8930 - loss: 0.0031
     Epoch 93/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9043 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8912 - loss: 0.0032
     Epoch 94/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9035 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8912 - loss: 0.0031
     Epoch 95/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9033 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8924 - loss: 0.0031
     Epoch 96/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9032 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8909 - loss: 0.0031
     Epoch 97/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9040 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8927 - loss: 0.0031
     Epoch 98/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9035 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8922 - loss: 0.0031
     Epoch 99/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9037 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8912 - loss: 0.0031
     Epoch 100/100
-    438/438 - 1s - 1ms/step - accuracy: 0.9047 - loss: 0.0030
+    438/438 - 1s - 1ms/step - accuracy: 0.8924 - loss: 0.0031
     188/188 - 0s - 1ms/step
         preval      crate      ptran       prec 
-    0.01401778 0.03254340 0.07920297 0.02653983 
+    0.02551931 0.03266070 0.07641141 0.02703325 
 
 ![](CNN_SIR_all_files/figure-commonmark/give%20parameters%20and%20run-1.png)
 
@@ -725,34 +725,159 @@ main_pipeline(N,n,ndays,ncores)
 Now we can Run a CNN model to find the best parameters we can use for
 our CNN model to perform
 
+This build_and_train_model function is designed to create, compile,
+train, and evaluate a convolutional neural network (CNN) model using the
+keras3 library in R for deep learning tasks.
+
 ``` r
-build_cnn_model <- function(input_shape, output_units, filters, kernel_size, activation, dense_units) {
-  model <- keras3::keras_model_sequential() %>%
+build_and_train_model <- function(train, test, theta, seed,
+                                  filters, kernel_size, activation_conv,
+                                  activation_dense, pool_size, optimizer,
+                                  loss, epochs, verbose = 0) {
+  # Build the model
+  model <- keras3::keras_model_sequential()
+  model %>%
     keras3::layer_conv_2d(
-      filters = filters,                      # Use dynamic filters
-      kernel_size = kernel_size,              # Use dynamic kernel size
-      activation = activation,                # Use dynamic activation
-      input_shape = c(input_shape, 1)         # Assuming single-channel input (e.g., grayscale)
+      filters     = filters,
+      input_shape = c(dim(train$x)[2], dim(train$x)[3], 1),
+      activation  = activation_conv,
+      kernel_size = kernel_size
     ) %>%
-    keras3::layer_max_pooling_2d(pool_size = 2, padding = 'same') %>%
+    keras3::layer_max_pooling_2d(
+      pool_size = pool_size,
+      padding = 'same'
+    ) %>%
     keras3::layer_flatten() %>%
-    keras3::layer_dense(units = dense_units, activation = activation) %>%
-    keras3::layer_dense(units = output_units, activation = 'sigmoid')  # Output layer
-
-  model %>% compile(
-    optimizer = 'adam', 
-    loss = 'mse', 
-    metrics = 'accuracy'
+    keras3::layer_dense(
+      units = ncol(theta),
+      activation = activation_dense
+    )
+  
+  # Compile the model
+  model %>% keras3::compile(
+    optimizer = optimizer,
+    loss      = loss,
+    metrics   = 'mae'
   )
-
-  return(model)
+  
+  # Set random seed
+  tensorflow::set_random_seed(seed)
+  
+  # Fit the model
+  model %>% keras3::fit(
+    train$x,
+    train$y,
+    epochs = epochs,
+    verbose = verbose
+  )
+  
+  # Make predictions
+  pred <- predict(model, x = test$x) %>%
+    as.data.table() %>%
+    setnames(colnames(theta))
+  
+  # Calculate MAEs
+  MAEs <- abs(pred - test$y) %>%
+    colMeans()
+  
+  # Return the MAEs and predictions
+  list(pred = pred, MAEs = MAEs, model = model)
 }
 ```
 
+- **Building the model**:
+
+  - The function begins by creating a sequential CNN model using
+    `keras3::keras_model_sequential()`.
+
+  - The first layer is a 2D convolutional layer with customizable
+    `filters`, `kernel_size`, and `activation_conv`, applied to input
+    data of shape `(height, width, 1)` (grayscale images).
+
+  - A max-pooling layer follows, which reduces spatial dimensions using
+    a pool size (`pool_size`).
+
+  - The model is then flattened to transition from 2D to 1D data.
+
+  - A dense (fully connected) layer is added with the number of units
+    equal to the number of columns in `theta` and an activation function
+    `activation_dense`.
+
+- **Compiling the model**:
+
+  - The model is compiled with an optimizer (`optimizer`), loss function
+    (`loss`), and the metric mean absolute error (`mae`) to track
+    performance.
+
+    # visualize results
+
 ``` r
-#|label: main_pipeline for tuning
-main_pipeline <- function(N, n, ndays, ncores) {
+#|label: Function to visualize results
+visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file = NULL) {
+  # Prepare the data for plotting
+  pred[, id := 1L:.N]
+  pred[, crate := qlogis(crate) * 10]
+  pred_long <- melt(pred, id.vars = "id")
   
+  theta_long <- as.data.table(test$y)
+  setnames(theta_long, names(theta))
+  theta_long[, id := 1L:.N]
+  theta_long[, crate := qlogis(crate) * 10]
+  theta_long <- melt(theta_long, id.vars = "id")
+  
+  alldat <- rbind(
+    cbind(pred_long, Type = "Predicted"),
+    cbind(theta_long, Type = "Observed")
+  )
+  
+  # Density plots
+  p1 <- ggplot(alldat, aes(x = value, colour = Type)) +
+    facet_wrap(~variable, scales = "free") +
+    geom_density() +
+    labs(title = "Density Plots of Predicted vs Observed Values",
+         subtitle = "Comparing distributions of predicted and observed parameters",
+         x = "Parameter Value", y = "Density")
+  
+  print(p1)
+  
+  # Scatter plots of Observed vs Predicted
+  alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
+  
+  vnames <- data.table(
+    variable = c("preval", "crate", "ptran", "prec"),
+    Name     = paste(
+      c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
+      sprintf("(MAE: %.2f)", MAEs)
+    )
+  )
+  
+  alldat_wide <- merge(alldat_wide, vnames, by = "variable")
+  
+  p2 <- ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
+    facet_wrap(~ Name, scales = "free") +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+    geom_point(alpha = .2) +
+    labs(
+      title    = "Observed vs Predicted (Test Set)",
+      subtitle = sprintf(
+        "Best Model with Mean MAE: %.2f",
+        mean(MAEs)
+      ),
+      x = "Observed Values",
+      y = "Predicted Values"
+    )
+  
+  print(p2)
+}
+```
+
+# hyperparameter tuning
+
+The `main` function orchestrates a full machine learning workflow for
+training a convolutional neural network (CNN) on simulated data.
+
+``` r
+main <- function(N, n, ndays, ncores) {
   # Generate theta and seeds
   theta <- generate_theta(N, n)
   seeds <- sample.int(.Machine$integer.max, N, TRUE)
@@ -771,1786 +896,270 @@ main_pipeline <- function(N, n, ndays, ncores) {
   
   # Save theta and simulations data
   theta2 <- copy(theta)
-  theta2[, crate := plogis(crate / 10)]  # Apply logit transform to crate
-  saveRDS(list(theta = theta2, simulations = arrays_1d), file = "calibration/sir.rds", compress = TRUE)
+  theta2[, crate := plogis(crate / 10)]
+  # Optionally save the data
+  # saveRDS(list(theta = theta2, simulations = arrays_1d), file = "calibration/sir.rds", compress = TRUE)
   
   # Split data into training and testing sets
   data_split <- split_data(arrays_1d, theta2, N)
   train <- data_split$train
   test <- data_split$test
+  N_train <- data_split$N_train
   
-  # Return train and test sets for future use
-  return(list(train = train, test = test, theta2 = theta2, arrays_1d = arrays_1d))
-}
-```
-
-The `main_pipeline` function streamlines the process of generating and
-preparing data for machine learning models. By returning the prepared
-datasets, it allows for modularity and flexibility, enabling you to
-focus on building and evaluating models without worrying about data
-preparation each time.
-
-# Function to experiment with different CNN configurations and track performance
-
-The `experiment_cnn_models` function systematically experiments with
-different configurations (hyperparameters) of a Convolutional Neural
-Network (CNN) to determine which combination yields the best
-performance, measured by the Mean Absolute Error (MAE) on the test
-dataset.
-
-``` r
-experiment_cnn_models <- function(train_data, test_data, theta, input_shape, output_units, epochs = 10) {
-  # Define the grid of hyperparameters to explore
-  filter_sizes <- c(16, 32, 64)         # Number of filters
-  kernel_sizes <- list(c(3, 3), c(5, 5), c(3,5)) # Kernel sizes
-  activations <- c("relu", "linear")     # Activation functions
-  dense_units <- c(32, 64, 128)          # Dense layer units
-  
-  # Store the results in a data frame for comparison
-  results <- data.table(
-    filters = integer(),
-    kernel_size = character(),
-    activation = character(),
-    dense_units = integer(),
-    MAE = numeric()
+  # Define hyperparameter grid
+  hyper_grid <- expand.grid(
+    filters = c(16, 32, 64),
+    kernel_size = list(c(3,3), c(3,5)),
+    activation_conv = c('relu', 'linear'),
+    activation_dense = c('sigmoid'),
+    pool_size = list(c(2,2)),
+    optimizer = c('adam'),
+    loss = c('mse', 'mae'),
+    epochs = c(50),
+    stringsAsFactors = FALSE
   )
   
-  # Loop over all combinations of hyperparameters
-  for (filters in filter_sizes) {
-    for (kernel_size in kernel_sizes) {
-      for (activation in activations) {
-        for (dense in dense_units) {
-          cat(sprintf("\nTraining model with filters=%d, kernel_size=%s, activation=%s, dense_units=%d\n",
-                      filters, paste(kernel_size, collapse="x"), activation, dense))
-          
-          # Build the model with current hyperparameters
-          model <- build_cnn_model(
-            input_shape = input_shape, 
-            output_units = output_units,
-            filters = filters, 
-            kernel_size = kernel_size, 
-            activation = activation, 
-            dense_units = dense
-          )
-          
-          # Train the model
-          train_model(model, train_data, epochs = epochs)
-          
-          # Evaluate the model
-          eval_results <- evaluate_model(model, test_data, theta)
-          pred <- eval_results$pred
-          MAEs <- eval_results$MAEs
-          
-          # Store the configuration and the MAE result
-          results <- rbind(results, data.table(
-            filters = filters,
-            kernel_size = paste(kernel_size, collapse = "x"),
-            activation = activation,
-            dense_units = dense,
-            MAE = mean(MAEs)  # Storing the mean MAE for comparison
-          ))
-          
-          # Output the performance
-          cat("Mean MAE for this configuration:", mean(MAEs), "\n")
-        }
+  # Initialize variables to store the best model
+  best_MAE <- Inf
+  best_model <- NULL
+  best_pred <- NULL
+  best_MAEs <- NULL
+  best_params <- NULL
+  
+  # Loop over hyperparameter combinations
+  for (i in 1:nrow(hyper_grid)) {
+    cat("Testing model", i, "of", nrow(hyper_grid), "\n")
+    
+    # Extract hyperparameters
+    filters <- hyper_grid$filters[i]
+    kernel_size <- hyper_grid$kernel_size[[i]]
+    activation_conv <- hyper_grid$activation_conv[i]
+    activation_dense <- hyper_grid$activation_dense[i]
+    pool_size <- hyper_grid$pool_size[[i]]
+    optimizer <- hyper_grid$optimizer[i]
+    loss <- hyper_grid$loss[i]
+    epochs <- hyper_grid$epochs[i]
+    
+    # Set a seed for reproducibility
+    seed <- 331
+    
+    # Build and train the model
+    model_results <- tryCatch(
+      {
+        build_and_train_model(
+          train = train,
+          test = test,
+          theta = theta2,
+          seed = seed,
+          filters = filters,
+          kernel_size = kernel_size,
+          activation_conv = activation_conv,
+          activation_dense = activation_dense,
+          pool_size = pool_size,
+          optimizer = optimizer,
+          loss = loss,
+          epochs = epochs,
+          verbose = 0
+        )
+      },
+      error = function(e) {
+        cat("Error in model", i, ":", e$message, "\n")
+        return(NULL)
       }
+    )
+    
+    # If the model failed, skip to the next iteration
+    if (is.null(model_results)) next
+    
+    # Get the MAEs
+    MAEs <- model_results$MAEs
+    
+    # Store the average MAE
+    hyper_grid$MAE[i] <- mean(MAEs)
+    
+    # If this is the best MAE so far, save the model and predictions
+    if (hyper_grid$MAE[i] < best_MAE) {
+      best_MAE <- hyper_grid$MAE[i]
+      best_model <- model_results$model
+      best_pred <- model_results$pred
+      best_MAEs <- MAEs
+      best_params <- hyper_grid[i,]
     }
   }
   
-  # Return the results data table with all configurations and their performance
-  return(results)
+  # Print the best hyperparameters
+  cat("Best model parameters:\n")
+  print(best_params)
+  cat("Best MAE:", best_MAE, "\n")
+  
+  # Visualize results
+  visualize_results(best_pred, test, theta2, best_MAEs, N, N_train)
 }
 ```
 
-**Function Breakdown**:
+### **1. Generate Parameters and Seeds**
 
-1.  **Hyperparameter Grid Definition**:
+- The function starts by generating a set of parameters (`theta`) using
+  `generate_theta`, which creates a matrix based on `N` and `n`.
 
-    - **`filter_sizes`**: Specifies different numbers of filters to try
-      (16, 32, 64).
+- It also generates random seeds (`seeds`) for each simulation using
+  `sample.int()` to ensure reproducibility.
 
-    - **`kernel_sizes`**: Lists different kernel size combinations to
-      test (3x3, 5x5, 3x5).
+### 2. **Run Simulations**
 
-    - **`activations`**: Includes activation functions to experiment
-      with (“relu”, “linear”).
+- Simulations are run using `run_simulations`, which likely generates a
+  set of matrices representing the simulated data. The inputs include
+  the number of simulations (`N`), days (`ndays`), and the number of
+  cores (`ncores`).
 
-    - **`dense_units`**: Defines different sizes for the dense layer
-      (32, 64, 128).
+### 3. **Filter Non-Null Data**
 
-2.  **Results Initialization**:
+- After simulations, non-null matrices are filtered out using
+  `filter_non_null`, which removes invalid results and updates
+  `matrices`, `theta`, and `N` accordingly.
 
-    - Creates an empty `data.table` called `results` to store the
-      performance metrics of each model configuration.
+### 4. **Prepare Data for TensorFlow**
 
-3.  **Hyperparameter Combination Loop**:
+- The simulation data is then transformed to be used in TensorFlow via
+  `prepare_data_for_tensorflow`, which likely reshapes the data into the
+  format needed for model training.
 
-    - Nested loops iterate over every combination of the
-      hyperparameters.
+### 5. **Data Adjustment and Saving**
 
-    - For each combination:
+- The `theta` matrix is adjusted by converting the `crate` column using
+  the logistic (sigmoid) function (`plogis(crate / 10)`).
 
-      - **Model Training**:
+- There is an option to save the data (`theta` and the reshaped arrays)
+  using `saveRDS`, though it’s commented out.
 
-        - Prints the current configuration being trained.
+### 6. **Split Data into Training and Testing Sets**
 
-        - Builds the CNN model using the `build_cnn_model` function with
-          the current hyperparameters.
+- The data is split into training and testing sets using `split_data`,
+  which returns `train`, `test`, and the number of training examples
+  (`N_train`).
 
-        - Trains the model on the provided training data using
-          `train_model`.
+### 7. **Define Hyperparameter Grid**
 
-      - **Model Evaluation**:
+- A grid of hyperparameters is defined using `expand.grid()`, which
+  includes options for:
 
-        - Evaluates the model on the test data using `evaluate_model`.
+  - Number of filters in the convolutional layer (`filters`).
 
-        - Calculates the mean MAE from the evaluation results.
+  - Kernel sizes (`kernel_size`).
 
-      - **Results Recording**:
+  - Activation functions for the convolutional and dense layers
+    (`activation_conv`, `activation_dense`).
 
-        - Appends the current hyperparameter settings and the
-          corresponding mean MAE to the `results` table.
+  - Pooling size (`pool_size`).
 
-        - Prints the mean MAE for the current configuration.
+  - Optimizer (`adam`).
 
-4.  **Return Statement**:
+  - Loss functions (`mse`, `mae`).
 
-    - After all combinations have been evaluated, the function returns
-      the `results` table containing all configurations and their mean
-      MAE scores.
+  - Number of epochs (`epochs`).
 
-# Running the Process to Find the Best Model
+### 8. **Hyperparameter Tuning Loop**
+
+- A loop iterates through each combination of hyperparameters in
+  `hyper_grid`.
+
+- For each combination, the function prints the current model number and
+  extracts the respective hyperparameters.
+
+- A random seed (`seed = 331`) is set for reproducibility.
+
+- The function then calls `build_and_train_model` to build, compile, and
+  train the CNN model.
+
+- If an error occurs during model training, it is caught using
+  `tryCatch`, and the iteration moves to the next combination.
+
+### 9. **Evaluate Models**
+
+- After training, the model’s performance is evaluated using mean
+  absolute errors (MAEs).
+
+- If the current model’s average MAE is the best so far, the function
+  stores the model, predictions, MAEs, and corresponding hyperparameters
+  as the best model.
+
+### 10. **Display Best Model**
+
+- After the hyperparameter tuning loop, the function prints the best
+  hyperparameters and the lowest MAE achieved.
+
+### 11. **Visualize Results**
+
+- Finally, the function calls `visualize_results` to display the
+  predictions and compare them to the true values using the test set,
+  `theta2`, and other relevant metrics.
+
+# Results
 
 ``` r
-N <- 2e4
+# Run the main function with specified parameters
+N <- 2e4   
 n <- 5000
 ndays <- 50
 ncores <- 20
-
-# Prepare the dataset
-pipeline_data <- main_pipeline(N, n, ndays, ncores)
-train <- pipeline_data$train
-test <- pipeline_data$test
-theta2 <- pipeline_data$theta2
-arrays_1d <- pipeline_data$arrays_1d
-
-# Define the input shape and number of output units
-input_shape <- dim(arrays_1d)[-1]  # Shape excluding the batch size
-output_units <- ncol(theta2)
-
-# Run the CNN model experiments
-results <- experiment_cnn_models(train, test, theta2, input_shape, output_units)
+main(N, n, ndays, ncores)
 ```
 
-
-    Training model with filters=16, kernel_size=3x3, activation=relu, dense_units=32
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7484 - loss: 0.0233
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8330 - loss: 0.0058
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8515 - loss: 0.0043
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8641 - loss: 0.0038
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8708 - loss: 0.0036
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8765 - loss: 0.0034
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8809 - loss: 0.0033
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8885 - loss: 0.0032
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8939 - loss: 0.0031
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8970 - loss: 0.0031
+    Testing model 1 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02147163 0.03139945 0.07254959 0.02469232 
-    Mean MAE for this configuration: 0.03752825 
-
-    Training model with filters=16, kernel_size=3x3, activation=relu, dense_units=64
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7342 - loss: 0.0419
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8134 - loss: 0.0076
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8464 - loss: 0.0050
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8637 - loss: 0.0043
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8727 - loss: 0.0038
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8798 - loss: 0.0035
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8879 - loss: 0.0033
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8897 - loss: 0.0032
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8920 - loss: 0.0031
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8946 - loss: 0.0031
+    Testing model 2 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01946953 0.03404719 0.07397494 0.03093267 
-    Mean MAE for this configuration: 0.03960608 
-
-    Training model with filters=16, kernel_size=3x3, activation=relu, dense_units=128
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7433 - loss: 0.0671
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.7874 - loss: 0.0174
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8415 - loss: 0.0053
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8618 - loss: 0.0044
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8689 - loss: 0.0040
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8757 - loss: 0.0037
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8837 - loss: 0.0034
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8901 - loss: 0.0033
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8946 - loss: 0.0032
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8963 - loss: 0.0031
+    Testing model 3 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01529082 0.03229686 0.07576668 0.02316660 
-    Mean MAE for this configuration: 0.03663024 
-
-    Training model with filters=16, kernel_size=3x3, activation=linear, dense_units=32
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8155 - loss: 0.1343
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7544 - loss: 0.0299
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8491 - loss: 0.0054
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8634 - loss: 0.0045
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8702 - loss: 0.0042
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8737 - loss: 0.0039
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8777 - loss: 0.0038
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8790 - loss: 0.0037
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8804 - loss: 0.0036
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8803 - loss: 0.0035
+    Testing model 4 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02447173 0.03291609 0.07738921 0.03115186 
-    Mean MAE for this configuration: 0.04148222 
-
-    Training model with filters=16, kernel_size=3x3, activation=linear, dense_units=64
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.8124 - loss: 0.1313
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7933 - loss: 0.1232
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7306 - loss: 0.0449
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8451 - loss: 0.0058
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8661 - loss: 0.0044
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8719 - loss: 0.0041
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8756 - loss: 0.0039
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8786 - loss: 0.0038
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8782 - loss: 0.0037
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8801 - loss: 0.0037
+    Testing model 5 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02517450 0.03631274 0.07748089 0.04171583 
-    Mean MAE for this configuration: 0.04517099 
-
-    Training model with filters=16, kernel_size=3x3, activation=linear, dense_units=128
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.8127 - loss: 0.1404
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8267 - loss: 0.1337
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8202 - loss: 0.1434
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8216 - loss: 0.1349
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8208 - loss: 0.1327
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8196 - loss: 0.1315
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8251 - loss: 0.1303
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8286 - loss: 0.1299
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8056 - loss: 0.1230
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7201 - loss: 0.0693
+    Testing model 6 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.20936182 0.03776354 0.29914916 0.06663654 
-    Mean MAE for this configuration: 0.1532278 
-
-    Training model with filters=16, kernel_size=5x5, activation=relu, dense_units=32
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7740 - loss: 0.0319
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8432 - loss: 0.0057
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8639 - loss: 0.0042
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8789 - loss: 0.0036
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8876 - loss: 0.0034
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8936 - loss: 0.0033
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8941 - loss: 0.0032
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8949 - loss: 0.0031
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8956 - loss: 0.0031
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8969 - loss: 0.0031
+    Testing model 7 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01399086 0.03409769 0.07380494 0.02533926 
-    Mean MAE for this configuration: 0.03680819 
-
-    Training model with filters=16, kernel_size=5x5, activation=relu, dense_units=64
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7507 - loss: 0.0401
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8217 - loss: 0.0057
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8539 - loss: 0.0041
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8688 - loss: 0.0036
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8798 - loss: 0.0034
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8870 - loss: 0.0032
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8921 - loss: 0.0031
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8997 - loss: 0.0031
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.9028 - loss: 0.0030
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.9052 - loss: 0.0029
+    Testing model 8 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01402642 0.03514259 0.07508233 0.01858595 
-    Mean MAE for this configuration: 0.03570932 
-
-    Training model with filters=16, kernel_size=5x5, activation=relu, dense_units=128
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7392 - loss: 0.0482
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8258 - loss: 0.0141
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8641 - loss: 0.0042
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8778 - loss: 0.0036
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8882 - loss: 0.0033
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8927 - loss: 0.0032
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.9003 - loss: 0.0030
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.9020 - loss: 0.0030
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.9033 - loss: 0.0029
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.9040 - loss: 0.0029
+    Testing model 9 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01412662 0.03296492 0.07363224 0.02382164 
-    Mean MAE for this configuration: 0.03613636 
-
-    Training model with filters=16, kernel_size=5x5, activation=linear, dense_units=32
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7344 - loss: 0.0621
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8143 - loss: 0.0127
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8652 - loss: 0.0046
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8691 - loss: 0.0040
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8728 - loss: 0.0039
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8744 - loss: 0.0038
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8779 - loss: 0.0038
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8800 - loss: 0.0037
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8824 - loss: 0.0036
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8849 - loss: 0.0036
+    Testing model 10 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02714988 0.03230574 0.07822272 0.03135192 
-    Mean MAE for this configuration: 0.04225757 
-
-    Training model with filters=16, kernel_size=5x5, activation=linear, dense_units=64
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7830 - loss: 0.0902
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8248 - loss: 0.0116
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8659 - loss: 0.0047
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8713 - loss: 0.0042
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8758 - loss: 0.0040
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8779 - loss: 0.0039
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8772 - loss: 0.0039
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8763 - loss: 0.0038
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8784 - loss: 0.0037
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8797 - loss: 0.0036
+    Testing model 11 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.03438376 0.03374374 0.07700405 0.03190838 
-    Mean MAE for this configuration: 0.04425998 
-
-    Training model with filters=16, kernel_size=5x5, activation=linear, dense_units=128
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7875 - loss: 0.1148
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7932 - loss: 0.0243
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8587 - loss: 0.0050
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8690 - loss: 0.0044
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8724 - loss: 0.0041
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8714 - loss: 0.0039
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8741 - loss: 0.0038
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8767 - loss: 0.0037
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8752 - loss: 0.0037
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8764 - loss: 0.0036
+    Testing model 12 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01753437 0.03516706 0.07625611 0.03154935 
-    Mean MAE for this configuration: 0.04012672 
-
-    Training model with filters=16, kernel_size=3x5, activation=relu, dense_units=32
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7486 - loss: 0.0281
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8216 - loss: 0.0052
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8556 - loss: 0.0041
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8706 - loss: 0.0037
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8791 - loss: 0.0034
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8862 - loss: 0.0033
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8907 - loss: 0.0032
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8924 - loss: 0.0031
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8948 - loss: 0.0031
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8949 - loss: 0.0030
+    Testing model 13 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01574871 0.03364821 0.07363045 0.03009332 
-    Mean MAE for this configuration: 0.03828017 
-
-    Training model with filters=16, kernel_size=3x5, activation=relu, dense_units=64
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7675 - loss: 0.0321
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8414 - loss: 0.0050
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8656 - loss: 0.0040
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8794 - loss: 0.0036
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8864 - loss: 0.0034
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8913 - loss: 0.0032
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8947 - loss: 0.0031
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8964 - loss: 0.0030
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.9003 - loss: 0.0030
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.9025 - loss: 0.0029
+    Testing model 14 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01875649 0.03524869 0.07490055 0.02041817 
-    Mean MAE for this configuration: 0.03733097 
-
-    Training model with filters=16, kernel_size=3x5, activation=relu, dense_units=128
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7447 - loss: 0.0501
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8268 - loss: 0.0192
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8516 - loss: 0.0098
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8793 - loss: 0.0037
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8896 - loss: 0.0033
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8956 - loss: 0.0032
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8992 - loss: 0.0031
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9005 - loss: 0.0030
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9030 - loss: 0.0029
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9055 - loss: 0.0029
+    Testing model 15 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01629789 0.03287565 0.07494970 0.02011277 
-    Mean MAE for this configuration: 0.036059 
-
-    Training model with filters=16, kernel_size=3x5, activation=linear, dense_units=32
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7271 - loss: 0.0617
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8189 - loss: 0.0151
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8622 - loss: 0.0047
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8703 - loss: 0.0041
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8739 - loss: 0.0039
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8768 - loss: 0.0038
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8779 - loss: 0.0037
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8812 - loss: 0.0036
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8827 - loss: 0.0036
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8834 - loss: 0.0035
+    Testing model 16 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.03202427 0.03337585 0.07844307 0.03074780 
-    Mean MAE for this configuration: 0.04364775 
-
-    Training model with filters=16, kernel_size=3x5, activation=linear, dense_units=64
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7669 - loss: 0.1003
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8030 - loss: 0.0282
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8596 - loss: 0.0053
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8670 - loss: 0.0044
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8737 - loss: 0.0041
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8751 - loss: 0.0040
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8785 - loss: 0.0038
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8803 - loss: 0.0037
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8806 - loss: 0.0037
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8803 - loss: 0.0036
+    Testing model 17 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02492167 0.03501169 0.08069073 0.03322711 
-    Mean MAE for this configuration: 0.0434628 
-
-    Training model with filters=16, kernel_size=3x5, activation=linear, dense_units=128
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.8167 - loss: 0.1286
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7216 - loss: 0.0649
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8442 - loss: 0.0061
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8661 - loss: 0.0045
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8739 - loss: 0.0042
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8746 - loss: 0.0040
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8763 - loss: 0.0038
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8804 - loss: 0.0036
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8800 - loss: 0.0036
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8809 - loss: 0.0035
+    Testing model 18 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02512083 0.03251516 0.07563982 0.03460740 
-    Mean MAE for this configuration: 0.0419708 
-
-    Training model with filters=32, kernel_size=3x3, activation=relu, dense_units=32
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7447 - loss: 0.0299
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8135 - loss: 0.0064
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8477 - loss: 0.0044
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8644 - loss: 0.0039
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8757 - loss: 0.0036
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8820 - loss: 0.0034
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8865 - loss: 0.0033
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8911 - loss: 0.0032
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8944 - loss: 0.0031
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8981 - loss: 0.0031
+    Testing model 19 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01907885 0.03312735 0.07318218 0.02534506 
-    Mean MAE for this configuration: 0.03768336 
-
-    Training model with filters=32, kernel_size=3x3, activation=relu, dense_units=64
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7759 - loss: 0.0300
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8516 - loss: 0.0050
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8744 - loss: 0.0039
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8857 - loss: 0.0035
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8924 - loss: 0.0033
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8963 - loss: 0.0032
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8987 - loss: 0.0031
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9003 - loss: 0.0030
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9018 - loss: 0.0030
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9033 - loss: 0.0030
+    Testing model 20 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01786832 0.03111221 0.07763035 0.02076183 
-    Mean MAE for this configuration: 0.03684318 
-
-    Training model with filters=32, kernel_size=3x3, activation=relu, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7272 - loss: 0.0421
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8104 - loss: 0.0205
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8426 - loss: 0.0185
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8676 - loss: 0.0112
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8775 - loss: 0.0036
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8853 - loss: 0.0033
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8937 - loss: 0.0032
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8953 - loss: 0.0031
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8963 - loss: 0.0030
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8997 - loss: 0.0030
+    Testing model 21 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01399858 0.03392113 0.07666556 0.02645521 
-    Mean MAE for this configuration: 0.03776012 
-
-    Training model with filters=32, kernel_size=3x3, activation=linear, dense_units=32
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.8075 - loss: 0.1315
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8207 - loss: 0.1302
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8140 - loss: 0.1270
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8203 - loss: 0.1242
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8192 - loss: 0.1157
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.7955 - loss: 0.0239
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8719 - loss: 0.0042
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8804 - loss: 0.0037
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8837 - loss: 0.0035
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8873 - loss: 0.0035
+    Testing model 22 of 24 
     188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02188040 0.03264577 0.07962232 0.03052967 
-    Mean MAE for this configuration: 0.04116954 
-
-    Training model with filters=32, kernel_size=3x3, activation=linear, dense_units=64
-    Epoch 1/10
-    438/438 - 2s - 3ms/step - accuracy: 0.8169 - loss: 0.1350
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8204 - loss: 0.1331
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8211 - loss: 0.1323
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8214 - loss: 0.1301
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8217 - loss: 0.1278
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8204 - loss: 0.1265
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8255 - loss: 0.1250
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8146 - loss: 0.1262
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8343 - loss: 0.1187
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8159 - loss: 0.0799
+    Testing model 23 of 24 
     188/188 - 0s - 1ms/step
-       preval     crate     ptran      prec 
-    0.2094207 0.3653406 0.2992066 0.0437759 
-    Mean MAE for this configuration: 0.2294359 
-
-    Training model with filters=32, kernel_size=3x3, activation=linear, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8187 - loss: 0.1377
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8203 - loss: 0.1395
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8198 - loss: 0.1343
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8200 - loss: 0.1321
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8191 - loss: 0.1333
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1327
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8203 - loss: 0.1338
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8204 - loss: 0.1330
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8202 - loss: 0.1327
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8198 - loss: 0.1323
+    Testing model 24 of 24 
     188/188 - 0s - 1ms/step
-       preval     crate     ptran      prec 
-    0.2095984 0.3790727 0.2992234 0.4651087 
-    Mean MAE for this configuration: 0.3382508 
+    Best model parameters:
+       filters kernel_size activation_conv activation_dense pool_size optimizer
+    16      16        3, 5            relu          sigmoid      2, 2      adam
+       loss epochs        MAE
+    16  mae     50 0.03541653
+    Best MAE: 0.03541653 
 
-    Training model with filters=32, kernel_size=5x5, activation=relu, dense_units=32
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7682 - loss: 0.0212
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8313 - loss: 0.0052
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8540 - loss: 0.0041
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8657 - loss: 0.0037
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8744 - loss: 0.0034
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8842 - loss: 0.0032
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8930 - loss: 0.0031
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.9005 - loss: 0.0030
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.9029 - loss: 0.0029
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.9045 - loss: 0.0029
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01694479 0.03180783 0.07457388 0.01833089 
-    Mean MAE for this configuration: 0.03541435 
+![](CNN_SIR_all_files/figure-commonmark/unnamed-chunk-18-1.png)
 
-    Training model with filters=32, kernel_size=5x5, activation=relu, dense_units=64
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7876 - loss: 0.0286
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8561 - loss: 0.0046
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8760 - loss: 0.0037
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8912 - loss: 0.0034
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8959 - loss: 0.0032
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9004 - loss: 0.0031
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9030 - loss: 0.0030
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9042 - loss: 0.0029
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9074 - loss: 0.0029
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9070 - loss: 0.0029
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01512548 0.03283650 0.07760507 0.02195139 
-    Mean MAE for this configuration: 0.03687961 
-
-    Training model with filters=32, kernel_size=5x5, activation=relu, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 3ms/step - accuracy: 0.7454 - loss: 0.0402
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8395 - loss: 0.0090
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8786 - loss: 0.0038
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8903 - loss: 0.0034
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8980 - loss: 0.0032
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8987 - loss: 0.0031
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9016 - loss: 0.0030
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9037 - loss: 0.0030
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9038 - loss: 0.0029
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9054 - loss: 0.0029
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01592746 0.03265400 0.07516760 0.01983388 
-    Mean MAE for this configuration: 0.03589573 
-
-    Training model with filters=32, kernel_size=5x5, activation=linear, dense_units=32
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7401 - loss: 0.0696
-    Epoch 2/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8496 - loss: 0.0060
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8720 - loss: 0.0042
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8772 - loss: 0.0039
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8803 - loss: 0.0037
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8808 - loss: 0.0036
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8839 - loss: 0.0036
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8834 - loss: 0.0035
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8848 - loss: 0.0035
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8844 - loss: 0.0034
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02960526 0.03389536 0.07744181 0.02845635 
-    Mean MAE for this configuration: 0.04234969 
-
-    Training model with filters=32, kernel_size=5x5, activation=linear, dense_units=64
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7960 - loss: 0.1134
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8190 - loss: 0.0089
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8661 - loss: 0.0044
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8749 - loss: 0.0040
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8789 - loss: 0.0038
-    Epoch 6/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8812 - loss: 0.0037
-    Epoch 7/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8817 - loss: 0.0036
-    Epoch 8/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8832 - loss: 0.0035
-    Epoch 9/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8857 - loss: 0.0035
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8857 - loss: 0.0034
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01760595 0.03315756 0.07766378 0.03195353 
-    Mean MAE for this configuration: 0.0400952 
-
-    Training model with filters=32, kernel_size=5x5, activation=linear, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 3ms/step - accuracy: 0.8186 - loss: 0.1390
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8300 - loss: 0.1347
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.7755 - loss: 0.1231
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.7294 - loss: 0.0437
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8750 - loss: 0.0045
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8852 - loss: 0.0039
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8860 - loss: 0.0037
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8869 - loss: 0.0036
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8870 - loss: 0.0035
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8855 - loss: 0.0034
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02154632 0.03478256 0.07556873 0.04248825 
-    Mean MAE for this configuration: 0.04359647 
-
-    Training model with filters=32, kernel_size=3x5, activation=relu, dense_units=32
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7747 - loss: 0.0168
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8374 - loss: 0.0049
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8665 - loss: 0.0040
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8830 - loss: 0.0035
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8922 - loss: 0.0033
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8973 - loss: 0.0031
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8994 - loss: 0.0030
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9010 - loss: 0.0030
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9027 - loss: 0.0029
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9020 - loss: 0.0029
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01331616 0.03247657 0.07385948 0.02191113 
-    Mean MAE for this configuration: 0.03539084 
-
-    Training model with filters=32, kernel_size=3x5, activation=relu, dense_units=64
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7772 - loss: 0.0291
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8576 - loss: 0.0044
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8804 - loss: 0.0035
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8912 - loss: 0.0032
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8976 - loss: 0.0031
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9033 - loss: 0.0030
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9062 - loss: 0.0029
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9072 - loss: 0.0029
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9085 - loss: 0.0028
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9087 - loss: 0.0028
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01793305 0.03109506 0.07198768 0.01781983 
-    Mean MAE for this configuration: 0.0347089 
-
-    Training model with filters=32, kernel_size=3x5, activation=relu, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7483 - loss: 0.0496
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8266 - loss: 0.0157
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8719 - loss: 0.0041
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8866 - loss: 0.0035
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8932 - loss: 0.0032
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8995 - loss: 0.0031
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9020 - loss: 0.0030
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9057 - loss: 0.0029
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9075 - loss: 0.0029
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9082 - loss: 0.0028
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01375671 0.03301882 0.07411041 0.01829217 
-    Mean MAE for this configuration: 0.03479453 
-
-    Training model with filters=32, kernel_size=3x5, activation=linear, dense_units=32
-    Epoch 1/10
-    438/438 - 1s - 3ms/step - accuracy: 0.7392 - loss: 0.0745
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8461 - loss: 0.0063
-    Epoch 3/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8711 - loss: 0.0043
-    Epoch 4/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8774 - loss: 0.0039
-    Epoch 5/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8806 - loss: 0.0038
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8827 - loss: 0.0036
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8832 - loss: 0.0036
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8839 - loss: 0.0035
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8832 - loss: 0.0035
-    Epoch 10/10
-    438/438 - 1s - 1ms/step - accuracy: 0.8832 - loss: 0.0035
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02193437 0.03398649 0.08244270 0.02995348 
-    Mean MAE for this configuration: 0.04207926 
-
-    Training model with filters=32, kernel_size=3x5, activation=linear, dense_units=64
-    Epoch 1/10
-    438/438 - 2s - 3ms/step - accuracy: 0.8188 - loss: 0.1304
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8136 - loss: 0.1249
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.7046 - loss: 0.0648
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8676 - loss: 0.0048
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8799 - loss: 0.0040
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8840 - loss: 0.0037
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8865 - loss: 0.0036
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8882 - loss: 0.0035
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8887 - loss: 0.0034
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8894 - loss: 0.0033
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01620391 0.03480297 0.07674050 0.02762158 
-    Mean MAE for this configuration: 0.03884224 
-
-    Training model with filters=32, kernel_size=3x5, activation=linear, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8095 - loss: 0.1317
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8228 - loss: 0.1288
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.7943 - loss: 0.1265
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.6958 - loss: 0.1099
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.7070 - loss: 0.0658
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8315 - loss: 0.0424
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8216 - loss: 0.0424
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8650 - loss: 0.0422
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8746 - loss: 0.0422
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8632 - loss: 0.0423
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.20931609 0.04285909 0.29922203 0.02822976 
-    Mean MAE for this configuration: 0.1449067 
-
-    Training model with filters=64, kernel_size=3x3, activation=relu, dense_units=32
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7858 - loss: 0.0153
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8425 - loss: 0.0043
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8651 - loss: 0.0037
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8822 - loss: 0.0033
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8879 - loss: 0.0031
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8930 - loss: 0.0031
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8941 - loss: 0.0030
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8967 - loss: 0.0030
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8992 - loss: 0.0030
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9016 - loss: 0.0029
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02070135 0.03151289 0.07209245 0.02176060 
-    Mean MAE for this configuration: 0.03651682 
-
-    Training model with filters=64, kernel_size=3x3, activation=relu, dense_units=64
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7284 - loss: 0.0336
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8172 - loss: 0.0077
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8545 - loss: 0.0041
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8734 - loss: 0.0036
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8800 - loss: 0.0034
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8897 - loss: 0.0032
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8914 - loss: 0.0031
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8932 - loss: 0.0030
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8944 - loss: 0.0030
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8962 - loss: 0.0029
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01922012 0.03270522 0.07911101 0.02482758 
-    Mean MAE for this configuration: 0.03896598 
-
-    Training model with filters=64, kernel_size=3x3, activation=relu, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 5ms/step - accuracy: 0.7498 - loss: 0.0519
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8263 - loss: 0.0237
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8749 - loss: 0.0038
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8854 - loss: 0.0033
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8880 - loss: 0.0032
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8927 - loss: 0.0031
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8949 - loss: 0.0030
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8974 - loss: 0.0030
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9010 - loss: 0.0029
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9060 - loss: 0.0029
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01247352 0.03307977 0.07320733 0.02285556 
-    Mean MAE for this configuration: 0.03540405 
-
-    Training model with filters=64, kernel_size=3x3, activation=linear, dense_units=32
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8193 - loss: 0.1430
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8199 - loss: 0.1434
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8211 - loss: 0.1413
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8130 - loss: 0.1415
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8173 - loss: 0.1361
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1435
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    188/188 - 0s - 1ms/step
-       preval     crate     ptran      prec 
-    0.2094271 0.3790987 0.2992234 0.4993451 
-    Mean MAE for this configuration: 0.3467736 
-
-    Training model with filters=64, kernel_size=3x3, activation=linear, dense_units=64
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8168 - loss: 0.1298
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8171 - loss: 0.1299
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8210 - loss: 0.1275
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8232 - loss: 0.1266
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8147 - loss: 0.1289
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8226 - loss: 0.1261
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8225 - loss: 0.1261
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8178 - loss: 0.1253
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8263 - loss: 0.1245
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8263 - loss: 0.1248
-    188/188 - 0s - 1ms/step
-       preval     crate     ptran      prec 
-    0.2094269 0.3787076 0.2992168 0.4118670 
-    Mean MAE for this configuration: 0.3248046 
-
-    Training model with filters=64, kernel_size=3x3, activation=linear, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8118 - loss: 0.1404
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8172 - loss: 0.1419
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8210 - loss: 0.1352
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8198 - loss: 0.1397
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8199 - loss: 0.1419
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8198 - loss: 0.1418
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8198 - loss: 0.1372
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8198 - loss: 0.1368
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8187 - loss: 0.1406
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8198 - loss: 0.1388
-    188/188 - 0s - 1ms/step
-       preval     crate     ptran      prec 
-    0.2094271 0.3791292 0.2992234 0.4739503 
-    Mean MAE for this configuration: 0.3404325 
-
-    Training model with filters=64, kernel_size=5x5, activation=relu, dense_units=32
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7913 - loss: 0.0110
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8586 - loss: 0.0042
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8790 - loss: 0.0035
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8921 - loss: 0.0032
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8979 - loss: 0.0031
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8979 - loss: 0.0030
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9026 - loss: 0.0029
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9035 - loss: 0.0029
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9073 - loss: 0.0028
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9073 - loss: 0.0028
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01333550 0.03212444 0.07332928 0.01838902 
-    Mean MAE for this configuration: 0.03429456 
-
-    Training model with filters=64, kernel_size=5x5, activation=relu, dense_units=64
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7279 - loss: 0.0469
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8372 - loss: 0.0051
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8779 - loss: 0.0036
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8880 - loss: 0.0032
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8932 - loss: 0.0031
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8969 - loss: 0.0030
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8990 - loss: 0.0029
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9041 - loss: 0.0029
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9055 - loss: 0.0028
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9054 - loss: 0.0028
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01249961 0.03247475 0.07375686 0.02032560 
-    Mean MAE for this configuration: 0.03476421 
-
-    Training model with filters=64, kernel_size=5x5, activation=relu, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7755 - loss: 0.0191
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8686 - loss: 0.0039
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8864 - loss: 0.0033
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8925 - loss: 0.0031
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9001 - loss: 0.0030
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9025 - loss: 0.0029
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9036 - loss: 0.0029
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9070 - loss: 0.0028
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9076 - loss: 0.0028
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9078 - loss: 0.0027
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01456389 0.03451676 0.07373209 0.01703268 
-    Mean MAE for this configuration: 0.03496136 
-
-    Training model with filters=64, kernel_size=5x5, activation=linear, dense_units=32
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7533 - loss: 0.0635
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8369 - loss: 0.0058
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8621 - loss: 0.0042
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8737 - loss: 0.0038
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8788 - loss: 0.0036
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8797 - loss: 0.0035
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8814 - loss: 0.0035
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8829 - loss: 0.0034
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8837 - loss: 0.0034
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8856 - loss: 0.0034
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01876336 0.03319909 0.08052284 0.03108091 
-    Mean MAE for this configuration: 0.04089155 
-
-    Training model with filters=64, kernel_size=5x5, activation=linear, dense_units=64
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8143 - loss: 0.1325
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.7929 - loss: 0.0309
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8714 - loss: 0.0042
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8814 - loss: 0.0038
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8835 - loss: 0.0036
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8822 - loss: 0.0035
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8842 - loss: 0.0035
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8852 - loss: 0.0034
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8881 - loss: 0.0034
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8893 - loss: 0.0033
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02334054 0.03512780 0.07785099 0.02664145 
-    Mean MAE for this configuration: 0.04074019 
-
-    Training model with filters=64, kernel_size=5x5, activation=linear, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8253 - loss: 0.1339
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8203 - loss: 0.1326
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1391
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    188/188 - 0s - 1ms/step
-       preval     crate     ptran      prec 
-    0.2094271 0.3790988 0.2992234 0.4993458 
-    Mean MAE for this configuration: 0.3467738 
-
-    Training model with filters=64, kernel_size=3x5, activation=relu, dense_units=32
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8074 - loss: 0.0118
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8599 - loss: 0.0045
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8781 - loss: 0.0037
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8825 - loss: 0.0034
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8873 - loss: 0.0032
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8889 - loss: 0.0031
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8934 - loss: 0.0031
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8952 - loss: 0.0030
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8976 - loss: 0.0030
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8973 - loss: 0.0029
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01279331 0.03201401 0.07628702 0.02195548 
-    Mean MAE for this configuration: 0.03576245 
-
-    Training model with filters=64, kernel_size=3x5, activation=relu, dense_units=64
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7356 - loss: 0.0309
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8527 - loss: 0.0047
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8796 - loss: 0.0037
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8898 - loss: 0.0033
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8951 - loss: 0.0031
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8995 - loss: 0.0030
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9017 - loss: 0.0030
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8999 - loss: 0.0029
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9047 - loss: 0.0029
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9055 - loss: 0.0029
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01882770 0.03273035 0.07514253 0.02023832 
-    Mean MAE for this configuration: 0.03673472 
-
-    Training model with filters=64, kernel_size=3x5, activation=relu, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 5ms/step - accuracy: 0.7890 - loss: 0.0179
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8599 - loss: 0.0041
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8732 - loss: 0.0035
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8821 - loss: 0.0032
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8900 - loss: 0.0031
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8969 - loss: 0.0030
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9022 - loss: 0.0029
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9038 - loss: 0.0029
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9040 - loss: 0.0028
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9071 - loss: 0.0028
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01443516 0.03302710 0.07488399 0.02000989 
-    Mean MAE for this configuration: 0.03558903 
-
-    Training model with filters=64, kernel_size=3x5, activation=linear, dense_units=32
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7773 - loss: 0.0965
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8315 - loss: 0.0062
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8714 - loss: 0.0041
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8803 - loss: 0.0038
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8832 - loss: 0.0036
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8832 - loss: 0.0035
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8834 - loss: 0.0034
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8857 - loss: 0.0034
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8914 - loss: 0.0033
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8909 - loss: 0.0033
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01915425 0.03289284 0.07924669 0.02778440 
-    Mean MAE for this configuration: 0.03976954 
-
-    Training model with filters=64, kernel_size=3x5, activation=linear, dense_units=64
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8144 - loss: 0.1288
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8168 - loss: 0.1207
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.7825 - loss: 0.0252
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8744 - loss: 0.0041
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8795 - loss: 0.0037
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8854 - loss: 0.0035
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8866 - loss: 0.0034
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8869 - loss: 0.0034
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8876 - loss: 0.0034
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8857 - loss: 0.0033
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.02117387 0.03577308 0.07521690 0.03079652 
-    Mean MAE for this configuration: 0.0407401 
-
-    Training model with filters=64, kernel_size=3x5, activation=linear, dense_units=128
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.8124 - loss: 0.1377
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1429
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8201 - loss: 0.1434
-    188/188 - 0s - 1ms/step
-       preval     crate     ptran      prec 
-    0.2094270 0.3790987 0.2992234 0.4993458 
-    Mean MAE for this configuration: 0.3467737 
-
-``` r
-# Display the results of all configurations and their MAEs
-print(results)
-```
-
-        filters kernel_size activation dense_units        MAE
-     1:      16         3x3       relu          32 0.03752825
-     2:      16         3x3       relu          64 0.03960608
-     3:      16         3x3       relu         128 0.03663024
-     4:      16         3x3     linear          32 0.04148222
-     5:      16         3x3     linear          64 0.04517099
-     6:      16         3x3     linear         128 0.15322776
-     7:      16         5x5       relu          32 0.03680819
-     8:      16         5x5       relu          64 0.03570932
-     9:      16         5x5       relu         128 0.03613636
-    10:      16         5x5     linear          32 0.04225757
-    11:      16         5x5     linear          64 0.04425998
-    12:      16         5x5     linear         128 0.04012672
-    13:      16         3x5       relu          32 0.03828017
-    14:      16         3x5       relu          64 0.03733097
-    15:      16         3x5       relu         128 0.03605900
-    16:      16         3x5     linear          32 0.04364775
-    17:      16         3x5     linear          64 0.04346280
-    18:      16         3x5     linear         128 0.04197080
-    19:      32         3x3       relu          32 0.03768336
-    20:      32         3x3       relu          64 0.03684318
-    21:      32         3x3       relu         128 0.03776012
-    22:      32         3x3     linear          32 0.04116954
-    23:      32         3x3     linear          64 0.22943593
-    24:      32         3x3     linear         128 0.33825079
-    25:      32         5x5       relu          32 0.03541435
-    26:      32         5x5       relu          64 0.03687961
-    27:      32         5x5       relu         128 0.03589573
-    28:      32         5x5     linear          32 0.04234969
-    29:      32         5x5     linear          64 0.04009520
-    30:      32         5x5     linear         128 0.04359647
-    31:      32         3x5       relu          32 0.03539084
-    32:      32         3x5       relu          64 0.03470890
-    33:      32         3x5       relu         128 0.03479453
-    34:      32         3x5     linear          32 0.04207926
-    35:      32         3x5     linear          64 0.03884224
-    36:      32         3x5     linear         128 0.14490674
-    37:      64         3x3       relu          32 0.03651682
-    38:      64         3x3       relu          64 0.03896598
-    39:      64         3x3       relu         128 0.03540405
-    40:      64         3x3     linear          32 0.34677357
-    41:      64         3x3     linear          64 0.32480458
-    42:      64         3x3     linear         128 0.34043250
-    43:      64         5x5       relu          32 0.03429456
-    44:      64         5x5       relu          64 0.03476421
-    45:      64         5x5       relu         128 0.03496136
-    46:      64         5x5     linear          32 0.04089155
-    47:      64         5x5     linear          64 0.04074019
-    48:      64         5x5     linear         128 0.34677376
-    49:      64         3x5       relu          32 0.03576245
-    50:      64         3x5       relu          64 0.03673472
-    51:      64         3x5       relu         128 0.03558903
-    52:      64         3x5     linear          32 0.03976954
-    53:      64         3x5     linear          64 0.04074010
-    54:      64         3x5     linear         128 0.34677374
-        filters kernel_size activation dense_units        MAE
-
-``` r
-# Find the best model configuration
-find_best_model <- function(results) {
-  # Select the row with the minimum MAE
-  best_model <- results[which.min(MAE)]
-  return(best_model)
-}
-
-# Train and evaluate the best model
-train_and_evaluate_best_model <- function(best_model, train_data, test_data, theta, input_shape, output_units, epochs = 10) {
-  # Extract the best hyperparameters
-  best_filters <- best_model$filters
-  best_kernel_size <- as.integer(unlist(strsplit(best_model$kernel_size, "x")))
-  best_activation <- best_model$activation
-  best_dense_units <- best_model$dense_units
-  
-  # Build the best model
-  model <- build_cnn_model(
-    input_shape = input_shape,
-    output_units = output_units,
-    filters = best_filters,
-    kernel_size = best_kernel_size,
-    activation = best_activation,
-    dense_units = best_dense_units
-  )
-  
-  # Train the best model
-  train_model(model, train_data, epochs = epochs)
-  
-  # Evaluate the best model
-  eval_results <- evaluate_model(model, test_data, theta)
-  return(list(model = model, eval_results = eval_results))
-}
-```
-
-``` r
-plot_results <- function(pred, test_data, theta, MAEs, N, N_train) {
-  # Prepare the data for plotting
-  pred[, id := 1L:.N]
-  pred[, crate := qlogis(crate) * 10]
-  pred_long <- melt(pred, id.vars = "id")
-  
-  theta_long <- test_data$y |> as.data.table()
-  setnames(theta_long, names(theta))
-  theta_long[, id := 1L:.N]
-  theta_long[, crate := qlogis(crate) * 10]
-  theta_long <- melt(theta_long, id.vars = "id")
-  
-  alldat <- rbind(
-    cbind(pred_long, Type = "Predicted"),
-    cbind(theta_long, Type = "Observed")
-  )
-  
-  # Plot 1: Boxplot of Predicted vs Observed values
-  p1 <- ggplot(alldat, aes(x = value, colour = Type)) +
-    facet_wrap(~variable, scales = "free") +
-    geom_boxplot() +
-    labs(title = "Boxplot: Predicted vs Observed")
-  
-  print(p1)  # Display the first plot
-  
-  # Prepare data for second plot
-  alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
-  
-  vnames <- data.table(
-    variable = c("preval", "crate", "ptran", "prec"),
-    Name     = paste(
-      c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
-      sprintf("(MAE: %.2f)", MAEs)
-    )
-  )
-  
-  alldat_wide <- merge(alldat_wide, vnames, by = "variable")
-  
-  # Plot 2: Observed vs Predicted with MAE labels
-  p2 <- ggplot(alldat_wide, aes(x = Observed, y = Predicted)) +
-    facet_wrap(~ Name, scales = "free") +
-    geom_abline(slope = 1, intercept = 0) +
-    geom_point(alpha = .2) +
-    labs(
-      title    = "Observed vs Predicted (validation set)",
-      subtitle = sprintf(
-        "The model includes %i simulated datasets, of which %i were used for training.",
-        N, N_train
-      ),
-      caption  = "Predictions made using a CNN as implemented with loss function MAE."
-    )
-  
-  print(p2)  # Display the second plot
-}
-```
-
-``` r
-best_model <- find_best_model(results)
-
-print(best_model)
-```
-
-       filters kernel_size activation dense_units        MAE
-    1:      64         5x5       relu          32 0.03429456
-
-``` r
-best_model_results <- train_and_evaluate_best_model(best_model, train, test, theta2, input_shape, output_units)
-```
-
-    Epoch 1/10
-    438/438 - 2s - 4ms/step - accuracy: 0.7913 - loss: 0.0110
-    Epoch 2/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8586 - loss: 0.0042
-    Epoch 3/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8790 - loss: 0.0035
-    Epoch 4/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8921 - loss: 0.0032
-    Epoch 5/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8979 - loss: 0.0031
-    Epoch 6/10
-    438/438 - 1s - 2ms/step - accuracy: 0.8979 - loss: 0.0030
-    Epoch 7/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9026 - loss: 0.0029
-    Epoch 8/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9035 - loss: 0.0029
-    Epoch 9/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9073 - loss: 0.0028
-    Epoch 10/10
-    438/438 - 1s - 2ms/step - accuracy: 0.9073 - loss: 0.0028
-    188/188 - 0s - 1ms/step
-        preval      crate      ptran       prec 
-    0.01333550 0.03212444 0.07332928 0.01838902 
-
-``` r
-pred <- best_model_results$eval_results$pred
-MAEs <- best_model_results$eval_results$MAEs
-print(MAEs)
-```
-
-        preval      crate      ptran       prec 
-    0.01333550 0.03212444 0.07332928 0.01838902 
-
-``` r
-plot_results(pred, test, theta2, MAEs, N, floor(N * 0.7))
-```
-
-![](CNN_SIR_all_files/figure-commonmark/plotting%20the%20best%20results-1.png)
-
-![](CNN_SIR_all_files/figure-commonmark/plotting%20the%20best%20results-2.png)
+![](CNN_SIR_all_files/figure-commonmark/unnamed-chunk-18-2.png)
