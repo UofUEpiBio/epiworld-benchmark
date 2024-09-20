@@ -4,6 +4,7 @@ Find the Closest Parameters to Simulate SIR Models
 Load required libraries:
 
 ``` r
+#| label: Load required libraries
 library(data.table)
 library(parallel)
 library(keras)
@@ -472,7 +473,7 @@ main()
 
     188/188 - 0s - 1ms/step
         preval      crate      ptran       prec 
-    0.03639818 0.03265657 0.07754360 0.08081101 
+    0.03573988 0.03179343 0.07717933 0.08084482 
 
 ![](CNN_SIR_infected_only_files/figure-commonmark/Main%20execution%20function-2.png)
 
@@ -480,9 +481,14 @@ main()
 
 ![](CNN_SIR_infected_only_files/figure-commonmark/Main%20execution%20function-4.png)
 
-# Section 2:
+# Section 2
 
-# Finding the Best CNN model
+Now we can run a CNN model to find the best parameters we can use for
+our CNN model to perform
+
+This build_and_train_model function is designed to create, compile,
+train, and evaluate a convolutional neural network (CNN) model using the
+keras3 library in R for deep learning tasks.
 
 ``` r
 build_and_train_model <- function(train, test, theta, seed,
@@ -538,8 +544,36 @@ build_and_train_model <- function(train, test, theta, seed,
   # Return the MAEs and predictions
   list(pred = pred, MAEs = MAEs, model = model)
 }
+```
 
-# Function to visualize results
+- **Building the model**:
+
+  - The function begins by creating a sequential CNN model using
+    `keras3::keras_model_sequential()`.
+
+  - The first layer is a 2D convolutional layer with customizable
+    `filters`, `kernel_size`, and `activation_conv`, applied to input
+    data of shape `(height, width, 1)` (grayscale images).
+
+  - A max-pooling layer follows, which reduces spatial dimensions using
+    a pool size (`pool_size`).
+
+  - The model is then flattened to transition from 2D to 1D data.
+
+  - A dense (fully connected) layer is added with the number of units
+    equal to the number of columns in `theta` and an activation function
+    `activation_dense`.
+
+- **Compiling the model**:
+
+  - The model is compiled with an optimizer (`optimizer`), loss function
+    (`loss`), and the metric mean absolute error (`mae`) to track
+    performance.
+
+    # visualize results
+
+``` r
+#|label: Function to visualize results
 visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file = NULL) {
   pred[, id := 1L:.N]
   pred_long <- melt(pred, id.vars = "id")
@@ -593,8 +627,15 @@ visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file =
   
   print(p2)
 }
+```
 
-# Main execution function with hyperparameter tuning
+# hyperparameter tuning
+
+The `main` function orchestrates a full machine learning workflow for
+training a convolutional neural network (CNN) on simulated data.
+
+``` r
+#|label: Main execution function with hyperparameter tuning
 main <- function() {
   # Simulate data
   simulate_data()
@@ -700,12 +741,116 @@ main <- function() {
   # Visualize results
   visualize_results(best_pred, test, theta, best_MAEs, N, N_train)
 }
+```
 
-# Run the main function
+### **1. Generate Parameters and Seeds**
+
+- The function starts by generating a set of parameters (`theta`) using
+  `generate_theta`, which creates a matrix based on `N` and `n`.
+
+- It also generates random seeds (`seeds`) for each simulation using
+  `sample.int()` to ensure reproducibility.
+
+### 2. **Run Simulations**
+
+- Simulations are run using `run_simulations`, which likely generates a
+  set of matrices representing the simulated data. The inputs include
+  the number of simulations (`N`), days (`ndays`), and the number of
+  cores (`ncores`).
+
+### 3. **Filter Non-Null Data**
+
+- After simulations, non-null matrices are filtered out using
+  `filter_non_null`, which removes invalid results and updates
+  `matrices`, `theta`, and `N` accordingly.
+
+### 4. **Prepare Data for TensorFlow**
+
+- The simulation data is then transformed to be used in TensorFlow via
+  `prepare_data_for_tensorflow`, which likely reshapes the data into the
+  format needed for model training.
+
+### 5. **Data Adjustment and Saving**
+
+- The `theta` matrix is adjusted by converting the `crate` column using
+  the logistic (sigmoid) function (`plogis(crate / 10)`).
+
+- There is an option to save the data (`theta` and the reshaped arrays)
+  using `saveRDS`, though it’s commented out.
+
+### 6. **Split Data into Training and Testing Sets**
+
+- The data is split into training and testing sets using `split_data`,
+  which returns `train`, `test`, and the number of training examples
+  (`N_train`).
+
+### 7. **Define Hyperparameter Grid**
+
+- A grid of hyperparameters is defined using `expand.grid()`, which
+  includes options for:
+
+  - Number of filters in the convolutional layer (`filters`).
+
+  - Kernel sizes (`kernel_size`).
+
+  - Activation functions for the convolutional and dense layers
+    (`activation_conv`, `activation_dense`).
+
+  - Pooling size (`pool_size`).
+
+  - Optimizer (`adam`).
+
+  - Loss functions (`mse`, `mae`).
+
+  - Number of epochs (`epochs`).
+
+### 8. **Hyperparameter Tuning Loop**
+
+- A loop iterates through each combination of hyperparameters in
+  `hyper_grid`.
+
+- For each combination, the function prints the current model number and
+  extracts the respective hyperparameters.
+
+- A random seed (`seed = 331`) is set for reproducibility.
+
+- The function then calls `build_and_train_model` to build, compile, and
+  train the CNN model.
+
+- If an error occurs during model training, it is caught using
+  `tryCatch`, and the iteration moves to the next combination.
+
+### 9. **Evaluate Models**
+
+- After training, the model’s performance is evaluated using mean
+  absolute errors (MAEs).
+
+- If the current model’s average MAE is the best so far, the function
+  stores the model, predictions, MAEs, and corresponding hyperparameters
+  as the best model.
+
+### 10. **Display Best Model**
+
+- After the hyperparameter tuning loop, the function prints the best
+  hyperparameters and the lowest MAE achieved.
+
+### 11. **Visualize Results**
+
+- Finally, the function calls `visualize_results` to display the
+  predictions and compare them to the true values using the test set,
+  `theta2`, and other relevant metrics.
+
+# Results
+
+``` r
+N <- 2e4   # Adjust N as needed
+n <- 5000
+ndays <- 50
+ncores <- 20
 main()
 ```
 
-![](CNN_SIR_infected_only_files/figure-commonmark/unnamed-chunk-11-1.png)
+![](CNN_SIR_infected_only_files/figure-commonmark/Run%20the%20main%20function-1.png)
 
     Testing model 1 of 48 
     188/188 - 0s - 1ms/step
@@ -720,7 +865,7 @@ main()
     Testing model 6 of 48 
     188/188 - 0s - 1ms/step
     Testing model 7 of 48 
-    188/188 - 0s - 1000us/step
+    188/188 - 0s - 1ms/step
     Testing model 8 of 48 
     188/188 - 0s - 1ms/step
     Testing model 9 of 48 
@@ -744,7 +889,7 @@ main()
     Testing model 18 of 48 
     188/188 - 0s - 1ms/step
     Testing model 19 of 48 
-    188/188 - 0s - 1ms/step
+    188/188 - 0s - 991us/step
     Testing model 20 of 48 
     188/188 - 0s - 1ms/step
     Testing model 21 of 48 
@@ -770,11 +915,11 @@ main()
     Testing model 31 of 48 
     188/188 - 0s - 1ms/step
     Testing model 32 of 48 
-    188/188 - 0s - 997us/step
+    188/188 - 0s - 1ms/step
     Testing model 33 of 48 
     188/188 - 0s - 1ms/step
     Testing model 34 of 48 
-    188/188 - 0s - 1ms/step
+    188/188 - 0s - 998us/step
     Testing model 35 of 48 
     188/188 - 0s - 1ms/step
     Testing model 36 of 48 
@@ -792,13 +937,13 @@ main()
     Testing model 42 of 48 
     188/188 - 0s - 1ms/step
     Testing model 43 of 48 
-    188/188 - 0s - 1ms/step
+    188/188 - 0s - 978us/step
     Testing model 44 of 48 
-    188/188 - 0s - 996us/step
+    188/188 - 0s - 1ms/step
     Testing model 45 of 48 
     188/188 - 0s - 1ms/step
     Testing model 46 of 48 
-    188/188 - 0s - 1ms/step
+    188/188 - 0s - 995us/step
     Testing model 47 of 48 
     188/188 - 0s - 1ms/step
     Testing model 48 of 48 
@@ -810,6 +955,6 @@ main()
     39  mae     50 0.05267334
     Best MAE: 0.05267334 
 
-![](CNN_SIR_infected_only_files/figure-commonmark/unnamed-chunk-11-2.png)
+![](CNN_SIR_infected_only_files/figure-commonmark/Run%20the%20main%20function-2.png)
 
-![](CNN_SIR_infected_only_files/figure-commonmark/unnamed-chunk-11-3.png)
+![](CNN_SIR_infected_only_files/figure-commonmark/Run%20the%20main%20function-3.png)
