@@ -1,6 +1,8 @@
 # Implementing the CNN Model by Knowing SIR Counts to Find the Closest
 Parameters to Simulate SIR Models
 
+
+
 Installing Packages if necessary:
 
 
