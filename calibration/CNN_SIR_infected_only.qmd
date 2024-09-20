@@ -1,5 +1,9 @@
+# Implementing the CNN Model Just by Knowing the Infections Count to Find the Closest Parameters to Simulate SIR Models
+
+Load required libraries:
+
 ```{r}
-# Load required libraries
+#| label: Load required libraries
 library(data.table)
 library(parallel)
 library(keras)
@@ -7,8 +11,14 @@ library(ggplot2)
 library(reshape2)
 library(tensorflow)
 library(keras3)
+```
 
-# Function to simulate data
+# simulate data
+
+`imulate_data` function performs a simulation for epidemiological modeling using the SIR (Susceptible-Infectious-Recovered) model across multiple iterations, to generate and save data for further analysis.
+
+```{r}
+#|label: Function to simulate data
 simulate_data <- function(N = 2e4, n = 5000, ndays = 50, ncores = 20, seed = 1231, savefile = "calibration/sir.rds") {
   source("calibration/dataprep.R")
   
@@ -84,8 +94,28 @@ simulate_data <- function(N = 2e4, n = 5000, ndays = 50, ncores = 20, seed = 123
     compress = TRUE
   )
 }
+```
 
-# Function to prepare training and testing data
+**Parameters**:
+
+-   `N`: Number of simulations to run (default 20,000).
+
+-   `n`: Population size for each simulation (default 5,000).
+
+-   `ndays`: Number of days to run each simulation (default 50).
+
+-   `ncores`: Number of CPU cores used for parallel processing (default 20).
+
+-   `seed`: Random seed for reproducibility.
+
+-   `savefile`: Path to save the final output.
+
+# prepare training and testing data
+
+This function prepares simulation data for training machine learning models. It splits the data into training and test sets based on the specified training fraction, reshapes the data, and returns it in a format ready for the CNN model.
+
+```{r}
+#| label: Function to prepare training and testing data
 prepare_data_sets <- function(datafile = "calibration/sir.rds", train_fraction = 0.7) {
   sim_results <- readRDS(datafile)
   theta <- sim_results$theta
@@ -116,8 +146,14 @@ prepare_data_sets <- function(datafile = "calibration/sir.rds", train_fraction =
   
   list(train = train, test = test, theta = theta, arrays_1d = arrays_1d, N = N, N_train = N_train, N_test = N_test)
 }
+```
 
-# Function to build and train the model
+# build and train the model
+
+The `build_and_train_model` function builds, trains, and evaluates a convolutional neural network (CNN) model using the `keras3` and `tensorflow` R packages.
+
+```{r}
+#|label: Function to build and train the model
 build_and_train_model <- function(train, test, arrays_1d, theta, N_train, seed = 331, save_model_file = "sir-keras_infections_only") {
   # Build the model
   model <- keras3::keras_model_sequential()
@@ -167,8 +203,30 @@ build_and_train_model <- function(train, test, arrays_1d, theta, N_train, seed =
 
   list(pred = pred, MAEs = MAEs)
 }
+```
 
-# Function to visualize results
+### **Parameters**:
+
+-   `train`: The training data, including inputs (`x`) and targets (`y`).
+
+-   `test`: The test data for model evaluation.
+
+-   `arrays_1d`: The 1D simulation data used to define the input shape for the model.
+
+-   `theta`: The target variables from the simulations.
+
+-   `N_train`: Number of training samples.
+
+-   `seed`: A random seed for reproducibility (default: 331).
+
+-   `save_model_file`: Filename to save the model (currently unused in the code).
+
+# visualize results
+
+The `visualize_results` function generates visualizations to compare predicted values from a trained model with the test dataset's observed (true) values.
+
+```{r}
+#|label: Function to visualize results
 visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file = "calibration/sir_infections_only.png") {
   pred[, id := 1L:.N]
   pred[, crate := qlogis(crate)]
@@ -212,14 +270,18 @@ visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file =
         N,
         N_train
       ),
-      caption  = "Predictions made using a CNN as implemented with loss function MAE."
+      caption  = "Predictions made using a CNN(infections only) as implemented with loss function MAE."
     )
   print(p2)
   
-  ggsave(filename = output_file, width = 1280, height = 800, units = "px", scale = 3)
+ 
 }
+```
 
-# Main execution function
+# Running the Model
+
+```{r}
+#| label: Main execution function
 main <- function() {
   # Simulate data
   simulate_data()
@@ -245,4 +307,3 @@ main <- function() {
 # Run the main function
 main()
 ```
-
