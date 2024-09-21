@@ -318,7 +318,7 @@ main()
 
 # Section 2
 
-# Finding the Best Model 
+# Finding the Best Model
 
 Now we want to find the best model for LSTM.
 
