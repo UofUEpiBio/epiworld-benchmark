@@ -1,0 +1,421 @@
+---
+title: "Implementing the CNN+LSTM Model by Knowing infected Counts to Find the Closest Parameters to Simulate SIR Models"
+format: gfm
+editor: visual
+---
+
+Installing Packages if necessary:
+
+```{r}
+# Load Required Libraries
+library(data.table)
+library(parallel)
+library(keras)
+library(ggplot2)
+library(reshape2)
+library(tensorflow)
+library(keras3)
+
+```
+
+# Simulate Data and Theta
+
+This function simulates data based on generating theta which is our parameters.
+
+```{r}
+#|label: Simulate Data
+simulate_data <- function(N = 2e4, n = 5000, ndays = 50, ncores = 20, seed = 1231, savefile = "calibration/sir.rds") {
+  source("calibration/dataprep.R")
+  
+  set.seed(seed)
+  
+  theta <- data.table(
+    preval = sample((100:2000)/n, N, TRUE),
+    crate  = rgamma(N, 5, 1),    # Mean 5
+    ptran  = rbeta(N, 3, 7),     # Mean 0.3
+    prec   = rbeta(N, 10, 10*2 - 10) # Mean 0.5
+  )
+  
+  seeds <- sample.int(.Machine$integer.max, N, TRUE)
+  
+  matrices <- parallel::mclapply(1:N, FUN = function(i) {
+    fn <- sprintf("calibration/simulated_data/sir-%06i.rds", i)
+    
+    if (file.exists(fn))
+      return(readRDS(fn))
+    
+    set.seed(seeds[i])
+    
+    m <- theta[i,
+               ModelSIRCONN(
+                 "mycon",
+                 prevalence        = preval,
+                 contact_rate      = crate,
+                 transmission_rate = ptran,
+                 recovery_rate     = prec, 
+                 n                 = n
+               )
+    ]
+    
+    verbose_off(m)
+    run(m, ndays = ndays)
+    ans <- prepare_data(m)
+    saveRDS(ans, fn)
+    ans
+  }, mc.cores = ncores)
+  
+  is_not_null <- intersect(
+    which(!sapply(matrices, inherits, what = "error")),
+    which(!sapply(matrices, function(x) any(is.na(x))))
+  )
+  
+  matrices <- matrices[is_not_null]
+  theta    <- theta[is_not_null,]
+  
+  N <- length(is_not_null)
+  
+  arrays_1d <- array(dim = c(N, dim(matrices[[1]][1,,])))
+  for (i in seq_along(matrices))
+    arrays_1d[i,,] <- matrices[[i]][1,,]
+  
+  theta2 <- copy(theta)
+  theta2[, crate := plogis(crate / 10)]
+  
+  saveRDS(
+    list(
+      theta = theta2,
+      simulations = arrays_1d
+    ),
+    file = savefile,
+    compress = TRUE
+  )
+}
+```
+
+# Prepare Data for CNN and LSTM
+
+This Function prepares data for TensorFlow and then splits it to train and test. Also, it just uses the counts of infections in the dataset.
+
+```{r}
+#| label: Prepare Data for CNN and LSTM
+prepare_data_sets <- function(datafile = "calibration/sir.rds", train_fraction = 0.7) {
+  sim_results <- readRDS(datafile)
+  theta <- sim_results$theta
+  arrays_1d <- sim_results$simulations
+  
+  arrays_1d <- arrays_1d[,1,,drop=FALSE]
+  N <- dim(arrays_1d)[1]
+  
+  N_train <- floor(N * train_fraction)
+  id_train <- 1:N_train
+  train <- list(
+    x = array_reshape(arrays_1d[id_train,,], dim = c(N_train, dim(arrays_1d)[-1])),
+    y = as.matrix(theta)[id_train,]
+  )
+  
+  N_test <- N - N_train
+  id_test <- (N_train + 1):N
+  test <- list(
+    x = array_reshape(arrays_1d[id_test,,], dim = c(N_test, dim(arrays_1d)[-1])),
+    y = as.matrix(theta)[id_test,]
+  )
+  
+  list(train = train, test = test, theta = theta, arrays_1d = arrays_1d, N = N, N_train = N_train, N_test = N_test)
+}
+```
+
+# CNN Model
+
+```{r}
+#| label: CNN Implementation
+build_and_train_CNN <- function(train, test, arrays_1d, theta, N_train, seed = 331, save_model_file = "sir-cnn_infections_only") {
+  model <- keras3::keras_model_sequential()
+  model |>
+    keras3::layer_conv_2d(
+      filters     = 32,
+      input_shape = c(dim(arrays_1d)[-1], 1),
+      activation  = "relu",
+      kernel_size = c(1, 5)
+    ) |>
+    keras3::layer_max_pooling_2d(pool_size = 2, padding = 'same') |>
+    keras3::layer_flatten() |>
+    keras3::layer_dense(
+      units = ncol(theta),
+      activation = 'sigmoid'
+    )
+  
+  model %>% compile(
+    optimizer = 'adam',
+    loss      = 'mse',
+    metric    = 'mae'
+  )
+  
+  tensorflow::set_random_seed(seed)
+  model |> fit(train$x, train$y, epochs = 50, verbose = 0)
+  
+  pred <- predict(model, x = test$x) |> as.data.table() |> setnames(colnames(theta))
+  MAEs <- abs(pred - as.matrix(test$y)) |> colMeans() |> print()
+  
+  list(pred = pred, MAEs = MAEs)
+}
+```
+
+# LSTM Model
+
+```{r}
+#| label: LSTM Implementation
+build_and_train_LSTM <- function(train, test, theta, N_train, ndays, seed = 331, save_model_file = "sir-lstm_infections_only") {
+  model <- keras_model_sequential() %>%
+    layer_lstm(units = 50, input_shape = c(ndays, 1)) %>%
+    layer_dense(units = ncol(theta), activation = 'sigmoid')
+  
+  model %>% compile(optimizer = 'adam', loss = 'mse', metrics = 'mae')
+  
+  tensorflow::set_random_seed(seed)
+  history <- model %>% fit(x = train$x, y = train$y, epochs = 50, batch_size = 64, validation_split = 0.2, verbose = 0)
+  
+  pred <- predict(model, x = test$x) %>%
+    as.data.table() %>%
+    setnames(colnames(theta))
+  
+  MAEs <- abs(pred - as.matrix(test$y)) %>%
+    colMeans() %>%
+    print()
+  
+  list(pred = pred, MAEs = MAEs, history = history)
+}
+```
+
+# Ensemble Prediction (Simple and Weighted)
+
+The `ensemble_predictions` function combines the predictions from two models—CNN (Convolutional Neural Network) and LSTM (Long Short-Term Memory) networks. This is done in two ways: simple averaging and weighted averaging.
+
+```{r}
+#| label: Ensemble Aggregation (Simple and Weighted Average)
+ensemble_predictions <- function(cnn_pred, lstm_pred, weight_cnn = 0.3, weight_lstm = 0.7) {
+  # Simple average
+  ensemble_avg <- (cnn_pred + lstm_pred) / 2
+  
+  # Weighted average
+  ensemble_weighted <- (cnn_pred * weight_cnn) + (lstm_pred * weight_lstm)
+  
+  list(average = ensemble_avg, weighted = ensemble_weighted)
+}
+
+# MAE Calculation for Ensemble
+calculate_MAE <- function(pred, actual) {
+  mae <- abs(pred - actual) %>%
+    colMeans() %>%
+    print()
+  return(mae)
+}
+```
+
+#### **Function Inputs:**
+
+-   **`cnn_pred`**: Predictions from the CNN model.
+
+-   **`lstm_pred`**: Predictions from the LSTM model.
+
+-   **`weight_cnn`**: The weight given to the CNN model in the weighted average (default is 0.3).
+
+-   **`weight_lstm`**: The weight given to the LSTM model in the weighted average (default is 0.7).
+
+#### **Steps Inside the Function:**
+
+1.  **Simple Average Ensemble**:
+
+    -   `avg_pred <- (cnn_pred + lstm_pred) / 2`: This line computes the simple average of the predictions from the CNN and LSTM models. Each element in the CNN and LSTM prediction arrays is averaged, assuming equal importance for both models.
+
+2.  **Weighted Average Ensemble**:
+
+    -   `weighted_pred <- (cnn_pred * weight_cnn) + (lstm_pred * weight_lstm)`:
+
+        -   Here, the function computes a weighted average of the CNN and LSTM predictions.
+
+        -   **`weight_cnn`** (default 0.3) and **`weight_lstm`** (default 0.7) specify the importance of each model's predictions.
+
+        -   In this case, the LSTM predictions are given more weight (70%) compared to the CNN predictions (30%), which assumes the LSTM model performs better.
+
+# Visualization Function for Results
+
+The function `visualize_combined_results` provides a way to visualize and compare predictions from CNN, LSTM, and ensemble models against the actual (observed) values. This function creates two types of plots: a **boxplot** and a **scatter plot**.
+
+```{r}
+#| label: Visualization Function for Combined Results
+visualize_combined_results <- function(cnn_pred, lstm_pred, ensemble_avg, ensemble_weighted, test, theta, cnn_MAEs, lstm_MAEs, avg_MAE, weighted_MAE, N, N_train) {
+  cnn_pred[, id := 1L:.N]
+  lstm_pred[, id := 1L:.N]
+  ensemble_avg[, id := 1L:.N]
+  ensemble_weighted[, id := 1L:.N]
+  
+  theta_long <- as.data.table(test$y)
+  setnames(theta_long, names(theta))
+  theta_long[, id := 1L:.N]
+  
+  cnn_long <- melt(cnn_pred, id.vars = "id")
+  lstm_long <- melt(lstm_pred, id.vars = "id")
+  avg_long <- melt(ensemble_avg, id.vars = "id")
+  weighted_long <- melt(ensemble_weighted, id.vars = "id")
+  theta_long <- melt(theta_long, id.vars = "id")
+  
+  alldat <- rbind(
+    cbind(cnn_long, Model = "CNN"),
+    cbind(lstm_long, Model = "LSTM"),
+    cbind(avg_long, Model = "Ensemble Avg"),
+    cbind(weighted_long, Model = "Ensemble Weighted"),
+    cbind(theta_long, Model = "Observed")
+  )
+  
+  # Boxplot
+  p1 <- ggplot(alldat, aes(x = value, colour = Model)) +
+    facet_wrap(~variable, scales = "free") +
+    geom_boxplot() +
+    labs(title = "Boxplots of CNN, LSTM, and Ensemble Predictions with Observed Values")
+  
+  print(p1)
+  
+  # Scatter Plot
+  alldat_wide <- dcast(alldat, id + variable ~ Model, value.var = "value")
+  vnames <- data.table(
+    variable = c("preval", "crate", "ptran", "prec"),
+    Name     = paste(
+      c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
+      sprintf("(CNN MAE: %.2f, LSTM MAE: %.2f, Avg MAE: %.2f, Weighted MAE: %.2f)", cnn_MAEs, lstm_MAEs, avg_MAE, weighted_MAE)
+    )
+  )
+  
+  alldat_wide <- merge(alldat_wide, vnames, by = "variable")
+  
+  p2 <- ggplot(alldat_wide, aes(x = Observed, y = CNN, colour = "CNN")) +
+    geom_point(alpha = .2) +
+    geom_point(aes(x = Observed, y = LSTM, colour = "LSTM"), alpha = .2) +
+    geom_point(aes(x = Observed, y = `Ensemble Avg`, colour = "Ensemble Avg"), alpha = .2) +
+    geom_point(aes(x = Observed, y = `Ensemble Weighted`, colour = "Ensemble Weighted"), alpha = .2) +
+    facet_wrap(~ Name, scales = "free") +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+    labs(title = "Observed vs CNN, LSTM, and Ensemble Predictions (Validation Set)")
+  
+  print(p2)
+}
+```
+
+```{r}
+#| label: Main Execution for CNN, LSTM, and Combining Results
+main <- function() {
+  # Simulate data
+  simulate_data()
+  
+  # Prepare data sets
+  data_sets <- prepare_data_sets()
+  train <- data_sets$train
+  test <- data_sets$test
+  theta <- data_sets$theta
+  arrays_1d <- data_sets$arrays_1d
+  N <- data_sets$N
+  N_train <- data_sets$N_train
+  ndays <- 50
+  
+  # Reshape data for CNN and LSTM
+  train_cnn <- train
+  test_cnn <- test
+  train_lstm <- list(x = aperm(train$x, c(1, 3, 2)), y = train$y)
+  test_lstm <- list(x = aperm(test$x, c(1, 3, 2)), y = test$y)
+  
+  # Build and train the CNN model
+  cnn_results <- build_and_train_CNN(train_cnn, test_cnn, arrays_1d, theta, N_train)
+  cnn_pred <- cnn_results$pred
+  cnn_MAEs <- cnn_results$MAEs
+  
+  # Build and train the LSTM model
+  lstm_results <- build_and_train_LSTM(train_lstm, test_lstm, theta, N_train, ndays)
+  lstm_pred <- lstm_results$pred
+  lstm_MAEs <- lstm_results$MAEs
+  
+  # Ensemble predictions
+  ensemble_results <- ensemble_predictions(cnn_pred, lstm_pred)
+  ensemble_avg <- ensemble_results$average
+  ensemble_weighted <- ensemble_results$weighted
+  
+  # Calculate MAEs for ensemble
+  avg_MAE <- calculate_MAE(ensemble_avg, test$y)
+  weighted_MAE <- calculate_MAE(ensemble_weighted, test$y)
+  
+  # Visualize combined results
+  visualize_combined_results(cnn_pred, lstm_pred, ensemble_avg, ensemble_weighted, test, theta, cnn_MAEs, lstm_MAEs, avg_MAE, weighted_MAE, N, N_train)
+}
+
+# Run the main function
+main()
+
+```
+
+### **Explanation of the Workflow:**
+
+1.  **Generate Parameters (`theta`) and Seeds:**
+
+    -   The function `generate_theta` creates the initial parameters for the simulation, which include the prevalence, contact rate, transmission rate, and recovery rate.
+
+    -   Random seeds are generated to ensure that the simulations can be replicated.
+
+2.  **Run Simulations:**
+
+    -   The function `run_simulations` is used to generate simulated SIR data using the parameters (`theta`) and seeds. These simulations provide a time-series dataset for each of the `N` simulations.
+
+    -   The results are stored in matrices that contain the simulated SIR data.
+
+3.  **Filter and Prepare Data:**
+
+    -   The function `filter_non_null` filters out simulations that generated invalid results or contain missing values.
+
+    -   The valid matrices are then reshaped using the `prepare_data_sets` function, which converts them into a format suitable for neural network training.
+
+4.  **Split Data into Training and Testing Sets:**
+
+    -   The function `split_data` splits the prepared data into training and testing sets.
+
+    -   This is done to allow the models to be trained on a portion of the data and tested on unseen data to evaluate their performance.
+
+5.  **CNN Model:**
+
+    -   The CNN model is built using `build_cnn_model`. It is a convolutional neural network that learns patterns from the input data (time-series).
+
+    -   The CNN model is trained using the `train_cnn_model` function, and its predictions are evaluated using the `evaluate_model` function.
+
+    -   The resulting predictions (`cnn_pred`) and Mean Absolute Errors (MAEs) (`cnn_MAEs`) are saved.
+
+6.  **LSTM Model:**
+
+    -   The LSTM model is built using `build_lstm_model`. It is a Long Short-Term Memory network designed for sequential data, making it suitable for time-series prediction.
+
+    -   The training and testing data for the LSTM are reshaped accordingly.
+
+    -   The LSTM model is trained with `train_lstm_model`, and its performance is evaluated using the `evaluate_model` function.
+
+    -   The resulting predictions (`lstm_pred`) and MAEs (`lstm_MAEs`) are saved.
+
+7.  **Ensemble Predictions:**
+
+    -   The predictions from both the CNN and LSTM models are combined using two ensemble methods in the `ensemble_predictions` function:
+
+        -   **Simple Average**: Takes the average of the CNN and LSTM predictions.
+
+        -   **Weighted Average**: Combines the predictions with a weighted average, where you can adjust the contribution from each model using the weights `weight_cnn` and `weight_lstm`.
+
+    -   These ensemble predictions are stored as `avg_pred` (simple average) and `weighted_pred` (weighted average).
+
+8.  **Calculate MAEs for Ensemble:**
+
+    -   The function `calculate_mae` computes the Mean Absolute Error for both the simple and weighted ensemble predictions. These MAEs (`avg_MAE` and `weighted_MAE`) provide insights into how well the ensemble methods performed compared to the individual models.
+
+9.  **Visualization:**
+
+    -   The function `visualize_combined_results` is used to create plots that compare the predictions from the CNN, LSTM, ensemble models, and the actual observed values.
+
+    -   The visualizations include:
+
+        -   **Boxplots**: Showing the spread of predictions and actual values.
+
+        -   **Scatter Plots**: Comparing observed vs. predicted values with different models.
+
+    -   This helps visually assess each model's performance and ensemble methods.
