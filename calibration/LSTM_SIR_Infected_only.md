@@ -471,17 +471,25 @@ main()
 
         clone_model
 
-    188/188 - 1s - 5ms/step
+    188/188 - 1s - 4ms/step
         preval      crate      ptran       prec 
-    0.02247850 0.03132215 0.07144518 0.05799861 
+    0.02364865 0.03144636 0.07145539 0.05783265 
 
 ![](LSTM_SIR_Infected_only_files/figure-commonmark/unnamed-chunk-9-1.png)
 
 ![](LSTM_SIR_Infected_only_files/figure-commonmark/unnamed-chunk-9-2.png)
 
-Section 2
+# Section 2
 
-find the best LSTM model
+# Finding the Best Model
+
+Now we want to find the best model for LSTM.
+
+# build and train the LSTM model with hyperparameters
+
+The `build_and_train_model` function builds, trains, and evaluates an
+LSTM (Long Short-Term Memory) neural network using the `keras3` library
+in R for time-series or sequential data.
 
 ``` r
 build_and_train_model <- function(train, test, theta, N_train, ndays, seed,
@@ -531,8 +539,41 @@ build_and_train_model <- function(train, test, theta, N_train, ndays, seed,
   # Return the MAEs and predictions
   list(pred = pred, MAEs = MAEs, model = model)
 }
+```
 
-# Function to visualize results
+### **Building the LSTM Model**
+
+- The function creates a sequential model using
+  `keras3::keras_model_sequential()`.
+
+- An LSTM layer (`keras3::layer_lstm()`) is added with customizable
+  parameters:
+
+  - `units`: the number of LSTM units (neurons) in the layer.
+
+  - `activation_lstm`: the activation function applied within the LSTM
+    units.
+
+  - `input_shape`: the shape of the input data, which is defined as the
+    number of time steps (`dim(train$x)[2]`) and features
+    (`dim(train$x)[3]`).
+
+  - `return_sequences = FALSE`: this flag means that only the final LSTM
+    output (not a sequence) is passed to the next layer.
+
+- A fully connected (dense) layer (`keras3::layer_dense()`) is added
+  with:
+
+  - `units = ncol(theta)`: the number of output neurons, which matches
+    the number of columns in the `theta` matrix.
+
+  - `activation_dense`: the activation function applied in the dense
+    layer (e.g., ‘sigmoid’ or ‘linear’).
+
+# visualize results
+
+``` r
+#|label: Function to visualize results
 visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file = NULL) {
   pred[, id := 1L:.N]
   pred_long <- melt(pred, id.vars = "id")
@@ -586,8 +627,14 @@ visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file =
   
   print(p2)
 }
+```
 
-# Main execution function with hyperparameter tuning
+# Execution function with hyperparameter tuning
+
+This `main` function performs a full workflow to generate and train an
+LSTM-based neural network model using hyperparameter tuning.
+
+``` r
 main <- function() {
   # Simulate data
   simulate_data()
@@ -689,8 +736,117 @@ main <- function() {
   # Visualize results
   visualize_results(best_pred, test, theta, best_MAEs, N, N_train)
 }
+```
+
+### 1. **Parameter Generation**
+
+- `generate_simulation_parameters(N, n)`: This function generates
+  simulation parameters (`theta`) for the epidemic simulations based on
+  the input parameters `N` and `n`. The exact nature of `theta` depends
+  on the simulation context.
+
+- `sample.int(.Machine$integer.max, N, TRUE)`: This generates a set of
+  random seeds for reproducibility across `N` simulations.
+
+### 2. **Run Simulations**
+
+- `run_epidemic_simulations(N, theta, seeds, n, ndays, ncores)`: This
+  runs the epidemic simulations using the parameters (`theta`) and seeds
+  across `ncores` processing cores. The results are stored in
+  `matrices`, which likely contain simulated data for different
+  scenarios.
+
+### 3. **Filter and Prepare Data**
+
+- `filter_valid_simulations(matrices, theta)`: This function filters out
+  invalid or null simulations. It adjusts `matrices`, `theta`, and `N`
+  to ensure only valid simulations are used for further processing.
+
+- `prepare_neural_network_data(N, matrices, theta)`: Prepares the data
+  for input into the LSTM neural network, converting the simulation
+  results (`matrices`) and parameters (`theta`) into appropriate arrays
+  (`arrays_1d`) for TensorFlow.
+
+### 4. **Save Prepared Data**
+
+- `save_prepared_data(theta2, arrays_1d)`: Saves the prepared data
+  (optional), possibly as `.rds` or some other serialized format,
+  allowing you to reload it later.
+
+### 5. **Split Train and Test Data**
+
+- `split_train_test_data(N, arrays_1d, theta2)`: Splits the dataset into
+  training and test sets. `train_test_data` includes `train`, `test`,
+  and the number of training samples (`N_train`).
+
+### 6. **Define Hyperparameter Grid**
+
+- `expand.grid()`: Creates a grid of hyperparameters for tuning. The
+  parameters include:
+
+  - `units`: Number of LSTM units (50 or 64).
+
+  - `activation_lstm`: Activation function for LSTM (e.g., `'relu'`).
+
+  - `activation_dense`: Activation function for the dense output layer
+    (`'sigmoid'` or `'linear'`).
+
+  - `optimizer`: Optimizer used for training (`'adam'`).
+
+  - `loss`: Loss function for training (`'mse'` or `'mae'`).
+
+  - `epochs`: Number of training epochs (20).
+
+  - `batch_size`: Batch size for training (32 or 64).
+
+This grid allows for different combinations of hyperparameters to be
+tested and tuned for the best model performance.
+
+### 7. **Hyperparameter Tuning Loop**
+
+- The loop runs through all possible hyperparameter combinations:
+
+  - Extracts the current hyperparameters from the grid (`units`,
+    `activation_lstm`, `activation_dense`, `optimizer`, `loss`,
+    `epochs`, `batch_size`).
+
+  - Sets a reproducible seed (`seed = 331`).
+
+  - Calls the `build_and_train_model` function to build, train, and test
+    the model for each combination of hyperparameters.
+
+### 8. **Error Handling**
+
+- A `tryCatch` block is used to handle errors during model building or
+  training. If an error occurs, it moves to the next combination of
+  hyperparameters without stopping the entire process.
+
+### 9. **Evaluating the Models**
+
+- After each model is trained, the mean absolute errors (MAEs) are
+  calculated.
+
+- The average MAE is stored for each hyperparameter configuration.
+
+- If the current model has the best MAE (lowest), it updates the stored
+  `best_model`, `best_pred`, `best_MAEs`, and `best_params`.
+
+### 10. **Results**
+
+- After testing all hyperparameter combinations, the function prints the
+  best model’s hyperparameters and the lowest MAE achieved.
+
+### 11. **Visualization**
+
+- `visualize_results()`: This function visualizes the results, such as
+  comparing predicted values (`best_pred`) to the actual values
+  (`test$y`). It likely includes error analysis, plotting, and model
+  diagnostics.
 
 # Run the main function
+
+``` r
+#|label: Run the main function
 main()
 ```
 
@@ -705,15 +861,15 @@ main()
     Testing model 5 of 16 
     188/188 - 1s - 5ms/step
     Testing model 6 of 16 
-    188/188 - 1s - 5ms/step
+    188/188 - 1s - 4ms/step
     Testing model 7 of 16 
     188/188 - 1s - 4ms/step
     Testing model 8 of 16 
-    188/188 - 1s - 5ms/step
+    188/188 - 1s - 4ms/step
     Testing model 9 of 16 
     188/188 - 1s - 4ms/step
     Testing model 10 of 16 
-    188/188 - 1s - 4ms/step
+    188/188 - 1s - 5ms/step
     Testing model 11 of 16 
     188/188 - 1s - 4ms/step
     Testing model 12 of 16 
@@ -725,7 +881,7 @@ main()
     Testing model 15 of 16 
     188/188 - 1s - 4ms/step
     Testing model 16 of 16 
-    188/188 - 1s - 5ms/step
+    188/188 - 1s - 4ms/step
     Best model parameters:
       units activation_lstm activation_dense optimizer loss epochs batch_size
     5    50            relu          sigmoid      adam  mae     20         32
@@ -733,6 +889,6 @@ main()
     5 0.04730755
     Best MAE: 0.04730755 
 
-![](LSTM_SIR_Infected_only_files/figure-commonmark/unnamed-chunk-11-1.png)
+![](LSTM_SIR_Infected_only_files/figure-commonmark/unnamed-chunk-16-1.png)
 
-![](LSTM_SIR_Infected_only_files/figure-commonmark/unnamed-chunk-11-2.png)
+![](LSTM_SIR_Infected_only_files/figure-commonmark/unnamed-chunk-16-2.png)
