@@ -362,24 +362,21 @@ The `build_and_train_model` function builds, trains, and evaluates an LSTM (Long
 
 ```{r}
 #|label: Function to build and train the LSTM model with hyperparameters
-build_and_train_model <- function(train, test, theta, seed,
-                                  units, activation_lstm, activation_dense,
-                                  optimizer, loss, epochs, batch_size, verbose = 0) {
+build_and_train_model <- function(train, test, theta, N_train, ndays, seed,
+                                  units, optimizer, loss, epochs, verbose = 0) {
   # Build the LSTM model
-  model <- keras3::keras_model_sequential() %>%
-    keras3::layer_lstm(
+  model <- keras_model_sequential() %>%
+    layer_lstm(
       units = units,
-      activation = activation_lstm,
-      input_shape = c(dim(train$x)[2], dim(train$x)[3]),
-      return_sequences = FALSE
+      input_shape = c(ndays, 1)
     ) %>%
-    keras3::layer_dense(
+    layer_dense(
       units = ncol(theta),
-      activation = activation_dense
+      activation = 'sigmoid'  # Fixed activation for dense layer
     )
   
   # Compile the model
-  model %>% keras3::compile(
+  model %>% compile(
     optimizer = optimizer,
     loss      = loss,
     metrics   = 'mae'
@@ -389,12 +386,10 @@ build_and_train_model <- function(train, test, theta, seed,
   tensorflow::set_random_seed(seed)
   
   # Fit the model
-  history <- model %>% keras3::fit(
+  history <- model %>% fit(
     x = train$x,
     y = train$y,
     epochs = epochs,
-    batch_size = batch_size,
-    validation_split = 0.2,
     verbose = verbose
   )
   
@@ -410,7 +405,6 @@ build_and_train_model <- function(train, test, theta, seed,
   # Return the MAEs and predictions
   list(pred = pred, MAEs = MAEs, model = model)
 }
-
 ```
 
 ### **Building the LSTM Model**
@@ -437,15 +431,14 @@ build_and_train_model <- function(train, test, theta, seed,
 
 ```{r}
 #| label: Function to visualize results
+#|label: Function to visualize results
 visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file = NULL) {
   pred[, id := 1L:.N]
-  pred[, crate := qlogis(crate) * 10]
   pred_long <- melt(pred, id.vars = "id")
   
   theta_long <- as.data.table(test$y)
   setnames(theta_long, names(theta))
   theta_long[, id := 1L:.N]
-  theta_long[, crate := qlogis(crate) * 10]
   theta_long <- melt(theta_long, id.vars = "id")
   
   alldat <- rbind(
@@ -467,9 +460,9 @@ visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file =
   alldat_wide <- dcast(alldat, id + variable ~ Type, value.var = "value")
   
   vnames <- data.table(
-    variable = c("preval", "crate", "ptran", "prec"),
+    variable = names(theta),
     Name     = paste(
-      c("Init. state", "Contact Rate", "P(transmit)", "P(recover)"),
+      c("Initial Prevalence", "Contact Rate", "Transmission Probability", "Recovery Probability"),
       sprintf("(MAE: %.4f)", MAEs)
     )
   )
@@ -493,129 +486,36 @@ visualize_results <- function(pred, test, theta, MAEs, N, N_train, output_file =
   print(p2)
 }
 
-
-```
-
-# Execution function with hyperparameter tuning
-
-This `main` function performs a full workflow to generate and train an LSTM-based neural network model using hyperparameter tuning.
-
-```{r}
-#| label: Main execution function with hyperparameter tuning
-main <- function(N, n, ndays, ncores) {
-  # Generate parameters (theta)
+#| label: simulate_data
+simulate_data <- function(N = 20000, n = 5000, ndays = 50, ncores = 20) {
+  # Generate theta parameters (example based on earlier parts)
   theta <- generate_simulation_parameters(N, n)
   seeds <- sample.int(.Machine$integer.max, N, TRUE)
   
-  # Run simulations
+  # Run epidemic simulations (using SIR model)
   matrices <- run_epidemic_simulations(N, theta, seeds, n, ndays, ncores)
   
-  # Filter and prepare data
+  # Filter valid simulations
   valid_data <- filter_valid_simulations(matrices, theta)
-  N <- valid_data$N
-  theta <- valid_data$theta
-  matrices <- valid_data$matrices
   
-  # Prepare for neural network
-  nn_data <- prepare_neural_network_data(N, matrices, theta)
-  arrays_1d <- nn_data$arrays_1d
-  theta2 <- nn_data$theta2
+  # Prepare neural network input data
+  nn_data <- prepare_neural_network_data(valid_data$N, valid_data$matrices, valid_data$theta)
   
-  # Save data
-  save_prepared_data(theta2, arrays_1d)
+  # Save the prepared data (optional)
+  save_prepared_data(nn_data$theta2, nn_data$arrays_1d)
   
-  # Split train and test data
-  train_test_data <- split_train_test_data(N, arrays_1d, theta2)
-  train <- train_test_data$train
-  test <- train_test_data$test
-  N_train <- train_test_data$N_train
-  
-  # Define hyperparameter grid
-  hyper_grid <- expand.grid(
-    units = c(50, 64),
-    activation_lstm = c('relu',"linear"),
-    activation_dense = c('sigmoid'),
-    optimizer = c('adam'),
-    loss = c('mse', 'mae'),
-    epochs = c(20),
-    batch_size = c(32, 64),
-    stringsAsFactors = FALSE
-  )
-  
-  # Initialize variables to store the best model
-  best_MAE <- Inf
-  best_model <- NULL
-  best_pred <- NULL
-  best_MAEs <- NULL
-  best_params <- NULL
-  
-  # Loop over hyperparameter combinations
-  for (i in 1:nrow(hyper_grid)) {
-    cat("Testing model", i, "of", nrow(hyper_grid), "\n")
-    
-    # Extract hyperparameters
-    units <- hyper_grid$units[i]
-    activation_lstm <- hyper_grid$activation_lstm[i]
-    activation_dense <- hyper_grid$activation_dense[i]
-    optimizer <- hyper_grid$optimizer[i]
-    loss <- hyper_grid$loss[i]
-    epochs <- hyper_grid$epochs[i]
-    batch_size <- hyper_grid$batch_size[i]
-    
-    # Set a seed for reproducibility
-    seed <- 331
-    
-    # Build and train the model
-    model_results <- tryCatch(
-      {
-        build_and_train_model(
-          train = train,
-          test = test,
-          theta = theta2,
-          seed = seed,
-          units = units,
-          activation_lstm = activation_lstm,
-          activation_dense = activation_dense,
-          optimizer = optimizer,
-          loss = loss,
-          epochs = epochs,
-          batch_size = batch_size,
-          verbose = 0
-        )
-      },
-      error = function(e) {
-        cat("Error in model", i, ":", e$message, "\n")
-        return(NULL)
-      }
-    )
-    
-    # If the model failed, skip to the next iteration
-    if (is.null(model_results)) next
-    
-    # Get the MAEs
-    MAEs <- model_results$MAEs
-    
-    # Store the average MAE
-    hyper_grid$MAE[i] <- mean(MAEs)
-    
-    # If this is the best MAE so far, save the model and predictions
-    if (hyper_grid$MAE[i] < best_MAE) {
-      best_MAE <- hyper_grid$MAE[i]
-      best_model <- model_results$model
-      best_pred <- model_results$pred
-      best_MAEs <- MAEs
-      best_params <- hyper_grid[i,]
-    }
-  }
-  
-  # Print the best hyperparameters
-  cat("Best model parameters:\n")
-  print(best_params)
-  cat("Best MAE:", best_MAE, "\n")
-  
-  # Visualize results
-  print(visualize_results(best_pred, test, theta2, best_MAEs, N, N_train))
+  # Return the prepared datasets
+  return(list(train_test_data = nn_data, N = valid_data$N, theta = valid_data$theta))
 }
+#| label: prepare_data_sets
+prepare_data_sets <- function(N, arrays_1d, theta2) {
+  # Split the data into training and test sets
+  data_splits <- split_train_test_data(N, arrays_1d, theta2)
+  
+  # Return the split datasets
+  return(data_splits)
+}
+
 
 ```
 
@@ -694,6 +594,105 @@ This grid allows for different combinations of hyperparameters to be tested and 
 -   `visualize_results()`: This function visualizes the results, such as comparing predicted values (`best_pred`) to the actual values (`test$y`). It likely includes error analysis, plotting, and model diagnostics.
 
 # Run the main function
+
+```{r}
+#| label: main-execution-function
+#| label: main-execution-function
+main <- function(N = 20000, n = 5000, ndays = 50, ncores = 20) {
+  # Simulate data
+  simulated_data <- simulate_data(N, n, ndays, ncores)
+  
+  # Extract the relevant data
+  train_test_data <- prepare_data_sets(simulated_data$N, simulated_data$train_test_data$arrays_1d, simulated_data$train_test_data$theta2)
+  
+  train <- train_test_data$train
+  test <- train_test_data$test
+  theta <- simulated_data$theta
+  N <- simulated_data$N
+  N_train <- length(train$x)
+  
+  # Define hyperparameter grid
+  hyper_grid <- expand.grid(
+    units = c(50, 64, 30),
+    optimizer = c('adam'),
+    loss = c('mae'),
+    epochs = c(20),
+    stringsAsFactors = FALSE
+  )
+  
+  # Initialize variables to store the best model
+  best_MAE <- Inf
+  best_model <- NULL
+  best_pred <- NULL
+  best_MAEs <- NULL
+  best_params <- NULL
+  
+  # Loop over hyperparameter combinations
+  for (i in 1:nrow(hyper_grid)) {
+    cat("Testing model", i, "of", nrow(hyper_grid), "\n")
+    
+    # Extract hyperparameters
+    units <- hyper_grid$units[i]
+    optimizer <- hyper_grid$optimizer[i]
+    loss <- hyper_grid$loss[i]
+    epochs <- hyper_grid$epochs[i]
+    
+    # Set a seed for reproducibility
+    seed <- 331
+    
+    # Build and train the model
+    model_results <- tryCatch(
+      {
+        build_and_train_model(
+          train = train,
+          test = test,
+          theta = theta,
+          N_train = N_train,
+          ndays = ndays,
+          seed = seed,
+          units = units,
+          optimizer = optimizer,
+          loss = loss,
+          epochs = epochs,
+          verbose = 0
+        )
+      },
+      error = function(e) {
+        cat("Error in model", i, ":", e$message, "\n")
+        return(NULL)
+      }
+    )
+    
+    # If the model failed, skip to the next iteration
+    if (is.null(model_results)) next
+    
+    # Get the MAEs
+    MAEs <- model_results$MAEs
+    
+    # Store the average MAE
+    hyper_grid$MAE[i] <- mean(MAEs)
+    
+    # If this is the best MAE so far, save the model and predictions
+    if (hyper_grid$MAE[i] < best_MAE) {
+      best_MAE <- hyper_grid$MAE[i]
+      best_model <- model_results$model
+      best_pred <- model_results$pred
+      best_MAEs <- MAEs
+      best_params <- hyper_grid[i,]
+    }
+  }
+  
+  # Print the best hyperparameters
+  cat("Best model parameters:\n")
+  print(best_params)
+  cat("Best MAE:", best_MAE, "\n")
+  
+  # Visualize results
+  print(visualize_results(best_pred, test, theta, best_MAEs, N, N_train))
+}
+
+
+```
 
 ```{r,echo=TRUE}
 #|label: Run the main function

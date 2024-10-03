@@ -334,7 +334,6 @@ build_and_train_model <- function(train, test, theta, N_train, ndays, seed,
   model <- keras_model_sequential() %>%
     layer_lstm(
       units = units,
-      activation = activation_lstm,
       input_shape = c(ndays, 1)
     ) %>%
     layer_dense(
@@ -357,8 +356,6 @@ build_and_train_model <- function(train, test, theta, N_train, ndays, seed,
     x = train$x,
     y = train$y,
     epochs = epochs,
-    batch_size = batch_size,
-    validation_split = 0.2,
     verbose = verbose
   )
   
@@ -478,13 +475,13 @@ main <- function() {
   
   # Define hyperparameter grid
   hyper_grid <- expand.grid(
-    units = c(50, 64),
-    activation_lstm = c( 'relu'),
-    activation_dense = c('sigmoid', 'linear'),
+    units = c(50, 64,30),
+    activation_lstm = c( "linear"),
+    activation_dense = c('sigmoid'),
     optimizer = c('adam'),
-    loss = c('mse', 'mae'),
+    loss = c( 'mae'),
     epochs = c(20),
-    batch_size = c(32, 64),
+    batch_size = c(64),
     stringsAsFactors = FALSE
   )
   
@@ -562,7 +559,7 @@ main <- function() {
   cat("Best MAE:", best_MAE, "\n")
   
   # Visualize results
-  visualize_results(best_pred, test, theta, best_MAEs, N, N_train)
+  print(visualize_results(best_pred, test, theta, best_MAEs, N, N_train))
 }
 
 
