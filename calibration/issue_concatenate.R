@@ -113,7 +113,7 @@ build_lstm_model <- function(input_shape, output_units) {
 
 build_cnn_lstm_model <- function(cnn_input_shape, lstm_input_shape, output_units) {
   
-  # Build CNN model
+# Build CNN model
   cnn <- build_cnn_model(cnn_input_shape, output_units)
   
   # Build LSTM model
