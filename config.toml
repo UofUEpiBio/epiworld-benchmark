@@ -24,11 +24,17 @@ hospitalization_probability = 0.05
 hospital_days = 7.0
 
 [calibration]
-# epiworldR advances faster under the shared analytic edge-transmissibility
-# mapping. These empirical factors align its median day-100 attack rate with
-# the three Python comparators at each full-profile population size.
+# These empirical factors align each engine's median day-100 attack rate with
+# the common benchmark target at each full-profile population size.
+#
+# Covasim's factors were calibrated after restricting it to fixed transmission
+# and permanent immunity; its native daily transmission semantics otherwise
+# produced substantially larger final attack rates under the shared analytic
+# mapping.
 epiworld_transmission_multiplier_10000 = 0.887
 epiworld_transmission_multiplier_100000 = 0.855
+covasim_transmission_multiplier_10000 = 0.715
+covasim_transmission_multiplier_100000 = 0.710
 
 [resources]
 # Safe by default: models run sequentially and native math libraries get one

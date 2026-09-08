@@ -33,6 +33,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--infectious-days", type=float, required=True)
     parser.add_argument("--hospitalization-probability", type=float, required=True)
     parser.add_argument("--hospital-days", type=float, required=True)
+    parser.add_argument("--transmission-multiplier", type=float, default=1.0)
     parser.add_argument("--fingerprint", required=True)
     parser.add_argument("--engine-version", required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -206,6 +207,7 @@ def run_covasim(args: argparse.Namespace, source: np.ndarray, target: np.ndarray
 
     recovery = 1.0 / args.infectious_days
     beta = discrete_transmission_probability(args.target_r0, args.mean_degree, recovery)
+    beta *= args.transmission_multiplier
     fixed = lambda value: {"dist": "normal_int", "par1": value, "par2": 0.0}
     prognoses = {
         "age_cutoffs": np.array([0]),
@@ -326,7 +328,7 @@ def main() -> None:
         "network_edges": args.network_edges,
         "mean_degree": args.mean_degree,
         "target_r0": args.target_r0,
-        "transmission_multiplier": 1.0,
+        "transmission_multiplier": args.transmission_multiplier,
         "setup_seconds": setup_elapsed,
         "total_seconds": total_elapsed,
         "fingerprint": args.fingerprint,
