@@ -132,6 +132,9 @@ density. At 10,000 and 100,000 agents its densities are approximately
 contacts. This prevents the edge count, runtime, and memory from growing
 quadratically.
 
+More details regarding the project setup can be found in
+[setup.md](./setup.md).
+
 ## Reproducibility and cache
 
 Every successful replicate is an atomic JSON cache record keyed by model
