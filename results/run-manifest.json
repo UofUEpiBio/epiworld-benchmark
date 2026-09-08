@@ -1,16 +1,16 @@
 {
-  "cached_before_run": 20,
+  "cached_before_run": 0,
   "engine_versions": {
-    "epiworldR": "0.15.1.0"
+    "covasim": "3.1.8"
   },
-  "executed": 80,
+  "executed": 200,
   "failures": 0,
   "platform": "macOS-15.0.1-arm64-arm-64bit",
   "profile": "full",
   "python": "3.12.11",
   "requested_engines": [
-    "epiworldR"
+    "covasim"
   ],
   "result_rows_available": 804,
-  "workers": 1
+  "workers": 2
 }

@@ -9,6 +9,7 @@ execute:
   echo: false
   warning: false
   message: false
+bibliography: references.bib
 ---
 
 ```{r}
@@ -40,7 +41,7 @@ complete_design <- has_full && all(
 ## Executive summary
 
 This benchmark compares simulation speed for 100-day network epidemics at
-10,000 and 100,000 agents, with 100 independent replicates per engine and size.
+10,000 and 100,000 agents, with 100 independent replicates per engine and size. The included engines are [epiworldR](https://uofuepibio.github.io/epiworldR/){target="_blank"} [@meyerEpiworldRFastAgentBased2023], [Covasim](https://covasim.org/){target="_blank"} [@kerrCovasimAgentbasedModel2021], [EoN](https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html){target="_blank"} [@millerEoNEpidemicsNetworks2019], and [epydemic](https://github.com/simoninireland/epydemic){target="_blank"} [@dobson2022epydemic]. 
 All engines use the exact same cached Watts--Strogatz edge list for a population
 size (mean degree 10, rewiring probability 0.05) and target an early-outbreak
 $R_0 = 2$. The epiworldR cells apply size-specific transmission multipliers of
@@ -217,10 +218,6 @@ bookkeeping. Thus this report measures restricted, representative framework
 throughput under aligned network and disease targets; it does not claim
 bit-for-bit epidemiological equivalence.
 
-> The committed full-profile result artifacts predate this Covasim restriction.
-> Rerun `make benchmark` and `make report` before using them to compare the
-> revised design.
-
 The sparse contact network fixes mean degree rather than literal graph density.
 At 10,000 and 100,000 agents its densities are approximately 0.001 and 0.0001,
 respectively, while every agent still has about ten contacts. This prevents the
@@ -242,3 +239,5 @@ if (nrow(all_results)) {
                col.names = c("Engine", "Recorded version"), row.names = FALSE)
 }
 ```
+
+## References

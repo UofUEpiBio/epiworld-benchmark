@@ -1,122 +1,191 @@
 # Network epidemic ABM speed benchmark
 
-This folder contains a reproducible, resumable benchmark of four epidemic
-simulation engines:
+2026-09-08
 
-- **epiworldR 0.15.1.0** (R/C++), using a custom discrete-time SEIRH model;
-- **Covasim 3.1.8** (Python), using its native symptom/severe bookkeeping and
-  severe state as the hospitalization proxy, with waning immunity and
-  transmission heterogeneity disabled;
-- **EoN 1.92** (Python), using a continuous-time Gillespie SEIRH model; and
-- **epydemic 1.14.1** (Python), using a custom synchronous SEIRH model.
+- [Executive summary](#executive-summary)
+- [Simulation time](#simulation-time)
+- [Speed relative to epiworldR](#speed-relative-to-epiworldr)
+- [Epidemiological sanity checks](#epidemiological-sanity-checks)
+- [Design and interpretation](#design-and-interpretation)
+- [Reproducibility and cache](#reproducibility-and-cache)
+- [References](#references)
 
-The full design runs 100 replicates for 100 days at 10,000 and 100,000 agents.
-Every engine receives the exact same cached Watts--Strogatz edge list at a
-given population size. The graph has mean degree 10 and rewiring probability
-0.05. Here “average density” is interpreted as the usual sparse-network
-quantity, average degree: literal graph density would force degree (and memory)
-to grow linearly with population size.
+## Executive summary
 
-## Quick start
+This benchmark compares simulation speed for 100-day network epidemics
+at 10,000 and 100,000 agents, with 100 independent replicates per engine
+and size. The included engines are
+<a href="https://uofuepibio.github.io/epiworldR/"
+target="_blank">epiworldR</a> (Meyer and Vega Yon 2023),
+<a href="https://covasim.org/" target="_blank">Covasim</a> (Kerr et al.
+2021),
+<a href="https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html"
+target="_blank">EoN</a> (Miller and Ting 2019), and
+<a href="https://github.com/simoninireland/epydemic"
+target="_blank">epydemic</a> (Dobson 2022). All engines use the exact
+same cached Watts–Strogatz edge list for a population size (mean degree
+10, rewiring probability 0.05) and target an early-outbreak $R_0 = 2$.
+The epiworldR cells apply size-specific transmission multipliers of
+0.887 at 10,000 agents and 0.855 at 100,000 agents. The restricted
+Covasim cells apply corresponding factors of 0.715 and 0.710. These
+empirical factors align realized attack rates under the frameworks’
+different transmission semantics.
 
-Prerequisites are Python 3.12, [uv](https://docs.astral.sh/uv/), R,
-`epiworldR`, `jsonlite`, and Quarto. From this folder:
+> [!TIP]
+>
+> The complete 800-run design is available.
 
-```sh
-uv sync --frozen
-make check
-make smoke
-make benchmark
-make report
-```
+| Field               | Value                        |
+|:--------------------|:-----------------------------|
+| Platform            | macOS-15.0.1-arm64-arm-64bit |
+| Python              | 3.12.11                      |
+| Workers             | 2                            |
+| Latest run failures | 0                            |
 
-The report target produces GitHub-flavored `report.md` plus PNG figures in
-`report_files/figure-commonmark/`, so the rendered results remain readable
-directly in a pull request.
+| Engine    | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
+|:----------|-------:|-----:|----------------------:|-------:|-------:|
+| epiworldR |  10000 |  100 |                 0.028 |  0.026 |  0.031 |
+| covasim   |  10000 |  100 |                 0.067 |  0.066 |  0.069 |
+| epydemic  |  10000 |  100 |                 0.499 |  0.476 |  0.534 |
+| EoN       |  10000 |  100 |                 0.723 |  0.642 |  0.819 |
+| epiworldR | 100000 |  100 |                 0.054 |  0.049 |  0.061 |
+| covasim   | 100000 |  100 |                 0.382 |  0.372 |  0.396 |
+| EoN       | 100000 |  100 |                 1.714 |  1.435 |  2.097 |
+| epydemic  | 100000 |  100 |                 1.744 |  1.634 |  1.948 |
 
-The smoke profile is deliberately tiny (1,000 agents, 10 days, one replicate)
-and tests all four integrations. `make benchmark` launches the full 800-run
-design. It is safe to stop and restart: each successful replicate is written
-atomically beneath `cache/results/`, and a later invocation only schedules
-missing or stale results.
+## Simulation time
 
-Useful targeted runs include:
+The primary measure is wall-clock time inside each engine’s simulation
+call. The logarithmic scale keeps fast and slow engines legible in one
+panel.
 
-```sh
-# Preview work without launching a model
-.venv/bin/python run.py --profile full --dry-run
+![](README_files/figure-commonmark/simulation-time-plot-1.png)
 
-# Run just one engine, or preflight one replicate at both full sizes
-.venv/bin/python run.py --profile full --engines epiworldR
-.venv/bin/python run.py --profile full --replicates 1
+## Speed relative to epiworldR
 
-# Explicitly invalidate matching cached results
-.venv/bin/python run.py --profile full --engines EoN --force
-```
+Ratios are matched by population size and replicate seed. Values above
+one mean that epiworldR completed the simulation call faster.
 
-Do not delete `cache/` between runs. The cache key covers the configuration,
-runner source, engine version, and shared-network checksum. `results/results.csv`
-is rebuilt from all successful cached records after each invocation; the report
-filters it to the full 10,000/100,000-agent, 100-day design.
+| Engine   | Agents | Median time / epiworldR |    Q1 |    Q3 |
+|:---------|-------:|------------------------:|------:|------:|
+| covasim  |  10000 |                    2.44 |  2.21 |  2.69 |
+| EoN      |  10000 |                   25.22 | 19.81 | 29.15 |
+| epydemic |  10000 |                   17.99 | 15.26 | 20.27 |
+| covasim  | 100000 |                    7.00 |  6.34 |  7.85 |
+| EoN      | 100000 |                   29.81 | 25.28 | 39.89 |
+| epydemic | 100000 |                   33.66 | 28.29 | 37.15 |
 
-## Resource policy
+## Epidemiological sanity checks
 
-The default is intentionally conservative: one simulation subprocess at a
-time, with OpenMP, BLAS, MKL, Accelerate, NumExpr, Numba, and Rcpp thread-count
-variables all set to one. `--workers 2` is available for an explicit opt-in,
-and the harness hard-caps concurrency at two even on a many-core host. Network
-generation occurs once per size and is excluded from engine timings.
+Speed is interpretable only if the simulations produce plausible
+epidemics. These checks show final attack rate and peak hospitalization
+load; differences also expose the engines’ non-identical time semantics
+and Covasim’s native symptom/severe bookkeeping.
 
-## What is timed
+| Engine    | Agents | Median final attack rate | Median peak hospitalized |
+|:----------|-------:|-------------------------:|-------------------------:|
+| epiworldR |  10000 |                    0.380 |                       22 |
+| covasim   |  10000 |                    0.392 |                       23 |
+| EoN       |  10000 |                    0.392 |                       23 |
+| epydemic  |  10000 |                    0.396 |                       25 |
+| epiworldR | 100000 |                    0.062 |                       28 |
+| covasim   | 100000 |                    0.061 |                       35 |
+| EoN       | 100000 |                    0.062 |                       35 |
+| epydemic  | 100000 |                    0.064 |                       41 |
 
-Each runner records:
+![](README_files/figure-commonmark/outcomes-plot-1.png)
 
-- `setup_seconds`: reading the shared edge list and building engine objects;
-- `simulate_seconds`: the engine's simulation call, including engine-native
-  initialization that occurs inside that call; and
-- `total_seconds`: setup plus simulation inside the runner process.
+## Design and interpretation
 
-Interpreter/package startup and shared graph generation are excluded. The
-Quarto report treats `simulate_seconds` as the primary outcome and presents
-setup separately. Each replicate runs in a fresh process, avoiding state
-leakage and making failures independently resumable.
+The common disease graph is susceptible $\rightarrow$ exposed
+$\rightarrow$ infectious $\rightarrow$ recovered, with a competing
+infectious $\rightarrow$ hospitalized $\rightarrow$ recovered branch.
+Mean latent and infectious periods are 4 and 7 days, lifetime
+hospitalization probability is 5%, and the hospital stay is 7 days.
+Initial infections are 100 in the full profile.
 
-## Epidemiological comparability
+The shared analytic transmission mapping produced different realized
+attack rates across frameworks. Calibration therefore selected
+size-specific factors for epiworldR (0.887 at 10,000 agents and 0.855 at
+100,000) and for restricted Covasim (0.715 and 0.710). All 100
+replicates in each adjusted cell were then rerun. These empirical
+corrections are intentionally population-specific; they align benchmark
+outcomes but mean that neither calibrated engine has a strictly analytic
+$R_0$ of 2. The values live in `config.toml` and participate in the
+cache fingerprint.
 
-The common target is an SEIR process with an explicit hospitalization/recovery
-branch, mean latent period 4 days, mean infectious period 7 days, 5% lifetime
-hospitalization probability, 7-day hospital stay, 100 initial infections, and
-an analytically targeted early-outbreak R0 of 2 on the degree-10 network.
-Transmission is calibrated using edge transmissibility and the mean excess
-degree (approximately degree minus one).
+epiworldR and epydemic use synchronous daily transitions. EoN uses
+continuous-time Gillespie hazards. Covasim retains its native exposed,
+infectious, symptomatic, and severe bookkeeping, with severe prevalence
+used as the hospitalization proxy. Its runner disables waning immunity
+and fixes individual transmissibility and viral load to one, making
+recovered people permanently removed and removing those sources of
+heterogeneity. Covasim does not expose a public switch to remove the
+remaining symptom/severity bookkeeping. Thus this report measures
+restricted, representative framework throughput under aligned network
+and disease targets; it does not claim bit-for-bit epidemiological
+equivalence.
 
-The analytic mapping initially gave epiworldR higher attack rates, so the full
-cells use documented empirical transmission multipliers of 0.887 at 10,000
-agents and 0.855 at 100,000 agents (`config.toml`). Each adjusted cell was rerun
-for all 100 replicates. At 10,000 agents the median attack rates are now 0.3803
-for epiworldR, 0.3984 for Covasim, 0.3774 for EoN, and 0.3958 for epydemic. At
-100,000 agents they are 0.0620, 0.0690, 0.0611, and 0.0641, respectively. These
-population-specific corrections prioritize comparable realized epidemic size;
-the adjusted epiworldR cells should not be interpreted as having independently
-validated $R_0$ values of exactly 2. Each multiplier is included in the cache
-key and recorded in every adjusted result row.
+The sparse contact network fixes mean degree rather than literal graph
+density. At 10,000 and 100,000 agents its densities are approximately
+0.001 and 0.0001, respectively, while every agent still has about ten
+contacts. This prevents the edge count, runtime, and memory from growing
+quadratically.
 
-epiworldR and epydemic use synchronous daily transitions. EoN implements the
-same state graph with continuous-time competing hazards. Covasim retains its
-native exposed, infectious, symptomatic, and severe bookkeeping, with severe
-prevalence used as the hospitalization proxy. The runner disables Covasim's
-waning-immunity/reinfection model and fixes both individual transmissibility
-and viral load to one, while retaining that native severe-state path. Covasim
-does not expose a public switch that removes the remaining generic
-symptom/severity bookkeeping. Consequently, this is a **restricted,
-representative framework-throughput comparison**, not proof that the engines
-execute identical random processes. The report includes epidemic outcome checks
-to make divergences visible.
+## Reproducibility and cache
 
-The committed full-profile result artifacts predate this Covasim restriction.
-They are retained as historical output; rerun `make benchmark` and `make
-report` before using them to compare the revised design.
+Every successful replicate is an atomic JSON cache record keyed by model
+configuration, runner source, engine version, and contact-network
+SHA-256. Rerunning `make benchmark` schedules only missing or stale
+records. The default worker count is one, and common native math-library
+thread counts are pinned to one; users must explicitly opt into a second
+worker.
 
-Relevant upstream documentation: [Covasim](https://docs.covasim.org/),
-[EoN generalized contagion](https://epidemicsonnetworks.readthedocs.io/en/latest/functions/EoN.Gillespie_simple_contagion.html),
-and [epydemic synchronous dynamics](https://pyepydemic.readthedocs.io/en/latest/synchronousdynamics.html).
+| Engine    | Recorded version |
+|:----------|:-----------------|
+| covasim   | 3.1.8            |
+| EoN       | 1.92             |
+| epiworldR | 0.15.1.0         |
+| epydemic  | 1.14.1           |
+
+## References
+
+<div id="refs" class="references csl-bib-body hanging-indent">
+
+<div id="ref-dobson2022epydemic" class="csl-entry">
+
+Dobson, Simon. 2022. “Epydemic: Epidemic Simulation on Networks in
+Python.” In *GitHub Repository*.
+<a href="https://github.com/simoninireland/epydemic"
+class="uri">Https://github.com/simoninireland/epydemic</a>; GitHub.
+
+</div>
+
+<div id="ref-kerrCovasimAgentbasedModel2021" class="csl-entry">
+
+Kerr, Cliff C., Robyn M. Stuart, Dina Mistry, et al. 2021. “Covasim: An
+Agent-Based Model of COVID-19 Dynamics and Interventions.” *PLOS
+Computational Biology* 17 (7): e1009149.
+<https://doi.org/10.1371/journal.pcbi.1009149>.
+
+</div>
+
+<div id="ref-meyerEpiworldRFastAgentBased2023" class="csl-entry">
+
+Meyer, Derek, and George G Vega Yon. 2023.
+“<span class="nocase">epiworldR</span>: Fast Agent-Based Epi Models.”
+*Journal of Open Source Software* 8 (90): 5781.
+<https://doi.org/10.21105/joss.05781>.
+
+</div>
+
+<div id="ref-millerEoNEpidemicsNetworks2019" class="csl-entry">
+
+Miller, Joel, and Tony Ting. 2019. “EoN (Epidemics on Networks): A Fast,
+Flexible Python Package for Simulation, Analytic Approximation, and
+Analysis of Epidemics on Networks.” *Journal of Open Source Software* 4
+(44): 1731. <https://doi.org/10.21105/joss.01731>.
+
+</div>
+
+</div>
