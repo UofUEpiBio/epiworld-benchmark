@@ -1,0 +1,235 @@
+---
+title: "Network epidemic ABM speed benchmark"
+subtitle: "epiworldR, Covasim, EoN, and epydemic"
+date: last-modified
+format:
+  gfm:
+    toc: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+options(scipen = 999)
+results_path <- file.path("results", "results.csv")
+manifest_path <- file.path("results", "run-manifest.json")
+if (file.exists(results_path)) {
+  all_results <- read.csv(results_path, stringsAsFactors = FALSE)
+} else {
+  all_results <- data.frame()
+}
+manifest <- if (file.exists(manifest_path)) jsonlite::read_json(manifest_path, simplifyVector = TRUE) else NULL
+
+if (nrow(all_results)) {
+  full <- subset(all_results, days == 100 & n %in% c(10000, 100000))
+} else {
+  full <- all_results
+}
+
+has_full <- nrow(full) > 0
+expected_per_cell <- 100L
+complete_design <- has_full && all(
+  table(factor(full$engine, levels = c("epiworldR", "covasim", "EoN", "epydemic")),
+        factor(full$n, levels = c(10000, 100000))) >= expected_per_cell
+)
+```
+
+## Executive summary
+
+This benchmark compares simulation speed for 100-day network epidemics at
+10,000 and 100,000 agents, with 100 independent replicates per engine and size.
+All engines use the exact same cached Watts--Strogatz edge list for a population
+size (mean degree 10, rewiring probability 0.05) and target an early-outbreak
+$R_0 = 2$. The epiworldR cells apply documented size-specific transmission
+multipliers of 0.887 at 10,000 agents and 0.855 at 100,000 agents to correct
+their higher realized attack rates under the framework's discrete-time
+transition semantics.
+
+```{r}
+#| label: completion-status
+#| results: asis
+if (!has_full) {
+  cat("::: {.callout-warning}\n",
+      "No full-profile results are present yet. Run `make benchmark`, then render this report again. ",
+      "The available smoke results validate integration but are not performance evidence.\n",
+      ":::\n", sep = "")
+} else if (!complete_design) {
+  cat("::: {.callout-warning}\n",
+      "The full-profile cache is incomplete. Estimates below are provisional; rerun `make benchmark` to resume missing cells.\n",
+      ":::\n", sep = "")
+} else {
+  cat("::: {.callout-tip}\nThe complete 800-run design is available.\n:::\n")
+}
+```
+
+```{r}
+#| label: environment
+if (!is.null(manifest)) {
+  environment <- data.frame(
+    Field = c("Platform", "Python", "Workers", "Latest run failures"),
+    Value = c(manifest$platform, manifest$python, manifest$workers, manifest$failures)
+  )
+  knitr::kable(environment, row.names = FALSE)
+}
+```
+
+```{r}
+#| label: summary-table
+if (has_full) {
+  q <- function(x, p) unname(stats::quantile(x, p, na.rm = TRUE))
+  split_rows <- split(full, list(full$engine, full$n), drop = TRUE)
+  summary_rows <- do.call(rbind, lapply(split_rows, function(d) data.frame(
+    engine = d$engine[[1]],
+    agents = d$n[[1]],
+    replicates = nrow(d),
+    median_sim_s = median(d$simulate_seconds),
+    q25_sim_s = q(d$simulate_seconds, 0.25),
+    q75_sim_s = q(d$simulate_seconds, 0.75)
+  )))
+  summary_rows <- summary_rows[order(summary_rows$agents, summary_rows$median_sim_s), ]
+  knitr::kable(summary_rows, digits = 3,
+    col.names = c("Engine", "Agents", "Runs", "Median simulation (s)",
+                  "Q1 (s)", "Q3 (s)"),
+    row.names = FALSE)
+}
+```
+
+## Simulation time
+
+The primary measure is wall-clock time inside each engine's simulation call.
+The logarithmic scale keeps fast and slow engines legible in one panel.
+
+```{r}
+#| label: simulation-time-plot
+#| fig-width: 9
+#| fig-height: 5
+if (has_full) {
+  full$engine <- factor(full$engine, levels = c("epiworldR", "covasim", "EoN", "epydemic"))
+  full$agents <- factor(full$n, levels = c(10000, 100000),
+                        labels = c("10,000", "100,000"))
+  print(
+    ggplot2::ggplot(full, ggplot2::aes(engine, simulate_seconds, fill = engine)) +
+      ggplot2::geom_boxplot(width = 0.65, outlier.alpha = 0.25) +
+      ggplot2::facet_wrap(~ agents, scales = "free_y") +
+      ggplot2::scale_y_log10() +
+      ggplot2::labs(x = NULL, y = "Simulation wall time (seconds, log scale)",
+                    subtitle = "One box per 100-day population-size cell") +
+      ggplot2::theme_minimal(base_size = 12) +
+      ggplot2::theme(legend.position = "none")
+  )
+}
+```
+
+## Speed relative to epiworldR
+
+Ratios are matched by population size and replicate seed. Values above one
+mean that epiworldR completed the simulation call faster.
+
+```{r}
+#| label: speedup
+if (has_full && any(full$engine == "epiworldR")) {
+  baseline <- full[full$engine == "epiworldR", c("n", "seed", "simulate_seconds")]
+  names(baseline)[3] <- "epiworld_seconds"
+  ratios <- merge(full[full$engine != "epiworldR", ], baseline, by = c("n", "seed"))
+  ratios$speed_ratio <- ratios$simulate_seconds / ratios$epiworld_seconds
+  ratio_groups <- split(ratios, list(ratios$engine, ratios$n), drop = TRUE)
+  ratio_table <- do.call(rbind, lapply(ratio_groups, function(d) data.frame(
+    engine = as.character(d$engine[[1]]),
+    agents = d$n[[1]],
+    median = median(d$speed_ratio),
+    q25 = unname(quantile(d$speed_ratio, .25)),
+    q75 = unname(quantile(d$speed_ratio, .75))
+  )))
+  knitr::kable(ratio_table, digits = 2,
+    col.names = c("Engine", "Agents", "Median time / epiworldR", "Q1", "Q3"),
+    row.names = FALSE)
+}
+```
+
+## Epidemiological sanity checks
+
+Speed is interpretable only if the simulations produce plausible epidemics.
+These checks show final attack rate and peak hospitalization load; differences
+also expose the engines' non-identical time semantics and Covasim's richer
+native progression.
+
+```{r}
+#| label: outcomes-table
+if (has_full) {
+  full$attack_rate <- 1 - full$final_susceptible / full$n
+  outcomes <- aggregate(cbind(attack_rate, peak_hospitalized) ~ engine + n,
+                        full, median)
+  knitr::kable(outcomes, digits = 3,
+    col.names = c("Engine", "Agents", "Median final attack rate",
+                  "Median peak hospitalized"), row.names = FALSE)
+}
+```
+
+```{r}
+#| label: outcomes-plot
+#| fig-width: 9
+#| fig-height: 5
+if (has_full) {
+  outcomes$agents <- factor(outcomes$n, levels = c(10000, 100000),
+                             labels = c("10,000", "100,000"))
+  print(
+    ggplot2::ggplot(outcomes, ggplot2::aes(engine, attack_rate, fill = engine)) +
+      ggplot2::geom_col(width = 0.65) +
+      ggplot2::facet_wrap(~ agents) +
+      ggplot2::scale_y_continuous(limits = c(0, NA)) +
+      ggplot2::labs(x = NULL, y = "Median final attack rate",
+                    subtitle = "The calibrated outcomes are closely aligned within each population size") +
+      ggplot2::theme_minimal(base_size = 12) +
+      ggplot2::theme(legend.position = "none")
+  )
+}
+```
+
+## Design and interpretation
+
+The common disease graph is susceptible $\rightarrow$ exposed $\rightarrow$
+infectious $\rightarrow$ recovered, with a competing infectious $\rightarrow$
+hospitalized $\rightarrow$ recovered branch. Mean latent and infectious
+periods are 4 and 7 days, lifetime hospitalization probability is 5%, and the
+hospital stay is 7 days. Initial infections are 100 in the full profile.
+
+The initial analytic transmission mapping produced larger attack rates in
+epiworldR than in the other engines. Short pilot calibrations therefore selected
+multipliers of 0.887 at 10,000 agents and 0.855 at 100,000 agents, after which
+all 100 epiworldR replicates in each adjusted cell were rerun. The resulting
+median attack rates are shown above. These empirical corrections are
+intentionally population-specific; they align the benchmark outcomes but mean
+that the epiworldR cells no longer have a strictly analytic $R_0$ of 2. The
+values live in `config.toml` and participate in the cache fingerprint.
+
+epiworldR and epydemic use synchronous daily transitions. EoN uses
+continuous-time Gillespie hazards. Covasim retains its native exposed,
+infectious, symptomatic, and severe bookkeeping, with severe prevalence used
+as the hospitalization proxy. Thus this report measures representative
+framework throughput under aligned network and disease targets; it does not
+claim bit-for-bit epidemiological equivalence.
+
+The sparse contact network fixes mean degree rather than literal graph density.
+At 10,000 and 100,000 agents its densities are approximately 0.001 and 0.0001,
+respectively, while every agent still has about ten contacts. This prevents the
+edge count, runtime, and memory from growing quadratically.
+
+## Reproducibility and cache
+
+Every successful replicate is an atomic JSON cache record keyed by model
+configuration, runner source, engine version, and contact-network SHA-256.
+Rerunning `make benchmark` schedules only missing or stale records. The default
+worker count is one, and common native math-library thread counts are pinned to
+one; users must explicitly opt into a second worker.
+
+```{r}
+#| label: versions
+if (nrow(all_results)) {
+  versions <- unique(all_results[c("engine", "engine_version")])
+  knitr::kable(versions[order(versions$engine), ],
+               col.names = c("Engine", "Recorded version"), row.names = FALSE)
+}
+```

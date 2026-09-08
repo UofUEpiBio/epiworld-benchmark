@@ -1,0 +1,19 @@
+[project]
+name = "abm-speed-benchmark"
+version = "0.1.0"
+description = "Reproducible network epidemic benchmark for epiworldR and Python ABM engines"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "covasim==3.1.8",
+  "EoN==1.92",
+  "epydemic==1.14.1",
+  "networkx==3.6.1",
+  "numpy==2.2.6",
+  "scipy==1.15.3",
+]
+
+[dependency-groups]
+dev = ["pytest==9.0.2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

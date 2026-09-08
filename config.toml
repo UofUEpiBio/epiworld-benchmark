@@ -1,0 +1,43 @@
+[study]
+days = 100
+replicates = 100
+population_sizes = [10000, 100000]
+base_seed = 8675309
+engines = ["epiworldR", "covasim", "EoN", "epydemic"]
+
+[network]
+type = "watts_strogatz"
+mean_degree = 10
+rewire_probability = 0.05
+seed = 20260907
+
+[disease]
+model = "SEIR"
+target_r0 = 2.0
+initial_infected = 100
+latent_days = 4.0
+infectious_days = 7.0
+# Hospitalization is retained as a common outcome parameter. Engines whose
+# native SEIR supports an H state use it directly; Covasim reports its native
+# severe/hospital load. The primary timing comparison is the common SEIR core.
+hospitalization_probability = 0.05
+hospital_days = 7.0
+
+[calibration]
+# epiworldR advances faster under the shared analytic edge-transmissibility
+# mapping. These empirical factors align its median day-100 attack rate with
+# the three Python comparators at each full-profile population size.
+epiworld_transmission_multiplier_10000 = 0.887
+epiworld_transmission_multiplier_100000 = 0.855
+
+[resources]
+# Safe by default: models run sequentially and native math libraries get one
+# thread. The CLI permits at most two workers even on a many-core machine.
+workers = 1
+max_workers = 2
+
+[smoke]
+days = 10
+replicates = 1
+population_sizes = [1000]
+initial_infected = 10
