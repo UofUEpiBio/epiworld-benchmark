@@ -153,8 +153,8 @@ if (has_full && any(full$engine == "epiworldR")) {
 
 Speed is interpretable only if the simulations produce plausible epidemics.
 These checks show final attack rate and peak hospitalization load; differences
-also expose the engines' non-identical time semantics and Covasim's richer
-native progression.
+also expose the engines' non-identical time semantics and Covasim's native
+symptom/severe bookkeeping.
 
 ```{r}
 #| label: outcomes-table
@@ -208,9 +208,17 @@ values live in `config.toml` and participate in the cache fingerprint.
 epiworldR and epydemic use synchronous daily transitions. EoN uses
 continuous-time Gillespie hazards. Covasim retains its native exposed,
 infectious, symptomatic, and severe bookkeeping, with severe prevalence used
-as the hospitalization proxy. Thus this report measures representative
-framework throughput under aligned network and disease targets; it does not
-claim bit-for-bit epidemiological equivalence.
+as the hospitalization proxy. Its runner disables waning immunity and fixes
+individual transmissibility and viral load to one, making recovered people
+permanently removed and removing those sources of heterogeneity. Covasim does
+not expose a public switch to remove the remaining symptom/severity
+bookkeeping. Thus this report measures restricted, representative framework
+throughput under aligned network and disease targets; it does not claim
+bit-for-bit epidemiological equivalence.
+
+> The committed full-profile result artifacts predate this Covasim restriction.
+> Rerun `make benchmark` and `make report` before using them to compare the
+> revised design.
 
 The sparse contact network fixes mean degree rather than literal graph density.
 At 10,000 and 100,000 agents its densities are approximately 0.001 and 0.0001,

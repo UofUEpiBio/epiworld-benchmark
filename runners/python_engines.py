@@ -255,6 +255,13 @@ def run_covasim(args: argparse.Namespace, source: np.ndarray, target: np.ndarray
         "dur": durations,
         "prog_by_age": False,
         "prognoses": prognoses,
+        # Restrict Covasim to the common SEIRH target: recovered people remain
+        # removed, and transmission has neither person-level dispersion nor a
+        # time-varying viral-load multiplier. Covasim still uses its native
+        # symptom/severe state bookkeeping to represent hospitalization.
+        "use_waning": False,
+        "beta_dist": {"dist": "normal", "par1": 1.0, "par2": 0.0},
+        "viral_dist": {"frac_time": 1.0, "load_ratio": 1.0, "high_cap": 1_000_000.0},
         "rescale": False,
     }
     sim = cv.Sim(pars=pars, people=popdict)

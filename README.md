@@ -4,8 +4,9 @@ This folder contains a reproducible, resumable benchmark of four epidemic
 simulation engines:
 
 - **epiworldR 0.15.1.0** (R/C++), using a custom discrete-time SEIRH model;
-- **Covasim 3.1.8** (Python), using its native disease progression and severe
-  state as the hospitalization proxy;
+- **Covasim 3.1.8** (Python), using its native symptom/severe bookkeeping and
+  severe state as the hospitalization proxy, with waning immunity and
+  transmission heterogeneity disabled;
 - **EoN 1.92** (Python), using a continuous-time Gillespie SEIRH model; and
 - **epydemic 1.14.1** (Python), using a custom synchronous SEIRH model.
 
@@ -101,13 +102,20 @@ validated $R_0$ values of exactly 2. Each multiplier is included in the cache
 key and recorded in every adjusted result row.
 
 epiworldR and epydemic use synchronous daily transitions. EoN implements the
-same state graph with continuous-time competing hazards. Covasim is deliberately
-engine-native: it retains Covasim's internal infection bookkeeping, while its
-durations, homogeneous prognoses, static contacts, and severe probability are
-aligned as closely as its public API permits. Consequently, this is a
-**representative framework-throughput comparison**, not proof that the engines
+same state graph with continuous-time competing hazards. Covasim retains its
+native exposed, infectious, symptomatic, and severe bookkeeping, with severe
+prevalence used as the hospitalization proxy. The runner disables Covasim's
+waning-immunity/reinfection model and fixes both individual transmissibility
+and viral load to one, while retaining that native severe-state path. Covasim
+does not expose a public switch that removes the remaining generic
+symptom/severity bookkeeping. Consequently, this is a **restricted,
+representative framework-throughput comparison**, not proof that the engines
 execute identical random processes. The report includes epidemic outcome checks
 to make divergences visible.
+
+The committed full-profile result artifacts predate this Covasim restriction.
+They are retained as historical output; rerun `make benchmark` and `make
+report` before using them to compare the revised design.
 
 Relevant upstream documentation: [Covasim](https://docs.covasim.org/),
 [EoN generalized contagion](https://epidemicsonnetworks.readthedocs.io/en/latest/functions/EoN.Gillespie_simple_contagion.html),
