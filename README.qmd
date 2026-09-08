@@ -9,6 +9,7 @@ execute:
   echo: false
   warning: false
   message: false
+bibliography: references.bib
 ---
 
 ```{r}
@@ -40,13 +41,14 @@ complete_design <- has_full && all(
 ## Executive summary
 
 This benchmark compares simulation speed for 100-day network epidemics at
-10,000 and 100,000 agents, with 100 independent replicates per engine and size.
+10,000 and 100,000 agents, with 100 independent replicates per engine and size. The included engines are [epiworldR](https://uofuepibio.github.io/epiworldR/){target="_blank"} [@meyerEpiworldRFastAgentBased2023], [Covasim](https://covasim.org/){target="_blank"} [@kerrCovasimAgentbasedModel2021], [EoN](https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html){target="_blank"} [@millerEoNEpidemicsNetworks2019], and [epydemic](https://github.com/simoninireland/epydemic){target="_blank"} [@dobson2022epydemic]. 
 All engines use the exact same cached Watts--Strogatz edge list for a population
 size (mean degree 10, rewiring probability 0.05) and target an early-outbreak
-$R_0 = 2$. The epiworldR cells apply documented size-specific transmission
-multipliers of 0.887 at 10,000 agents and 0.855 at 100,000 agents to correct
-their higher realized attack rates under the framework's discrete-time
-transition semantics.
+$R_0 = 2$. The epiworldR cells apply size-specific transmission multipliers of
+0.887 at 10,000 agents and 0.855 at 100,000 agents. The restricted Covasim
+cells apply corresponding factors of 0.715 and 0.710. These empirical factors
+align realized attack rates under the frameworks' different transmission
+semantics.
 
 ```{r}
 #| label: completion-status
@@ -153,8 +155,8 @@ if (has_full && any(full$engine == "epiworldR")) {
 
 Speed is interpretable only if the simulations produce plausible epidemics.
 These checks show final attack rate and peak hospitalization load; differences
-also expose the engines' non-identical time semantics and Covasim's richer
-native progression.
+also expose the engines' non-identical time semantics and Covasim's native
+symptom/severe bookkeeping.
 
 ```{r}
 #| label: outcomes-table
@@ -196,26 +198,32 @@ hospitalized $\rightarrow$ recovered branch. Mean latent and infectious
 periods are 4 and 7 days, lifetime hospitalization probability is 5%, and the
 hospital stay is 7 days. Initial infections are 100 in the full profile.
 
-The initial analytic transmission mapping produced larger attack rates in
-epiworldR than in the other engines. Short pilot calibrations therefore selected
-multipliers of 0.887 at 10,000 agents and 0.855 at 100,000 agents, after which
-all 100 epiworldR replicates in each adjusted cell were rerun. The resulting
-median attack rates are shown above. These empirical corrections are
-intentionally population-specific; they align the benchmark outcomes but mean
-that the epiworldR cells no longer have a strictly analytic $R_0$ of 2. The
-values live in `config.toml` and participate in the cache fingerprint.
+The shared analytic transmission mapping produced different realized attack
+rates across frameworks. Calibration therefore selected size-specific factors
+for epiworldR (0.887 at 10,000 agents and 0.855 at 100,000) and for restricted
+Covasim (0.715 and 0.710). All 100 replicates in each adjusted cell were then
+rerun. These empirical corrections are intentionally population-specific; they
+align benchmark outcomes but mean that neither calibrated engine has a strictly
+analytic $R_0$ of 2. The values live in `config.toml` and participate in the
+cache fingerprint.
 
 epiworldR and epydemic use synchronous daily transitions. EoN uses
 continuous-time Gillespie hazards. Covasim retains its native exposed,
 infectious, symptomatic, and severe bookkeeping, with severe prevalence used
-as the hospitalization proxy. Thus this report measures representative
-framework throughput under aligned network and disease targets; it does not
-claim bit-for-bit epidemiological equivalence.
+as the hospitalization proxy. Its runner disables waning immunity and fixes
+individual transmissibility and viral load to one, making recovered people
+permanently removed and removing those sources of heterogeneity. Covasim does
+not expose a public switch to remove the remaining symptom/severity
+bookkeeping. Thus this report measures restricted, representative framework
+throughput under aligned network and disease targets; it does not claim
+bit-for-bit epidemiological equivalence.
 
 The sparse contact network fixes mean degree rather than literal graph density.
 At 10,000 and 100,000 agents its densities are approximately 0.001 and 0.0001,
 respectively, while every agent still has about ten contacts. This prevents the
 edge count, runtime, and memory from growing quadratically.
+
+More details regarding the project setup can be found in [setup.md](./setup.md).
 
 ## Reproducibility and cache
 
@@ -233,3 +241,5 @@ if (nrow(all_results)) {
                col.names = c("Engine", "Recorded version"), row.names = FALSE)
 }
 ```
+
+## References

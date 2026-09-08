@@ -102,6 +102,7 @@ def task_command(task: dict[str, Any]) -> list[str]:
         "--infectious-days", str(task["infectious_days"]),
         "--hospitalization-probability", str(task["hospitalization_probability"]),
         "--hospital-days", str(task["hospital_days"]),
+        "--transmission-multiplier", str(task["transmission_multiplier"]),
         "--fingerprint", task["fingerprint"],
         "--engine-version", task["engine_version"],
         "--output", task["output"],
@@ -110,7 +111,6 @@ def task_command(task: dict[str, Any]) -> list[str]:
         return [
             "Rscript", "--vanilla", str(ROOT / "runners" / "epiworld.R"),
             *common,
-            "--transmission-multiplier", str(task["transmission_multiplier"]),
         ]
     return [
         sys.executable,
@@ -230,11 +230,8 @@ def main() -> int:
                     "infectious_days": disease["infectious_days"],
                     "hospitalization_probability": disease["hospitalization_probability"],
                     "hospital_days": disease["hospital_days"],
-                    "transmission_multiplier": (
-                        float(calibration[f"epiworld_transmission_multiplier_{int(n)}"])
-                        if engine == "epiworldR"
-                        and f"epiworld_transmission_multiplier_{int(n)}" in calibration
-                        else 1.0
+                    "transmission_multiplier": float(
+                        calibration.get(f"{engine}_transmission_multiplier_{int(n)}", 1.0)
                     ),
                 }
                 task_fingerprint = fingerprint(identity)
