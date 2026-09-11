@@ -1,6 +1,6 @@
 # Network epidemic ABM speed benchmark
 
-2026-09-08
+2026-09-10
 
 - [Executive summary](#executive-summary)
 - [Simulation time](#simulation-time)

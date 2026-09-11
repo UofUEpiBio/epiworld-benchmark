@@ -111,16 +111,19 @@ The logarithmic scale keeps fast and slow engines legible in one panel.
 if (has_full) {
   full$engine <- factor(full$engine, levels = c("epiworldR", "covasim", "EoN", "epydemic"))
   full$agents <- factor(full$n, levels = c(10000, 100000),
-                        labels = c("10,000", "100,000"))
+                        labels = c("10,000 agents", "100,000 agents"))
   print(
     ggplot2::ggplot(full, ggplot2::aes(engine, simulate_seconds, fill = engine)) +
       ggplot2::geom_boxplot(width = 0.65, outlier.alpha = 0.25) +
       ggplot2::facet_wrap(~ agents, scales = "free_y") +
       ggplot2::scale_y_log10() +
-      ggplot2::labs(x = NULL, y = "Simulation wall time (seconds, log scale)",
+      ggplot2::labs(x = NULL, y = "Simulation wall time\n(seconds, log scale)",
                     subtitle = "One box per 100-day population-size cell") +
-      ggplot2::theme_minimal(base_size = 12) +
-      ggplot2::theme(legend.position = "none")
+      ggplot2::theme_minimal(base_size = 18) +
+      ggplot2::theme(
+        legend.position = "none",
+        axis.text.x = ggplot2::element_text(angle = 30, hjust = 1)
+        )
   )
 }
 ```
