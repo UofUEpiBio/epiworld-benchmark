@@ -1,6 +1,6 @@
 # Network epidemic ABM speed benchmark
 
-2026-09-10
+2026-09-13
 
 - [Executive summary](#executive-summary)
 - [Simulation time](#simulation-time)
@@ -39,19 +39,19 @@ different transmission semantics.
 |:--------------------|:-----------------------------|
 | Platform            | macOS-15.0.1-arm64-arm-64bit |
 | Python              | 3.12.11                      |
-| Workers             | 2                            |
+| Workers             | 4                            |
 | Latest run failures | 0                            |
 
 | Engine    | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:----------|-------:|-----:|----------------------:|-------:|-------:|
-| epiworldR |  10000 |  100 |                 0.028 |  0.026 |  0.031 |
-| covasim   |  10000 |  100 |                 0.067 |  0.066 |  0.069 |
-| epydemic  |  10000 |  100 |                 0.499 |  0.476 |  0.534 |
-| EoN       |  10000 |  100 |                 0.723 |  0.642 |  0.819 |
-| epiworldR | 100000 |  100 |                 0.054 |  0.049 |  0.061 |
-| covasim   | 100000 |  100 |                 0.382 |  0.372 |  0.396 |
-| EoN       | 100000 |  100 |                 1.714 |  1.435 |  2.097 |
-| epydemic  | 100000 |  100 |                 1.744 |  1.634 |  1.948 |
+| epiworldR |  10000 |  100 |                 0.038 |  0.036 |  0.040 |
+| covasim   |  10000 |  100 |                 0.101 |  0.099 |  0.104 |
+| EoN       |  10000 |  100 |                 0.112 |  0.106 |  0.120 |
+| epydemic  |  10000 |  100 |                 0.694 |  0.659 |  0.719 |
+| epiworldR | 100000 |  100 |                 0.083 |  0.076 |  0.096 |
+| EoN       | 100000 |  100 |                 0.437 |  0.417 |  0.450 |
+| covasim   | 100000 |  100 |                 0.558 |  0.542 |  0.598 |
+| epydemic  | 100000 |  100 |                 2.387 |  2.295 |  2.502 |
 
 ## Simulation time
 
@@ -68,12 +68,12 @@ one mean that epiworldR completed the simulation call faster.
 
 | Engine   | Agents | Median time / epiworldR |    Q1 |    Q3 |
 |:---------|-------:|------------------------:|------:|------:|
-| covasim  |  10000 |                    2.44 |  2.21 |  2.69 |
-| EoN      |  10000 |                   25.22 | 19.81 | 29.15 |
-| epydemic |  10000 |                   17.99 | 15.26 | 20.27 |
-| covasim  | 100000 |                    7.00 |  6.34 |  7.85 |
-| EoN      | 100000 |                   29.81 | 25.28 | 39.89 |
-| epydemic | 100000 |                   33.66 | 28.29 | 37.15 |
+| covasim  |  10000 |                    2.72 |  2.53 |  2.87 |
+| EoN      |  10000 |                    2.93 |  2.69 |  3.17 |
+| epydemic |  10000 |                   18.31 | 16.34 | 19.82 |
+| covasim  | 100000 |                    6.81 |  5.91 |  7.43 |
+| EoN      | 100000 |                    5.22 |  4.47 |  5.68 |
+| epydemic | 100000 |                   28.89 | 24.89 | 31.90 |
 
 ## Epidemiological sanity checks
 
@@ -86,11 +86,11 @@ and Covasim’s native symptom/severe bookkeeping.
 |:----------|-------:|-------------------------:|-------------------------:|
 | epiworldR |  10000 |                    0.380 |                       22 |
 | covasim   |  10000 |                    0.392 |                       23 |
-| EoN       |  10000 |                    0.392 |                       23 |
+| EoN       |  10000 |                    0.379 |                       21 |
 | epydemic  |  10000 |                    0.396 |                       25 |
 | epiworldR | 100000 |                    0.062 |                       28 |
 | covasim   | 100000 |                    0.061 |                       35 |
-| EoN       | 100000 |                    0.062 |                       35 |
+| EoN       | 100000 |                    0.060 |                       32 |
 | epydemic  | 100000 |                    0.064 |                       41 |
 
 ![](README_files/figure-commonmark/outcomes-plot-1.png)
@@ -115,7 +115,8 @@ $R_0$ of 2. The values live in `config.toml` and participate in the
 cache fingerprint.
 
 epiworldR and epydemic use synchronous daily transitions. EoN uses
-continuous-time Gillespie hazards. Covasim retains its native exposed,
+continuous-time hazards, simulated exactly with its event-driven
+`fast_simple_contagion` algorithm. Covasim retains its native exposed,
 infectious, symptomatic, and severe bookkeeping, with severe prevalence
 used as the hospitalization proxy. Its runner disables waning immunity
 and fixes individual transmissibility and viral load to one, making
@@ -141,8 +142,12 @@ Every successful replicate is an atomic JSON cache record keyed by model
 configuration, runner source, engine version, and contact-network
 SHA-256. Rerunning `make benchmark` schedules only missing or stale
 records. The default worker count is one, and common native math-library
-thread counts are pinned to one; users must explicitly opt into a second
-worker.
+thread counts are pinned to one. Concurrency is opt-in through the
+`N_THREADS` environment variable and is intended for filling the cache,
+not for measurement: concurrent replicates contend for memory bandwidth
+and performance cores, and the penalty differs by engine, so the timings
+reported here are collected sequentially. The worker count for the run
+behind this report is shown in the table above.
 
 | Engine    | Recorded version |
 |:----------|:-----------------|

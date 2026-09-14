@@ -31,16 +31,24 @@ hospital_days = 7.0
 # and permanent immunity; its native daily transmission semantics otherwise
 # produced substantially larger final attack rates under the shared analytic
 # mapping.
-epiworld_transmission_multiplier_10000 = 0.887
-epiworld_transmission_multiplier_100000 = 0.855
+epiworldR_transmission_multiplier_10000 = 0.887
+epiworldR_transmission_multiplier_100000 = 0.855
 covasim_transmission_multiplier_10000 = 0.715
 covasim_transmission_multiplier_100000 = 0.710
 
 [resources]
 # Safe by default: models run sequentially and native math libraries get one
-# thread. The CLI permits at most two workers even on a many-core machine.
+# thread. Concurrency comes from $N_THREADS (or --workers), capped by
+# max_workers and by the host core count.
+#
+# Timings are only comparable across engines when collected at the same
+# concurrency. Measured on an 11-core M3 Pro (5 performance + 6 efficiency),
+# concurrency up to three workers left median simulate_seconds unchanged at
+# n=100000, while six to eight workers inflated it by 1.1x to 2.2x depending
+# on the engine. Because the distortion is uneven it biases the cross-engine
+# comparison rather than just adding noise. See setup.md for the measurements.
 workers = 1
-max_workers = 2
+max_workers = 8
 
 [smoke]
 days = 10

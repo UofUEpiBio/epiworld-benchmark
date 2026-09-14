@@ -6,7 +6,8 @@ simulation engines:
 - **epiworldR 0.15.1.0** (R/C++), using a custom discrete-time SEIRH model;
 - **Covasim 3.1.8** (Python), using its native disease progression and severe
   state as the hospitalization proxy;
-- **EoN 1.92** (Python), using a continuous-time Gillespie SEIRH model; and
+- **EoN 1.92** (Python), using a continuous-time SEIRH model run with the
+  event-driven `fast_simple_contagion` algorithm; and
 - **epydemic 1.14.1** (Python), using a custom synchronous SEIRH model.
 
 The full design runs 100 replicates for 100 days at 10,000 and 100,000 agents.
@@ -62,9 +63,46 @@ filters it to the full 10,000/100,000-agent, 100-day design.
 
 The default is intentionally conservative: one simulation subprocess at a
 time, with OpenMP, BLAS, MKL, Accelerate, NumExpr, Numba, and Rcpp thread-count
-variables all set to one. `--workers 2` is available for an explicit opt-in,
-and the harness hard-caps concurrency at two even on a many-core host. Network
-generation occurs once per size and is excluded from engine timings.
+variables all set to one. Network generation occurs once per size and is
+excluded from engine timings.
+
+Concurrency is opt-in through the `N_THREADS` environment variable, capped by
+`resources.max_workers` in `config.toml` and by the host core count:
+
+```sh
+N_THREADS=3 make benchmark
+```
+
+`--workers` overrides `N_THREADS` when both are given. `N_THREADS` is not part
+of the cache fingerprint, so changing it does not invalidate cached results.
+
+Replicates running side by side contend for memory bandwidth and, on hybrid
+CPUs, for performance cores, and the penalty differs by engine. Median
+`simulate_seconds` at 100,000 agents, relative to a sequential run, measured on
+an 11-core M3 Pro (5 performance + 6 efficiency), 12 replicates per cell:
+
+| workers | epiworldR   | covasim     | EoN         |
+|--------:|------------:|------------:|------------:|
+| 2       | 0.98x       | 1.03x       | 1.00x       |
+| 3       | 1.01x       | 1.20x       | 0.99x       |
+| 4       | 1.06-1.30x  | 1.04-1.07x  | 0.97-0.99x  |
+| 6       | 1.62x       | 1.42x       | 1.09x       |
+| 8       | 1.42-2.17x  | 1.36-1.46x  | 1.13-1.27x  |
+
+Ranges span repeated probes; cells without a range were measured once, and the
+spread at four and eight workers shows these figures are sensitive to other
+load on the host. The pattern is stable even so: up to three workers is free,
+and beyond that the fastest engine degrades the most, because it is the one
+most sensitive to being scheduled onto an efficiency core. That biases the
+cross-engine comparison rather than just adding noise.
+
+Three workers is the recommended setting on this host: roughly 3x throughput at
+no measurable timing cost, staying within the five performance cores. Eight
+workers bought only about 1.7x the throughput of three while distorting the
+comparison. Use `N_THREADS=1` if you want timings collected under exactly the
+documented sequential policy.
+
+Epidemiological outputs are unaffected by concurrency; only the timings are.
 
 ## What is timed
 
@@ -82,5 +120,5 @@ leakage and making failures independently resumable.
 
 
 Relevant upstream documentation: [Covasim](https://docs.covasim.org/),
-[EoN generalized contagion](https://epidemicsonnetworks.readthedocs.io/en/latest/functions/EoN.Gillespie_simple_contagion.html),
+[EoN generalized contagion](https://epidemicsonnetworks.readthedocs.io/en/latest/functions/EoN.fast_simple_contagion.html),
 and [epydemic synchronous dynamics](https://pyepydemic.readthedocs.io/en/latest/synchronousdynamics.html).

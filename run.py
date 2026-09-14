@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -84,6 +85,25 @@ def valid_cache(path: Path, expected_fingerprint: str) -> bool:
         return value.get("status") == "ok" and value.get("fingerprint") == expected_fingerprint
     except (OSError, ValueError):
         return False
+
+
+def resolve_workers(cli_value: int | None, resources: dict[str, Any]) -> int:
+    """Harness concurrency: --workers, else $N_THREADS, else the config default.
+
+    $N_THREADS is deliberately not part of source_hash(), so tuning concurrency
+    does not invalidate cached results the way editing config.toml would.
+    """
+    if cli_value is not None:
+        requested = cli_value
+    elif (raw := os.environ.get("N_THREADS", "").strip()):
+        try:
+            requested = int(raw)
+        except ValueError:
+            raise SystemExit(f"N_THREADS must be an integer, got {raw!r}") from None
+    else:
+        requested = int(resources["workers"])
+    ceiling = min(int(resources["max_workers"]), os.cpu_count() or 1)
+    return max(1, min(requested, ceiling))
 
 
 def task_command(task: dict[str, Any]) -> list[str]:
@@ -164,7 +184,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--engines", nargs="+", help="subset of configured engines")
     parser.add_argument("--sizes", nargs="+", type=int, help="override profile population sizes")
     parser.add_argument("--replicates", type=int, help="override profile replicate count")
-    parser.add_argument("--workers", type=int, help="override safe default (hard-capped by config)")
+    parser.add_argument(
+        "--workers", type=int,
+        help="harness concurrency; overrides $N_THREADS (hard-capped by config)",
+    )
     parser.add_argument("--force", action="store_true", help="ignore matching cached results")
     parser.add_argument("--dry-run", action="store_true", help="show work without running models")
     return parser.parse_args()
@@ -181,13 +204,24 @@ def main() -> int:
     unknown = sorted(set(engines) - set(study["engines"]))
     if unknown:
         raise SystemExit(f"Unknown engine(s): {', '.join(unknown)}")
+    # Calibration keys are looked up as "<engine>_transmission_multiplier_<n>".
+    # A key whose prefix is not an engine name would silently fall back to a
+    # multiplier of 1.0, so reject it here instead.
+    stray = sorted(
+        key for key in calibration
+        if (match := re.fullmatch(r"(.+)_transmission_multiplier_\d+", key))
+        and match.group(1) not in set(study["engines"])
+    )
+    if stray:
+        raise SystemExit(
+            "Calibration key(s) do not match any engine name: " + ", ".join(stray)
+        )
     profile = study if args.profile == "full" else (study | config["smoke"])
     population_sizes = args.sizes or list(profile["population_sizes"])
     replicate_count = args.replicates or int(profile["replicates"])
     if replicate_count < 1:
         raise SystemExit("--replicates must be at least one")
-    workers = args.workers if args.workers is not None else int(resources["workers"])
-    workers = max(1, min(workers, int(resources["max_workers"]), 2))
+    workers = resolve_workers(args.workers, resources)
 
     if shutil.which("Rscript") is None and "epiworldR" in engines:
         raise SystemExit("Rscript is required for the epiworldR runner")
@@ -250,6 +284,17 @@ def main() -> int:
         f"workers={workers}; cached={cached}; pending={len(tasks)}",
         flush=True,
     )
+    if workers > 1 and tasks:
+        # Concurrent replicates contend for memory bandwidth and, on hybrid
+        # CPUs, for performance cores. The effect is uneven across engines, so
+        # timings from a parallel run are not comparable to sequential ones.
+        print(
+            f"NOTE: running {workers} replicates concurrently; timings are "
+            "comparable only against runs at the same concurrency. High worker "
+            "counts inflate simulate_seconds unevenly across engines - see the "
+            "resource policy in setup.md.",
+            file=sys.stderr, flush=True,
+        )
     if args.dry_run:
         return 0
 

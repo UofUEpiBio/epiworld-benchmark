@@ -96,16 +96,21 @@ def run_eon(args: argparse.Namespace, source: np.ndarray, target: np.ndarray) ->
     chooser = random.Random(args.seed)
     for node in chooser.sample(range(args.n), min(args.initial_infected, args.n)):
         initial[node] = "I"
-    random.seed(args.seed)
-    np.random.seed(args.seed)
+    # EoN 1.92 draws from a private Generator, so seeding random/np.random
+    # globally never reaches it; the generator has to be passed in explicitly.
+    rng = np.random.default_rng(args.seed)
     started = perf_counter()
-    times, susceptible, exposed, infected, hospitalized, recovered = EoN.Gillespie_simple_contagion(
+    # fast_simple_contagion is the event-driven counterpart of
+    # Gillespie_simple_contagion: same continuous-time Markov chain, same
+    # arguments, and the algorithm EoN's own documentation recommends.
+    times, susceptible, exposed, infected, hospitalized, recovered = EoN.fast_simple_contagion(
         graph,
         spontaneous,
         induced,
         initial,
         return_statuses=("S", "E", "I", "H", "R"),
         tmax=args.days,
+        rng=rng,
         return_full_data=False,
     )
     elapsed = perf_counter() - started

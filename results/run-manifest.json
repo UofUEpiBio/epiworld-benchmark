@@ -1,16 +1,22 @@
 {
   "cached_before_run": 0,
   "engine_versions": {
-    "covasim": "3.1.8"
+    "EoN": "1.92",
+    "covasim": "3.1.8",
+    "epiworldR": "0.15.1.0",
+    "epydemic": "1.14.1"
   },
-  "executed": 200,
+  "executed": 800,
   "failures": 0,
   "platform": "macOS-15.0.1-arm64-arm-64bit",
   "profile": "full",
   "python": "3.12.11",
   "requested_engines": [
-    "covasim"
+    "epiworldR",
+    "covasim",
+    "EoN",
+    "epydemic"
   ],
   "result_rows_available": 804,
-  "workers": 2
+  "workers": 4
 }

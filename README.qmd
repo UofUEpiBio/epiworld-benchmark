@@ -115,10 +115,26 @@ if (has_full) {
   print(
     ggplot2::ggplot(full, ggplot2::aes(engine, simulate_seconds, fill = engine)) +
       ggplot2::geom_boxplot(width = 0.65, outlier.alpha = 0.25) +
+      ggplot2::stat_summary(
+        fun = median, geom = "text",
+        ggplot2::aes(
+          label = ggplot2::after_stat(sprintf("%.2fs", y))
+          ),
+        vjust = -1, size = 4.5, hjust = -.3
+        ) +
       ggplot2::facet_wrap(~ agents, scales = "free_y") +
-      ggplot2::scale_y_log10() +
-      ggplot2::labs(x = NULL, y = "Simulation wall time\n(seconds, log scale)",
-                    subtitle = "One box per 100-day population-size cell") +
+      ggplot2::scale_y_log10(
+        expand = ggplot2::expansion(mult = c(0.05, 0.12))
+        ) +
+      ggplot2::scale_x_discrete(
+        expand = ggplot2::expansion(add = c(0, 0.7))
+      ) +
+      ggplot2::labs(
+        x = NULL,
+        y = "Simulation wall time\n(seconds, log scale)",
+        subtitle = "Wall time distribution for 100-day simulations",
+        caption = "Note: Numeric labels show median simulation time"
+        ) +
       ggplot2::theme_minimal(base_size = 18) +
       ggplot2::theme(
         legend.position = "none",
@@ -211,7 +227,8 @@ analytic $R_0$ of 2. The values live in `config.toml` and participate in the
 cache fingerprint.
 
 epiworldR and epydemic use synchronous daily transitions. EoN uses
-continuous-time Gillespie hazards. Covasim retains its native exposed,
+continuous-time hazards, simulated exactly with its event-driven
+`fast_simple_contagion` algorithm. Covasim retains its native exposed,
 infectious, symptomatic, and severe bookkeeping, with severe prevalence used
 as the hospitalization proxy. Its runner disables waning immunity and fixes
 individual transmissibility and viral load to one, making recovered people
@@ -234,7 +251,11 @@ Every successful replicate is an atomic JSON cache record keyed by model
 configuration, runner source, engine version, and contact-network SHA-256.
 Rerunning `make benchmark` schedules only missing or stale records. The default
 worker count is one, and common native math-library thread counts are pinned to
-one; users must explicitly opt into a second worker.
+one. Concurrency is opt-in through the `N_THREADS` environment variable and is
+intended for filling the cache, not for measurement: concurrent replicates
+contend for memory bandwidth and performance cores, and the penalty differs by
+engine, so the timings reported here are collected sequentially. The worker
+count for the run behind this report is shown in the table above.
 
 ```{r}
 #| label: versions
