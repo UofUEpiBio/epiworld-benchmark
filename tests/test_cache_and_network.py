@@ -110,7 +110,10 @@ def test_source_paths_cover_only_the_scenario_runners() -> None:
         assert f"{scenario}/runners/epiworld.R" in paths
         assert "config.toml" in paths
         assert not any("/target/" in path for path in paths)
-        assert not any(path.endswith(("README.md", "code_regions.yml")) for path in paths)
+        assert not any(
+            path.endswith(("README.md", "README.qmd", "code_regions.yml")) or "README_files" in path
+            for path in paths
+        )
         others = set(discover_scenarios()) - {scenario}
         assert not any(path.split("/")[0] in others for path in paths)
 

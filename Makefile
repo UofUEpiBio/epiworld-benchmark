@@ -18,7 +18,7 @@ help:
 	@echo "  check           - Run tests and check R package dependencies"
 	@echo "  smoke           - Run a quick smoke test of the simulation"
 	@echo "  benchmark       - Run the full benchmark simulation"
-	@echo "  report          - Render the report using Quarto"
+	@echo "  report          - Render the overview and every scenario report with Quarto"
 	@echo "  clean-cache     - Remove benchmark/cache manually if you really want to discard reusable runs."
 	@echo ""
 	@echo "smoke and benchmark run every scenario_* folder; set SCENARIOS to pick some."
@@ -46,10 +46,13 @@ smoke:
 benchmark:
 	$(PYTHON) run.py --profile full $(SCENARIO_ARGS)
 
-README.md: README.qmd results/results.csv $(wildcard scenario_*/code_regions.yml)
+# Always re-render: every scenario report reads the shared results and its
+# own runner sources, which make cannot track cheaply.
+report:
 	quarto render README.qmd
-
-report: README.md
+	for report in scenario_*/README.qmd; do \
+		quarto render $$report || exit 1; \
+	done
 
 clean-cache:
 	@echo "Remove benchmark/cache manually if you really want to discard reusable runs."

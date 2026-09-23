@@ -4,16 +4,15 @@ A scenario is one model that every engine implements. Scenarios are numbered
 folders at the top of the repository. Each adds complexity to an earlier one,
 so the report can show how run time and model code grow with the model.
 
-| Scenario                                   | Adds                                          |
-|:-------------------------------------------|:----------------------------------------------|
-| [`scenario_00`](scenario_00/README.md)     | SEIRH baseline, no interventions              |
-| [`scenario_01`](scenario_01/README.md)     | All-or-nothing vaccine, 30% coverage, 80% efficacy |
+The list of scenarios, with links to their reports, is in the
+[project overview](README.md#scenarios).
 
 ## What a scenario folder holds
 
 ```
 scenario_NN/
-  README.md             # the spec: model, parameters, per-engine notes
+  README.qmd            # the report: spec, results, interpretation
+  README.md             # README.qmd rendered by `make report`
   scenario.toml         # [scenario] [disease] [intervention] [calibration]
   code_regions.yml      # line-count anchors for the report
   runners/
@@ -23,8 +22,9 @@ scenario_NN/
 ```
 
 Everything else is shared: `config.toml` (study design, network, resources,
-smoke profile), `run.py`, `scripts/`, and the report. `run.py` discovers every
-`scenario_*/scenario.toml` automatically.
+smoke profile), `run.py`, `scripts/`, and the report helpers in
+`report/common.R`. `run.py` discovers every `scenario_*/scenario.toml`
+automatically.
 
 Each folder is self-contained on purpose. The argument parsing and result
 writing are duplicated across scenarios so that each folder can be read as a
@@ -33,8 +33,8 @@ complete model. The report leaves that shared plumbing out of the line counts.
 ## Checklist
 
 1. **Copy the latest scenario.**
-   `cp -R scenario_01 scenario_02`, then delete `runners/ixa/target` if you
-   copied one.
+   `cp -R scenario_01 scenario_02`, then delete `runners/ixa/target`,
+   `README.md`, and `README_files/` if you copied them.
 
 2. **Rename the ixa crate.** In `runners/ixa/Cargo.toml`, set the package and
    `[[bin]]` names to `ixa-scenario-02`. Change the root package name in
@@ -80,9 +80,15 @@ complete model. The report leaves that shared plumbing out of the line counts.
    cache fingerprint, so you can adjust it after a run without rerunning
    anything.
 
-6. **Write `README.md`**: the model change, a parameter table, the output
-   convention, and one bullet per engine describing how it is implemented.
-   Add a row to the table at the top of this file.
+6. **Write the report, `README.qmd`.** Start from the previous scenario's
+   report. It should describe the model change, include a parameter table,
+   state the output convention, and have one bullet per engine describing how
+   it is implemented. The tables and figures come from `report/common.R`:
+   call `load_benchmark("scenario_02")`, then the `table_*` and `plot_*`
+   helpers. To compare with an earlier scenario, pass it to
+   `table_time_versus()` and `table_code_effort()`. Write the interpretation
+   specific to the scenario, and add a row for it to the scenario table in
+   the top-level `README.qmd`.
 
 7. **Check correctness before timing anything.**
    ```sh
@@ -105,9 +111,9 @@ complete model. The report leaves that shared plumbing out of the line counts.
    SCENARIOS=scenario_02 make container-benchmark
    make container-report
    ```
-   Keep `N_THREADS` at 1 (the default) for published timings. The report
-   picks up the new scenario from `results/scenarios.json`, which `run.py`
-   writes. Update the report's prose where it describes specific scenarios.
+   Keep `N_THREADS` at 1 (the default) for published timings. `make report`
+   renders the overview and every `scenario_*/README.qmd`. Check that the
+   prose in the new report still matches its numbers.
 
 ## Caching
 

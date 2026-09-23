@@ -13,9 +13,9 @@ simulation engines across several scenarios of increasing complexity:
   plan per day on ixa's plan queue, its built-in contact network, and an
   indexed disease-status property.
 
-Each scenario lives in its own `scenario_NN/` folder with a spec
-(`README.md`), its parameters (`scenario.toml`), and one runner per engine
-(`runners/`). Scenario 00 is the SEIRH baseline and scenario 01 adds an
+Each scenario lives in its own `scenario_NN/` folder with its report
+(`README.qmd`, rendered to `README.md`), its parameters (`scenario.toml`), and
+one runner per engine (`runners/`). Scenario 00 is the SEIRH baseline and scenario 01 adds an
 all-or-nothing vaccine. [scenarios.md](scenarios.md) explains how to add
 another.
 
@@ -61,8 +61,9 @@ and `jsonlite`, a Rust toolchain, and Quarto (`make setup check smoke
 benchmark report`). Cache records carry the host OS and architecture in their
 fingerprint, so native and container timings are never mixed.
 
-The report target produces GitHub-flavored `README.md` plus PNG figures in
-`README_files/figure-commonmark/`, so the rendered results remain readable
+The report target renders the data-free project overview (`README.md`) and
+one GitHub-flavored report per scenario (`scenario_NN/README.md`, with PNG
+figures in `scenario_NN/README_files/`), so the rendered results stay readable
 directly in a pull request.
 
 The smoke profile is deliberately tiny (1,000 agents, 10 days, one replicate)
