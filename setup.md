@@ -32,7 +32,7 @@ Docker: pass `CONTAINER=docker`). From this folder:
 make container-image
 make container-check
 make container-smoke
-N_THREADS=6 make container-benchmark
+make container-benchmark
 make container-report
 ```
 
@@ -124,6 +124,13 @@ no measurable timing cost, staying within the five performance cores. Eight
 workers bought only about 1.7x the throughput of three while distorting the
 comparison. Use `N_THREADS=1` if you want timings collected under exactly the
 documented sequential policy.
+
+The container behaves the same way, more strongly. A 6-worker run of the full
+design in the podman VM (10 vCPUs) inflated median epiworldR `simulate_seconds`
+at 100,000 agents about 2.8x relative to a sequential run of the same model,
+and ixa only 1.2-1.4x, roughly doubling the apparent ixa/epiworldR speed
+ratio. The published results
+are collected sequentially.
 
 Epidemiological outputs are unaffected by concurrency; only the timings are.
 

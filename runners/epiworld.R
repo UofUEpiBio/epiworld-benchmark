@@ -64,7 +64,10 @@ pathogen <- virus(
   prob_infecting = beta,
   recovery_rate = recovery
 ) |>
-  virus_set_state(init = 2L, end = 4L, removed = 4L) |>
+  # New infections enter Exposed (state 1). The R API offers no way to seed a
+  # custom model's initial cases in a different state, so the initial cases
+  # start Exposed too, unlike the other engines, which seed them Infected.
+  virus_set_state(init = 1L, end = 4L, removed = 4L) |>
   set_prob_infecting_ptr(model, "Transmission rate") |>
   set_distribution_virus(distribute_virus_randomly(
     min(integer("initial_infected"), n), FALSE

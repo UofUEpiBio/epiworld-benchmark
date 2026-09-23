@@ -45,10 +45,10 @@ This benchmark compares simulation speed for 100-day network epidemics at
 10,000 and 100,000 agents, with 100 independent replicates per engine and size. The included engines are [epiworldR](https://uofuepibio.github.io/epiworldR/){target="_blank"} [@meyerEpiworldRFastAgentBased2023], [Covasim](https://covasim.org/){target="_blank"} [@kerrCovasimAgentbasedModel2021], [EoN](https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html){target="_blank"} [@millerEoNEpidemicsNetworks2019], [epydemic](https://github.com/simoninireland/epydemic){target="_blank"} [@dobson2022epydemic], and [ixa](https://ixa.rs/){target="_blank"} [@ixa2026]. 
 All engines use the exact same cached Watts--Strogatz edge list for a population
 size (mean degree 10, rewiring probability 0.05) and target an early-outbreak
-$R_0 = 2$. The epiworldR cells apply size-specific transmission multipliers of
-0.887 at 10,000 agents and 0.855 at 100,000 agents. The restricted Covasim
-cells apply corresponding factors of 0.715 and 0.710, and the ixa cells apply
-0.983 and 0.988. These empirical factors
+$R_0 = 2$. epiworldR and EoN run at the analytic transmission rate. The
+restricted Covasim cells apply size-specific transmission multipliers of 0.715
+at 10,000 agents and 0.710 at 100,000 agents, and the ixa cells apply 0.983
+and 0.988. These empirical factors
 align realized attack rates under the frameworks' different transmission
 semantics.
 
@@ -218,14 +218,17 @@ The common disease graph is susceptible $\rightarrow$ exposed $\rightarrow$
 infectious $\rightarrow$ recovered, with a competing infectious $\rightarrow$
 hospitalized $\rightarrow$ recovered branch. Mean latent and infectious
 periods are 4 and 7 days, lifetime hospitalization probability is 5%, and the
-hospital stay is 7 days. Initial infections are 100 in the full profile.
+hospital stay is 7 days. Initial infections are 100 in the full profile. They
+start infectious in every engine except epiworldR, whose R API cannot seed a
+custom model's initial cases in a state other than the one new infections
+enter, so they start exposed there.
 
 The shared analytic transmission mapping produced different realized attack
 rates across frameworks. Calibration therefore selected size-specific factors
-for epiworldR (0.887 at 10,000 agents and 0.855 at 100,000), for restricted
-Covasim (0.715 and 0.710), and for ixa (0.983 and 0.988, matching its median
-attack rate to the epiworldR cells). All 100 replicates in each adjusted cell
-were then rerun. These empirical corrections are intentionally
+for restricted Covasim (0.715 at 10,000 agents and 0.710 at 100,000) and for
+ixa (0.983 and 0.988). epiworldR needs none: its uncalibrated median attack
+rates match EoN's exact continuous-time results. All 100 replicates in each
+adjusted cell were then rerun. These empirical corrections are intentionally
 population-specific; they align benchmark outcomes but mean that none of the
 calibrated engines has a strictly analytic $R_0$ of 2. The values live in `config.toml` and participate in the
 cache fingerprint.
@@ -234,7 +237,21 @@ epiworldR, epydemic, and ixa use synchronous daily transitions. The ixa
 runner schedules one plan per day on ixa's plan queue, samples transmission
 along ixa's built-in contact-network edges, and stores disease status as an
 indexed entity property; its competing infectious $\rightarrow$
-hospitalized/recovered step reuses epiworldR's roulette rule. EoN uses
+hospitalized/recovered step reuses epiworldR's roulette rule.
+
+The two fastest engines organize the daily work differently. ixa's step visits
+only exposed, infectious, and hospitalized agents, found through its indexed
+status property, and tries transmission outward from each infectious agent to
+its susceptible neighbours, so its cost follows the size of the outbreak.
+epiworldR's queuing system skips agents with no infected contact, but each
+queued susceptible agent (every neighbour of an exposed, infectious, or
+hospitalized agent) scans all of its neighbours for infectious ones, which is
+roughly ten times as many neighbour visits. Its daily loop also checks every
+agent's queue flag, about 12% of its run time at 100,000 agents. An exact
+push-style alternative for epiworld is proposed in
+[UofUEpiBio/epiworld#264](https://github.com/UofUEpiBio/epiworld/issues/264). Both runners
+are single-threaded, and all five engines treat the shared edge list as an
+undirected graph. EoN uses
 continuous-time hazards, simulated exactly with its event-driven
 `fast_simple_contagion` algorithm. Covasim retains its native exposed,
 infectious, symptomatic, and severe bookkeeping, with severe prevalence used

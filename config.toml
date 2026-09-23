@@ -31,14 +31,16 @@ hospital_days = 7.0
 # and permanent immunity; its native daily transmission semantics otherwise
 # produced substantially larger final attack rates under the shared analytic
 # mapping.
-epiworldR_transmission_multiplier_10000 = 0.887
-epiworldR_transmission_multiplier_100000 = 0.855
+#
+# epiworldR needs no factor: its uncalibrated median attack rates (0.382 and
+# 0.060) match EoN's exact continuous-time results.
 covasim_transmission_multiplier_10000 = 0.715
 covasim_transmission_multiplier_100000 = 0.710
 #
-# ixa shares the synchronous daily semantics of epiworldR and epydemic; its
-# uncalibrated median attack rates (0.407 and 0.067) sat slightly above the
-# epiworldR cells, so it is aligned to them the same way.
+# ixa shares the synchronous daily semantics of epiworldR and epydemic, but
+# its uncalibrated median attack rates (0.407 and 0.067) sat above the other
+# engines: it seeds the initial cases as infectious and samples each
+# infectious contact independently rather than with epiworld's roulette.
 ixa_transmission_multiplier_10000 = 0.983
 ixa_transmission_multiplier_100000 = 0.988
 

@@ -26,12 +26,12 @@ target="_blank">epydemic</a> (Dobson 2022), and
 <a href="https://ixa.rs/" target="_blank">ixa</a> (The Ixa Developers
 2026). All engines use the exact same cached Watts–Strogatz edge list
 for a population size (mean degree 10, rewiring probability 0.05) and
-target an early-outbreak $R_0 = 2$. The epiworldR cells apply
-size-specific transmission multipliers of 0.887 at 10,000 agents and
-0.855 at 100,000 agents. The restricted Covasim cells apply
-corresponding factors of 0.715 and 0.710, and the ixa cells apply 0.983
-and 0.988. These empirical factors align realized attack rates under the
-frameworks’ different transmission semantics.
+target an early-outbreak $R_0 = 2$. epiworldR and EoN run at the
+analytic transmission rate. The restricted Covasim cells apply
+size-specific transmission multipliers of 0.715 at 10,000 agents and
+0.710 at 100,000 agents, and the ixa cells apply 0.983 and 0.988. These
+empirical factors align realized attack rates under the frameworks’
+different transmission semantics.
 
 > [!TIP]
 >
@@ -41,21 +41,21 @@ frameworks’ different transmission semantics.
 |:--------------------|:------------------------------------------------------|
 | Platform            | Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39 |
 | Python              | 3.12.11                                               |
-| Workers             | 6                                                     |
+| Workers             | 1                                                     |
 | Latest run failures | 0                                                     |
 
 | Engine    | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:----------|-------:|-----:|----------------------:|-------:|-------:|
-| ixa       |  10000 |  100 |                 0.006 |  0.005 |  0.007 |
-| epiworldR |  10000 |  100 |                 0.041 |  0.031 |  0.054 |
-| covasim   |  10000 |  100 |                 0.119 |  0.097 |  0.156 |
-| EoN       |  10000 |  100 |                 0.124 |  0.110 |  0.164 |
-| epydemic  |  10000 |  100 |                 0.732 |  0.657 |  0.836 |
-| ixa       | 100000 |  100 |                 0.012 |  0.010 |  0.015 |
-| epiworldR | 100000 |  100 |                 0.170 |  0.129 |  0.242 |
-| EoN       | 100000 |  100 |                 0.552 |  0.490 |  0.615 |
-| covasim   | 100000 |  100 |                 0.643 |  0.511 |  0.860 |
-| epydemic  | 100000 |  100 |                 3.275 |  2.848 |  3.581 |
+| ixa       |  10000 |  100 |                 0.005 |  0.004 |  0.005 |
+| epiworldR |  10000 |  100 |                 0.022 |  0.021 |  0.024 |
+| covasim   |  10000 |  100 |                 0.066 |  0.064 |  0.070 |
+| EoN       |  10000 |  100 |                 0.077 |  0.074 |  0.083 |
+| epydemic  |  10000 |  100 |                 0.545 |  0.497 |  0.589 |
+| ixa       | 100000 |  100 |                 0.010 |  0.008 |  0.013 |
+| epiworldR | 100000 |  100 |                 0.059 |  0.052 |  0.069 |
+| EoN       | 100000 |  100 |                 0.302 |  0.287 |  0.322 |
+| covasim   | 100000 |  100 |                 0.364 |  0.335 |  0.403 |
+| epydemic  | 100000 |  100 |                 1.857 |  1.771 |  2.244 |
 
 ## Simulation time
 
@@ -72,14 +72,14 @@ one mean that epiworldR completed the simulation call faster.
 
 | Engine   | Agents | Median time / epiworldR |    Q1 |    Q3 |
 |:---------|-------:|------------------------:|------:|------:|
-| covasim  |  10000 |                    2.67 |  2.03 |  4.20 |
-| EoN      |  10000 |                    3.16 |  2.22 |  4.41 |
-| epydemic |  10000 |                   17.57 | 12.85 | 25.00 |
-| ixa      |  10000 |                    0.16 |  0.12 |  0.20 |
-| covasim  | 100000 |                    3.99 |  2.43 |  5.40 |
-| EoN      | 100000 |                    3.43 |  2.46 |  4.61 |
-| epydemic | 100000 |                   19.45 | 12.15 | 28.65 |
-| ixa      | 100000 |                    0.07 |  0.04 |  0.11 |
+| covasim  |  10000 |                    3.00 |  2.81 |  3.23 |
+| EoN      |  10000 |                    3.49 |  3.13 |  3.95 |
+| epydemic |  10000 |                   24.47 | 21.87 | 27.42 |
+| ixa      |  10000 |                    0.21 |  0.18 |  0.23 |
+| covasim  | 100000 |                    6.10 |  5.28 |  7.30 |
+| EoN      | 100000 |                    5.10 |  4.39 |  5.97 |
+| epydemic | 100000 |                   33.71 | 26.70 | 38.58 |
+| ixa      | 100000 |                    0.17 |  0.14 |  0.24 |
 
 ## Epidemiological sanity checks
 
@@ -90,12 +90,12 @@ and Covasim’s native symptom/severe bookkeeping.
 
 | Engine    | Agents | Median final attack rate | Median peak hospitalized |
 |:----------|-------:|-------------------------:|-------------------------:|
-| epiworldR |  10000 |                    0.380 |                     22.0 |
+| epiworldR |  10000 |                    0.382 |                     19.0 |
 | covasim   |  10000 |                    0.392 |                     23.0 |
 | EoN       |  10000 |                    0.379 |                     21.0 |
 | epydemic  |  10000 |                    0.396 |                     25.0 |
 | ixa       |  10000 |                    0.378 |                     18.5 |
-| epiworldR | 100000 |                    0.062 |                     28.0 |
+| epiworldR | 100000 |                    0.060 |                     30.0 |
 | covasim   | 100000 |                    0.061 |                     35.0 |
 | EoN       | 100000 |                    0.060 |                     32.0 |
 | epydemic  | 100000 |                    0.064 |                     41.0 |
@@ -110,35 +110,53 @@ $\rightarrow$ infectious $\rightarrow$ recovered, with a competing
 infectious $\rightarrow$ hospitalized $\rightarrow$ recovered branch.
 Mean latent and infectious periods are 4 and 7 days, lifetime
 hospitalization probability is 5%, and the hospital stay is 7 days.
-Initial infections are 100 in the full profile.
+Initial infections are 100 in the full profile. They start infectious in
+every engine except epiworldR, whose R API cannot seed a custom model’s
+initial cases in a state other than the one new infections enter, so
+they start exposed there.
 
 The shared analytic transmission mapping produced different realized
 attack rates across frameworks. Calibration therefore selected
-size-specific factors for epiworldR (0.887 at 10,000 agents and 0.855 at
-100,000), for restricted Covasim (0.715 and 0.710), and for ixa (0.983
-and 0.988, matching its median attack rate to the epiworldR cells). All
-100 replicates in each adjusted cell were then rerun. These empirical
-corrections are intentionally population-specific; they align benchmark
-outcomes but mean that none of the calibrated engines has a strictly
-analytic $R_0$ of 2. The values live in `config.toml` and participate in
-the cache fingerprint.
+size-specific factors for restricted Covasim (0.715 at 10,000 agents and
+0.710 at 100,000) and for ixa (0.983 and 0.988). epiworldR needs none:
+its uncalibrated median attack rates match EoN’s exact continuous-time
+results. All 100 replicates in each adjusted cell were then rerun. These
+empirical corrections are intentionally population-specific; they align
+benchmark outcomes but mean that none of the calibrated engines has a
+strictly analytic $R_0$ of 2. The values live in `config.toml` and
+participate in the cache fingerprint.
 
 epiworldR, epydemic, and ixa use synchronous daily transitions. The ixa
 runner schedules one plan per day on ixa’s plan queue, samples
 transmission along ixa’s built-in contact-network edges, and stores
 disease status as an indexed entity property; its competing infectious
 $\rightarrow$ hospitalized/recovered step reuses epiworldR’s roulette
-rule. EoN uses continuous-time hazards, simulated exactly with its
-event-driven `fast_simple_contagion` algorithm. Covasim retains its
-native exposed, infectious, symptomatic, and severe bookkeeping, with
-severe prevalence used as the hospitalization proxy. Its runner disables
-waning immunity and fixes individual transmissibility and viral load to
-one, making recovered people permanently removed and removing those
-sources of heterogeneity. Covasim does not expose a public switch to
-remove the remaining symptom/severity bookkeeping. Thus this report
-measures restricted, representative framework throughput under aligned
-network and disease targets; it does not claim bit-for-bit
-epidemiological equivalence.
+rule.
+
+The two fastest engines organize the daily work differently. ixa’s step
+visits only exposed, infectious, and hospitalized agents, found through
+its indexed status property, and tries transmission outward from each
+infectious agent to its susceptible neighbours, so its cost follows the
+size of the outbreak. epiworldR’s queuing system skips agents with no
+infected contact, but each queued susceptible agent (every neighbour of
+an exposed, infectious, or hospitalized agent) scans all of its
+neighbours for infectious ones, which is roughly ten times as many
+neighbour visits. Its daily loop also checks every agent’s queue flag,
+about 12% of its run time at 100,000 agents. An exact push-style
+alternative for epiworld is proposed in
+[UofUEpiBio/epiworld#264](https://github.com/UofUEpiBio/epiworld/issues/264).
+Both runners are single-threaded, and all five engines treat the shared
+edge list as an undirected graph. EoN uses continuous-time hazards,
+simulated exactly with its event-driven `fast_simple_contagion`
+algorithm. Covasim retains its native exposed, infectious, symptomatic,
+and severe bookkeeping, with severe prevalence used as the
+hospitalization proxy. Its runner disables waning immunity and fixes
+individual transmissibility and viral load to one, making recovered
+people permanently removed and removing those sources of heterogeneity.
+Covasim does not expose a public switch to remove the remaining
+symptom/severity bookkeeping. Thus this report measures restricted,
+representative framework throughput under aligned network and disease
+targets; it does not claim bit-for-bit epidemiological equivalence.
 
 The sparse contact network fixes mean degree rather than literal graph
 density. At 10,000 and 100,000 agents its densities are approximately
