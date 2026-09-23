@@ -1,0 +1,40 @@
+{
+  "scenario_00": {
+    "calibration": {
+      "covasim_transmission_multiplier_10000": 0.715,
+      "covasim_transmission_multiplier_100000": 0.71,
+      "ixa_transmission_multiplier_10000": 0.983,
+      "ixa_transmission_multiplier_100000": 0.988
+    },
+    "description": "SEIRH epidemic with a hospitalization branch and no interventions.",
+    "name": "SEIRH baseline",
+    "parameters": {
+      "hospital_days": 7.0,
+      "hospitalization_probability": 0.05,
+      "infectious_days": 7.0,
+      "initial_infected": 100,
+      "latent_days": 4.0,
+      "target_r0": 2.0
+    }
+  },
+  "scenario_01": {
+    "calibration": {
+      "covasim_transmission_multiplier_10000": 0.715,
+      "covasim_transmission_multiplier_100000": 0.71,
+      "ixa_transmission_multiplier_10000": 0.983,
+      "ixa_transmission_multiplier_100000": 0.988
+    },
+    "description": "Scenario 00 plus a day-0 all-or-nothing vaccine: 30% coverage, 80% efficacy.",
+    "name": "SEIRH + vaccination",
+    "parameters": {
+      "hospital_days": 7.0,
+      "hospitalization_probability": 0.05,
+      "infectious_days": 7.0,
+      "initial_infected": 100,
+      "latent_days": 4.0,
+      "target_r0": 2.0,
+      "vaccine_coverage": 0.3,
+      "vaccine_efficacy": 0.8
+    }
+  }
+}

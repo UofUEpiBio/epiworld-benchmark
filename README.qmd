@@ -14,35 +14,50 @@ bibliography: references.bib
 
 ```{r}
 #| label: setup
-options(scipen = 999)
+options(scipen = 999, knitr.kable.NA = "")
 results_path <- file.path("results", "results.csv")
 manifest_path <- file.path("results", "run-manifest.json")
+scenarios_path <- file.path("results", "scenarios.json")
 if (file.exists(results_path)) {
   all_results <- read.csv(results_path, stringsAsFactors = FALSE)
 } else {
   all_results <- data.frame()
 }
 engine_levels <- c("epiworldR", "covasim", "EoN", "epydemic", "ixa")
+size_levels <- c(10000, 100000)
 manifest <- if (file.exists(manifest_path)) jsonlite::read_json(manifest_path, simplifyVector = TRUE) else NULL
+scenario_info <- if (file.exists(scenarios_path)) jsonlite::read_json(scenarios_path) else list()
+scenario_levels <- sort(names(scenario_info))
+baseline <- "scenario_00"
+scenario_label <- function(id) {
+  vapply(id, function(s) sprintf("%s: %s", sub("scenario_", "", s), scenario_info[[s]]$name), "")
+}
 
 if (nrow(all_results)) {
-  full <- subset(all_results, days == 100 & n %in% c(10000, 100000))
+  full <- subset(all_results, days == 100 & n %in% size_levels & scenario %in% scenario_levels)
 } else {
   full <- all_results
 }
 
 has_full <- nrow(full) > 0
 expected_per_cell <- 100L
+design_runs <- length(scenario_levels) * length(engine_levels) * length(size_levels) * expected_per_cell
 complete_design <- has_full && all(
-  table(factor(full$engine, levels = engine_levels),
-        factor(full$n, levels = c(10000, 100000))) >= expected_per_cell
+  table(factor(full$scenario, levels = scenario_levels),
+        factor(full$engine, levels = engine_levels),
+        factor(full$n, levels = size_levels)) >= expected_per_cell
 )
+if (has_full) {
+  full$scenario_label <- factor(scenario_label(full$scenario), levels = scenario_label(scenario_levels))
+}
+q <- function(x, p) unname(stats::quantile(x, p, na.rm = TRUE))
 ```
 
 ## Executive summary
 
 This benchmark compares simulation speed for 100-day network epidemics at
-10,000 and 100,000 agents, with 100 independent replicates per engine and size. The included engines are [epiworldR](https://uofuepibio.github.io/epiworldR/){target="_blank"} [@meyerEpiworldRFastAgentBased2023], [Covasim](https://covasim.org/){target="_blank"} [@kerrCovasimAgentbasedModel2021], [EoN](https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html){target="_blank"} [@millerEoNEpidemicsNetworks2019], [epydemic](https://github.com/simoninireland/epydemic){target="_blank"} [@dobson2022epydemic], and [ixa](https://ixa.rs/){target="_blank"} [@ixa2026]. 
+10,000 and 100,000 agents, with 100 independent replicates per engine, size,
+and scenario. The included engines are [epiworldR](https://uofuepibio.github.io/epiworldR/){target="_blank"} [@meyerEpiworldRFastAgentBased2023], [Covasim](https://covasim.org/){target="_blank"} [@kerrCovasimAgentbasedModel2021], [EoN](https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html){target="_blank"} [@millerEoNEpidemicsNetworks2019], [epydemic](https://github.com/simoninireland/epydemic){target="_blank"} [@dobson2022epydemic], and [ixa](https://ixa.rs/){target="_blank"} [@ixa2026].
 All engines use the exact same cached Watts--Strogatz edge list for a population
 size (mean degree 10, rewiring probability 0.05) and target an early-outbreak
 $R_0 = 2$. epiworldR and EoN run at the analytic transmission rate. The
@@ -51,6 +66,23 @@ at 10,000 agents and 0.710 at 100,000 agents, and the ixa cells apply 0.983
 and 0.988. These empirical factors
 align realized attack rates under the frameworks' different transmission
 semantics.
+
+The benchmark is organized in scenarios of increasing complexity, so that it
+shows how run time and the code needed to define the model change as the
+model grows. Each scenario is a folder with its own specification and one
+runner per engine; [scenarios.md](scenarios.md) describes how to add one.
+
+```{r}
+#| label: scenarios
+if (length(scenario_info)) {
+  knitr::kable(data.frame(
+    Scenario = sub("scenario_", "", scenario_levels),
+    Name = vapply(scenario_levels, function(s) scenario_info[[s]]$name, ""),
+    Description = vapply(scenario_levels, function(s) scenario_info[[s]]$description, ""),
+    Details = sprintf("[%s/README.md](%s/README.md)", scenario_levels, scenario_levels)
+  ), row.names = FALSE)
+}
+```
 
 ```{r}
 #| label: completion-status
@@ -65,7 +97,8 @@ if (!has_full) {
       "The full-profile cache is incomplete. Estimates below are provisional; rerun `make benchmark` to resume missing cells.\n",
       ":::\n", sep = "")
 } else {
-  cat("::: {.callout-tip}\nThe complete 1,000-run design is available.\n:::\n")
+  cat("::: {.callout-tip}\nThe complete ", format(design_runs, big.mark = ","),
+      "-run design is available.\n:::\n", sep = "")
 }
 ```
 
@@ -83,9 +116,9 @@ if (!is.null(manifest)) {
 ```{r}
 #| label: summary-table
 if (has_full) {
-  q <- function(x, p) unname(stats::quantile(x, p, na.rm = TRUE))
-  split_rows <- split(full, list(full$engine, full$n), drop = TRUE)
+  split_rows <- split(full, list(full$scenario, full$engine, full$n), drop = TRUE)
   summary_rows <- do.call(rbind, lapply(split_rows, function(d) data.frame(
+    scenario = sub("scenario_", "", d$scenario[[1]]),
     engine = d$engine[[1]],
     agents = d$n[[1]],
     replicates = nrow(d),
@@ -93,9 +126,10 @@ if (has_full) {
     q25_sim_s = q(d$simulate_seconds, 0.25),
     q75_sim_s = q(d$simulate_seconds, 0.75)
   )))
-  summary_rows <- summary_rows[order(summary_rows$agents, summary_rows$median_sim_s), ]
+  summary_rows <- summary_rows[order(summary_rows$scenario, summary_rows$agents,
+                                     summary_rows$median_sim_s), ]
   knitr::kable(summary_rows, digits = 3,
-    col.names = c("Engine", "Agents", "Runs", "Median simulation (s)",
+    col.names = c("Scenario", "Engine", "Agents", "Runs", "Median simulation (s)",
                   "Q1 (s)", "Q3 (s)"),
     row.names = FALSE)
 }
@@ -104,71 +138,184 @@ if (has_full) {
 ## Simulation time
 
 The primary measure is wall-clock time inside each engine's simulation call.
-The logarithmic scale keeps fast and slow engines legible in one panel.
+The logarithmic scale keeps fast and slow engines legible in one panel, and
+the scenarios sit side by side for each engine.
 
 ```{r}
 #| label: simulation-time-plot
-#| fig-width: 9
-#| fig-height: 5
+#| fig-width: 10
+#| fig-height: 5.5
 if (has_full) {
   full$engine <- factor(full$engine, levels = engine_levels)
-  full$agents <- factor(full$n, levels = c(10000, 100000),
+  full$agents <- factor(full$n, levels = size_levels,
                         labels = c("10,000 agents", "100,000 agents"))
   print(
-    ggplot2::ggplot(full, ggplot2::aes(engine, simulate_seconds, fill = engine)) +
-      ggplot2::geom_boxplot(width = 0.65, outlier.alpha = 0.25) +
-      ggplot2::stat_summary(
-        fun = median, geom = "text",
-        ggplot2::aes(
-          label = ggplot2::after_stat(sprintf("%.2gs", y))
-          ),
-        vjust = -1, size = 4.5, hjust = -.3
-        ) +
+    ggplot2::ggplot(full, ggplot2::aes(engine, simulate_seconds, fill = scenario_label)) +
+      ggplot2::geom_boxplot(width = 0.7, outlier.alpha = 0.25,
+                            position = ggplot2::position_dodge(width = 0.8)) +
       ggplot2::facet_wrap(~ agents, scales = "free_y") +
-      ggplot2::coord_cartesian(clip = "off") +
-      ggplot2::scale_y_log10(
-        expand = ggplot2::expansion(mult = c(0.05, 0.12))
-        ) +
-      ggplot2::scale_x_discrete(
-        expand = ggplot2::expansion(add = c(0, 1))
-      ) +
+      ggplot2::scale_y_log10() +
+      ggplot2::scale_fill_brewer(palette = "Set2") +
       ggplot2::labs(
-        x = NULL,
+        x = NULL, fill = "Scenario",
         y = "Simulation wall time\n(seconds, log scale)",
-        subtitle = "Wall time distribution for 100-day simulations",
-        caption = "Note: Numeric labels show median simulation time"
+        subtitle = "Wall time distribution for 100-day simulations"
         ) +
-      ggplot2::theme_minimal(base_size = 18) +
+      ggplot2::theme_minimal(base_size = 16) +
       ggplot2::theme(
-        legend.position = "none",
+        legend.position = "bottom",
         axis.text.x = ggplot2::element_text(angle = 30, hjust = 1)
         )
   )
 }
 ```
 
+## Cost of added complexity
+
+### Run time
+
+Each later scenario is compared with scenario 00 replicate by replicate: the
+engine, population size, seed, network, and calibration are the same, and
+only the model differs. Values above one mean that the more complex scenario
+took longer.
+
+```{r}
+#| label: complexity-time
+if (has_full && baseline %in% full$scenario) {
+  base <- full[full$scenario == baseline, c("engine", "n", "seed", "simulate_seconds")]
+  names(base)[4] <- "baseline_seconds"
+  later <- merge(full[full$scenario != baseline, ], base, by = c("engine", "n", "seed"))
+  if (nrow(later)) {
+    later$ratio <- later$simulate_seconds / later$baseline_seconds
+    groups <- split(later, list(later$scenario, later$engine, later$n), drop = TRUE)
+    complexity <- do.call(rbind, lapply(groups, function(d) data.frame(
+      scenario = sub("scenario_", "", d$scenario[[1]]),
+      engine = as.character(d$engine[[1]]),
+      agents = d$n[[1]],
+      median = median(d$ratio),
+      q25 = q(d$ratio, .25),
+      q75 = q(d$ratio, .75)
+    )))
+    complexity <- complexity[order(complexity$scenario, complexity$agents, complexity$median), ]
+    knitr::kable(complexity, digits = 2,
+      col.names = c("Scenario", "Engine", "Agents", "Median time / scenario 00", "Q1", "Q3"),
+      row.names = FALSE)
+  }
+}
+```
+
+Run time does not isolate the cost of the extra machinery. Scenario 01's
+vaccine protects about a quarter of the population, which cuts the median
+attack rate from about 0.38 to 0.11 at 10,000 agents and from 0.06 to 0.013
+at 100,000. Engines whose work tracks the number of active infections (EoN,
+epydemic, epiworldR, and ixa) get faster for that reason alone. Covasim's
+vectorized daily update touches every agent regardless of the outbreak's
+size, so its time barely moves. A ratio below one therefore does not mean
+the vaccine is free. It means that the engine's handling of the vaccine costs
+less than the smaller outbreak saves. A ratio above one would mean the
+feature itself is expensive, as `distribute_tool_to_set()` made it for
+epiworldR (see [Design and interpretation](#design-and-interpretation)).
+
+### Code required to define the model
+
+A rough measure of effort: how much code each engine needs to express each
+scenario. *Model lines* counts non-blank, non-comment lines that build the
+population and network, define the disease and interventions, and run the
+simulation. Argument parsing, edge-file reading, timing, and writing results
+are excluded because every runner shares them. *Files* counts the files a user
+writes, including build manifests. They are counted from the runner sources
+when this report is rendered, using the regions listed in each scenario's
+`code_regions.yml`.
+
+```{r}
+#| label: code-effort
+# Each region runs from the first line matching `from` to the next line
+# matching `to` (both inclusive). The anchors live in code_regions.yml rather
+# than as markers in the runners because runner sources are part of the cache
+# fingerprint.
+count_model_lines <- function(spec, scenario) {
+  path <- file.path(scenario, spec$files[[1]])
+  lines <- readLines(path, warn = FALSE)
+  keep <- logical(length(lines))
+  for (r in spec$regions) {
+    to <- if (is.null(r$to)) r$from else r$to
+    start <- grep(r$from, lines)[1]
+    if (is.na(start)) stop("Anchor not found in ", path, ": ", r$from)
+    end <- start - 1L + grep(to, lines[start:length(lines)])[1]
+    if (is.na(end)) stop("Anchor not found in ", path, ": ", to)
+    keep[start:end] <- TRUE
+  }
+  code <- trimws(lines[keep])
+  timing <- "perf_counter|proc\\.time|Instant::now|elapsed"
+  sum(nzchar(code) & !grepl("^(#|//|\"\"\")", code) & !grepl(timing, code))
+}
+
+effort <- do.call(rbind, lapply(scenario_levels, function(scenario) {
+  specs <- yaml::read_yaml(file.path(scenario, "code_regions.yml"))
+  data.frame(
+    scenario = scenario,
+    engine = names(specs),
+    language = vapply(specs, `[[`, "", "language"),
+    files = vapply(specs, function(x) length(x$files), 0L),
+    model_lines = vapply(specs, count_model_lines, 0L, scenario = scenario)
+  )
+}))
+lines_wide <- reshape(effort[c("engine", "scenario", "model_lines")],
+                      idvar = "engine", timevar = "scenario", direction = "wide")
+effort_table <- merge(unique(effort[c("engine", "language")]), lines_wide, by = "engine")
+line_columns <- paste0("model_lines.", scenario_levels)
+later_columns <- setdiff(line_columns, paste0("model_lines.", baseline))
+for (column in later_columns) {
+  effort_table[[sub("model_lines", "added", column)]] <-
+    effort_table[[column]] - effort_table[[paste0("model_lines.", baseline)]]
+}
+files_by_engine <- tapply(effort$files, effort$engine, max)
+effort_table$files <- files_by_engine[effort_table$engine]
+effort_table <- effort_table[order(effort_table[[line_columns[[1]]]]),
+  c("engine", "language", "files", line_columns, sub("model_lines", "added", later_columns))]
+knitr::kable(effort_table,
+  col.names = c("Engine", "Language", "Files",
+                paste("Lines,", sub("scenario_", "scenario ", scenario_levels)),
+                paste("Added in", sub("scenario_", "scenario ", sub("model_lines.", "", later_columns)))),
+  row.names = FALSE)
+```
+
+Model lines vary with how much of the model an engine provides built in. For
+example, EoN describes transitions as rate graphs, Covasim needs its native
+parameters overridden to restrict it to SEIRH, and the ixa runner writes its
+daily step by hand. The Python engines share one runner file per scenario,
+and ixa needs a Cargo project that is compiled before it runs.
+
+For the vaccine in scenario 01, EoN and epydemic only need a compartment with
+no transitions, Covasim has a vaccine intervention but it is leaky, so an
+all-or-nothing vaccine takes two targeted doses, epiworldR has a tool that
+removes susceptibility, and ixa adds an agent property that its hand-written
+transmission step has to consult.
+
 ## Speed relative to epiworldR
 
-Ratios are matched by population size and replicate seed. Values above one
-mean that epiworldR completed the simulation call faster.
+Ratios are matched by scenario, population size, and replicate seed. Values
+above one mean that epiworldR completed the simulation call faster.
 
 ```{r}
 #| label: speedup
 if (has_full && any(full$engine == "epiworldR")) {
-  baseline <- full[full$engine == "epiworldR", c("n", "seed", "simulate_seconds")]
-  names(baseline)[3] <- "epiworld_seconds"
-  ratios <- merge(full[full$engine != "epiworldR", ], baseline, by = c("n", "seed"))
+  epiworld <- full[full$engine == "epiworldR", c("scenario", "n", "seed", "simulate_seconds")]
+  names(epiworld)[4] <- "epiworld_seconds"
+  ratios <- merge(full[full$engine != "epiworldR", ], epiworld, by = c("scenario", "n", "seed"))
   ratios$speed_ratio <- ratios$simulate_seconds / ratios$epiworld_seconds
-  ratio_groups <- split(ratios, list(ratios$engine, ratios$n), drop = TRUE)
+  ratio_groups <- split(ratios, list(ratios$scenario, ratios$engine, ratios$n), drop = TRUE)
   ratio_table <- do.call(rbind, lapply(ratio_groups, function(d) data.frame(
+    scenario = sub("scenario_", "", d$scenario[[1]]),
     engine = as.character(d$engine[[1]]),
     agents = d$n[[1]],
     median = median(d$speed_ratio),
-    q25 = unname(quantile(d$speed_ratio, .25)),
-    q75 = unname(quantile(d$speed_ratio, .75))
+    q25 = q(d$speed_ratio, .25),
+    q75 = q(d$speed_ratio, .75)
   )))
+  ratio_table <- ratio_table[order(ratio_table$scenario, ratio_table$agents, ratio_table$engine), ]
   knitr::kable(ratio_table, digits = 2,
-    col.names = c("Engine", "Agents", "Median time / epiworldR", "Q1", "Q3"),
+    col.names = c("Scenario", "Engine", "Agents", "Median time / epiworldR", "Q1", "Q3"),
     row.names = FALSE)
 }
 ```
@@ -176,7 +323,8 @@ if (has_full && any(full$engine == "epiworldR")) {
 ## Epidemiological sanity checks
 
 Speed is interpretable only if the simulations produce plausible epidemics.
-These checks show final attack rate and peak hospitalization load; differences
+These checks show final attack rate and peak hospitalization load, and, where
+a scenario vaccinates, the share of agents the vaccine protected; differences
 also expose the engines' non-identical time semantics and Covasim's native
 symptom/severe bookkeeping.
 
@@ -184,11 +332,26 @@ symptom/severe bookkeeping.
 #| label: outcomes-table
 if (has_full) {
   full$attack_rate <- 1 - full$final_susceptible / full$n
-  outcomes <- aggregate(cbind(attack_rate, peak_hospitalized) ~ engine + n,
-                        full, median)
-  knitr::kable(outcomes, digits = 3,
-    col.names = c("Engine", "Agents", "Median final attack rate",
-                  "Median peak hospitalized"), row.names = FALSE)
+  full$protected_share <- full$vaccine_protected / full$n
+  outcomes <- do.call(rbind, lapply(
+    split(full, list(full$scenario, full$engine, full$n), drop = TRUE),
+    function(d) data.frame(
+      scenario = d$scenario[[1]],
+      scenario_label = d$scenario_label[[1]],
+      engine = as.character(d$engine[[1]]),
+      n = d$n[[1]],
+      attack_rate = median(d$attack_rate),
+      peak_hospitalized = median(d$peak_hospitalized),
+      protected_share = if (all(is.na(d$protected_share))) NA else median(d$protected_share, na.rm = TRUE)
+    )
+  ))
+  outcomes <- outcomes[order(outcomes$scenario, outcomes$n, outcomes$engine), ]
+  shown <- outcomes[c("scenario", "engine", "n", "attack_rate", "peak_hospitalized", "protected_share")]
+  shown$scenario <- sub("scenario_", "", shown$scenario)
+  knitr::kable(shown, digits = 3,
+    col.names = c("Scenario", "Engine", "Agents", "Median final attack rate",
+                  "Median peak hospitalized", "Median share protected"),
+    row.names = FALSE)
 }
 ```
 
@@ -197,116 +360,26 @@ if (has_full) {
 #| fig-width: 9
 #| fig-height: 5
 if (has_full) {
-  outcomes$agents <- factor(outcomes$n, levels = c(10000, 100000),
+  outcomes$agents <- factor(outcomes$n, levels = size_levels,
                              labels = c("10,000", "100,000"))
+  outcomes$engine <- factor(outcomes$engine, levels = engine_levels)
   print(
-    ggplot2::ggplot(outcomes, ggplot2::aes(engine, attack_rate, fill = engine)) +
-      ggplot2::geom_col(width = 0.65) +
-      ggplot2::facet_wrap(~ agents) +
+    ggplot2::ggplot(outcomes, ggplot2::aes(engine, attack_rate, fill = scenario_label)) +
+      ggplot2::geom_col(width = 0.7, position = ggplot2::position_dodge(width = 0.8)) +
+      ggplot2::facet_wrap(~ agents, scales = "free_y") +
       ggplot2::scale_y_continuous(limits = c(0, NA)) +
-      ggplot2::labs(x = NULL, y = "Median final attack rate",
-                    subtitle = "The calibrated outcomes are closely aligned within each population size") +
+      ggplot2::scale_fill_brewer(palette = "Set2") +
+      ggplot2::labs(x = NULL, y = "Median final attack rate", fill = "Scenario",
+                    subtitle = "The calibrated outcomes are closely aligned within each scenario and population size") +
       ggplot2::theme_minimal(base_size = 12) +
-      ggplot2::theme(legend.position = "none")
+      ggplot2::theme(legend.position = "bottom")
   )
 }
 ```
 
-## Code required to define the model
-
-A rough measure of effort: how much code each engine needs to express the
-common SEIRH model. *Model lines* counts non-blank, non-comment lines that
-build the population and network, define the disease, and run the simulation.
-Argument parsing, edge-file reading, timing, and writing results are excluded
-because every runner shares them. *Files* counts the files a user writes,
-including build manifests. They are counted from the runner sources when this
-report is rendered.
-
-```{r}
-#| label: code-effort
-# Each region runs from the first line matching `from` to the next line
-# matching `to` (both inclusive). The anchors live here rather than as markers
-# in the runners because runner sources are part of the cache fingerprint.
-region <- function(from, to = from) list(from = from, to = to)
-model_code <- list(
-  epiworldR = list(language = "R", files = "runners/epiworld.R",
-    regions = list(
-      region("^recovery <- 1", "^  \\(1 - hospital_probability"),
-      region("^model <- Model\\(\\)", "^verbose_off\\(model\\)"),
-      region("^run\\(model")
-    )),
-  covasim = list(language = "Python", files = "runners/python_engines.py",
-    regions = list(
-      region("^def discrete_transmission_probability", "^    return"),
-      region("^def run_covasim", "^    sim.run\\(\\)")
-    )),
-  EoN = list(language = "Python", files = "runners/python_engines.py",
-    regions = list(
-      region("^def make_graph", "^    return graph"),
-      region("^def run_eon", "^    \\)$")
-    )),
-  epydemic = list(language = "Python", files = "runners/python_engines.py",
-    regions = list(
-      region("^def discrete_transmission_probability", "^    return"),
-      region("^def hospitalization_daily_probability", "^    \\)$"),
-      region("^def make_graph", "^    return graph"),
-      region("^def run_epydemic", "^    result = dynamics")
-    )),
-  ixa = list(language = "Rust",
-    files = c("runners/ixa/src/main.rs", "runners/ixa/Cargo.toml",
-              "runners/ixa/rust-toolchain.toml"),
-    regions = list(
-      region("^define_entity!", "^define_rng!\\(ProgressionRng"),
-      region("^struct Rates", "^}"),
-      region("^impl Rates", "^}"),
-      region("^fn build_context", "^}"),
-      region("^fn with_status", "^}"),
-      region("^fn roulette", "^}"),
-      region("^fn step", "^}"),
-      region("^fn schedule_days", "^}"),
-      region("let rates = Rates::from_args"),
-      region("let mut context = build_context"),
-      region("let peak = schedule_days"),
-      region("context.execute\\(\\)")
-    ))
-)
-
-count_model_lines <- function(spec) {
-  lines <- readLines(spec$files[[1]], warn = FALSE)
-  keep <- logical(length(lines))
-  for (r in spec$regions) {
-    start <- grep(r$from, lines)[1]
-    if (is.na(start)) stop("Anchor not found in ", spec$files[[1]], ": ", r$from)
-    end <- start - 1L + grep(r$to, lines[start:length(lines)])[1]
-    if (is.na(end)) stop("Anchor not found in ", spec$files[[1]], ": ", r$to)
-    keep[start:end] <- TRUE
-  }
-  code <- trimws(lines[keep])
-  timing <- "perf_counter|proc\\.time|Instant::now|elapsed"
-  sum(nzchar(code) & !grepl("^(#|//|\"\"\")", code) & !grepl(timing, code))
-}
-
-effort <- data.frame(
-  engine = names(model_code),
-  language = vapply(model_code, `[[`, "", "language"),
-  files = vapply(model_code, function(x) length(x$files), 0L),
-  model_lines = vapply(model_code, count_model_lines, 0L)
-)
-effort <- effort[order(effort$model_lines), ]
-knitr::kable(effort,
-  col.names = c("Engine", "Language", "Files", "Model lines"),
-  row.names = FALSE)
-```
-
-Model lines vary with how much of the model an engine provides built in. For
-example, EoN describes transitions as rate graphs, Covasim needs its native
-parameters overridden to restrict it to SEIRH, and the ixa runner writes its
-daily step by hand. The Python engines share one runner file, and ixa needs a
-Cargo project that is compiled before it runs.
-
 ## Design and interpretation
 
-The common disease graph is susceptible $\rightarrow$ exposed $\rightarrow$
+The scenario 00 disease graph is susceptible $\rightarrow$ exposed $\rightarrow$
 infectious $\rightarrow$ recovered, with a competing infectious $\rightarrow$
 hospitalized $\rightarrow$ recovered branch. Mean latent and infectious
 periods are 4 and 7 days, lifetime hospitalization probability is 5%, and the
@@ -315,6 +388,19 @@ start infectious in every engine except epiworldR, whose R API cannot seed a
 custom model's initial cases in a state other than the one new infections
 enter, so they start exposed there.
 
+Scenario 01 adds an all-or-nothing vaccine before the first day: 30% of agents
+are vaccinated at random, and each is fully protected with probability 0.8, so
+about 24% of the population can never be infected. Every engine expresses the
+vaccine in its own idiom, described in
+[scenario_01/README.md](scenario_01/README.md). One of these choices changed
+the results substantially: epiworldR's `distribute_tool_to_set()` copies the
+list of target agents once per agent it reaches, so placing the tool on 24,000
+named agents took about 4.6 seconds per run at 100,000 agents. The runner
+instead draws the number of protected agents and lets epiworld place the tool
+at random, which is statistically the same vaccine. The epydemic runner draws
+its vaccinated agents inside the timed simulation call, where epydemic sets
+initial compartments; this adds well under a millisecond.
+
 The shared analytic transmission mapping produced different realized attack
 rates across frameworks. Calibration therefore selected size-specific factors
 for restricted Covasim (0.715 at 10,000 agents and 0.710 at 100,000) and for
@@ -322,8 +408,10 @@ ixa (0.983 and 0.988). epiworldR needs none: its uncalibrated median attack
 rates match EoN's exact continuous-time results. All 100 replicates in each
 adjusted cell were then rerun. These empirical corrections are intentionally
 population-specific; they align benchmark outcomes but mean that none of the
-calibrated engines has a strictly analytic $R_0$ of 2. The values live in `config.toml` and participate in the
-cache fingerprint.
+calibrated engines has a strictly analytic $R_0$ of 2. Scenario 01 reuses the
+same factors, because they correct the engines' transmission semantics rather
+than anything specific to a scenario. The values live in each scenario's
+`scenario.toml` and participate in the cache fingerprint.
 
 epiworldR, epydemic, and ixa use synchronous daily transitions. The ixa
 runner schedules one plan per day on ixa's plan queue, samples transmission
@@ -360,13 +448,17 @@ At 10,000 and 100,000 agents its densities are approximately 0.001 and 0.0001,
 respectively, while every agent still has about ten contacts. This prevents the
 edge count, runtime, and memory from growing quadratically.
 
-More details regarding the project setup can be found in [setup.md](./setup.md).
+More details regarding the project setup can be found in [setup.md](./setup.md),
+and the steps for adding a scenario in [scenarios.md](./scenarios.md).
 
 ## Reproducibility and cache
 
-Every successful replicate is an atomic JSON cache record keyed by model
-configuration, runner source, engine version, and contact-network SHA-256.
-Rerunning `make benchmark` schedules only missing or stale records. The default
+Every successful replicate is an atomic JSON cache record keyed by scenario,
+model configuration, runner source, engine version, and contact-network
+SHA-256. Rerunning `make benchmark` schedules only missing or stale records,
+and editing one scenario's runners leaves the other scenarios' records valid.
+Replicate seeds do not depend on the scenario, which is what makes the
+replicate-by-replicate scenario comparison possible. The default
 worker count is one, and common native math-library thread counts are pinned to
 one. Concurrency is opt-in through the `N_THREADS` environment variable.
 Concurrent replicates contend for memory bandwidth and performance cores, and

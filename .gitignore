@@ -4,4 +4,4 @@ __pycache__/
 **/__pycache__/
 cache/
 report.html
-runners/ixa/target/
+scenario_*/runners/ixa/target/

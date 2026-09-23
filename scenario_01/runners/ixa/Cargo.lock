@@ -487,7 +487,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ixa-benchmark"
+name = "ixa-scenario-01"
 version = "0.1.0"
 dependencies = [
  "clap",

@@ -27,18 +27,43 @@ ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "config.toml"
 CACHE_DIR = ROOT / "cache"
 RESULTS_DIR = ROOT / "results"
-RUNNER_FORMAT_VERSION = 1
+RUNNER_FORMAT_VERSION = 2
 DIST_NAMES = {"covasim": "covasim", "EoN": "EoN", "epydemic": "epydemic"}
-IXA_DIR = ROOT / "runners" / "ixa"
+# Scenario tables whose keys are forwarded to every runner as --kebab-case flags.
+PARAMETER_TABLES = ("disease", "intervention")
 
 
-def ixa_binary() -> Path:
-    target = Path(os.environ.get("CARGO_TARGET_DIR", IXA_DIR / "target"))
-    return target / "release" / "ixa-benchmark"
+def discover_scenarios() -> list[str]:
+    return sorted(path.parent.name for path in ROOT.glob("scenario_*/scenario.toml"))
 
 
-def ixa_version() -> str:
-    lock = tomllib.loads((IXA_DIR / "Cargo.lock").read_text(encoding="utf-8"))
+def load_scenario(scenario: str) -> dict[str, Any]:
+    path = ROOT / scenario / "scenario.toml"
+    return tomllib.loads(path.read_text(encoding="utf-8"))
+
+
+def scenario_parameters(scenario_config: dict[str, Any]) -> dict[str, Any]:
+    """Model parameters forwarded to the runners, in a stable order."""
+    parameters: dict[str, Any] = {}
+    for table in PARAMETER_TABLES:
+        for key, value in scenario_config.get(table, {}).items():
+            if key in parameters:
+                raise SystemExit(f"Parameter {key!r} is defined in more than one table")
+            parameters[key] = value
+    return parameters
+
+
+def ixa_dir(scenario: str) -> Path:
+    return ROOT / scenario / "runners" / "ixa"
+
+
+def ixa_binary(scenario: str) -> Path:
+    target = Path(os.environ.get("CARGO_TARGET_DIR", ixa_dir(scenario) / "target"))
+    return target / "release" / f"ixa-{scenario.replace('_', '-')}"
+
+
+def ixa_version(scenario: str) -> str:
+    lock = tomllib.loads((ixa_dir(scenario) / "Cargo.lock").read_text(encoding="utf-8"))
     return next(package["version"] for package in lock["package"] if package["name"] == "ixa")
 
 
@@ -55,31 +80,36 @@ def atomic_json(path: Path, value: dict[str, Any]) -> None:
             os.unlink(temporary)
 
 
-def source_paths() -> list[Path]:
-    """Files whose contents define the benchmark, excluding build output."""
+def source_paths(scenario: str) -> list[Path]:
+    """Files whose contents define a scenario's results, excluding build output.
+
+    The scenario's README.md and code_regions.yml are documentation and report
+    inputs, so editing them does not invalidate cached results.
+    """
+    runner_dir = ROOT / scenario / "runners"
     runners = [
-        path for path in sorted((ROOT / "runners").rglob("*"))
+        path for path in sorted(runner_dir.rglob("*"))
         if path.is_file()
-        and "target" not in path.relative_to(ROOT / "runners").parts
+        and "target" not in path.relative_to(runner_dir).parts
         and "__pycache__" not in path.parts
     ]
     return (
-        [CONFIG_PATH, ROOT / "run.py"]
+        [CONFIG_PATH, ROOT / "run.py", ROOT / scenario / "scenario.toml"]
         + runners
         + sorted((ROOT / "scripts").glob("*.py"))
     )
 
 
-def source_hash() -> str:
+def source_hash(scenario: str) -> str:
     digest = hashlib.sha256()
-    for path in source_paths():
+    for path in source_paths(scenario):
         if path.is_file():
             digest.update(path.relative_to(ROOT).as_posix().encode())
             digest.update(path.read_bytes())
     return digest.hexdigest()
 
 
-def engine_versions(engines: list[str]) -> dict[str, str]:
+def engine_versions(engines: list[str], scenarios: list[str]) -> dict[str, str]:
     versions: dict[str, str] = {}
     for engine in engines:
         if engine in DIST_NAMES:
@@ -93,7 +123,10 @@ def engine_versions(engines: list[str]) -> dict[str, str]:
             )
             versions[engine] = completed.stdout.strip()
         elif engine == "ixa":
-            versions[engine] = ixa_version()
+            found = {ixa_version(scenario) for scenario in scenarios}
+            if len(found) != 1:
+                raise SystemExit(f"Scenarios pin different ixa versions: {sorted(found)}")
+            versions[engine] = found.pop()
     return versions
 
 
@@ -129,6 +162,10 @@ def resolve_workers(cli_value: int | None, resources: dict[str, Any]) -> int:
     return max(1, min(requested, ceiling))
 
 
+def flag(key: str) -> str:
+    return "--" + key.replace("_", "-")
+
+
 def task_command(task: dict[str, Any]) -> list[str]:
     common = [
         "--network", task["network"],
@@ -139,34 +176,30 @@ def task_command(task: dict[str, Any]) -> list[str]:
         "--replicate", str(task["replicate"]),
         "--seed", str(task["seed"]),
         "--mean-degree", str(task["mean_degree"]),
-        "--target-r0", str(task["target_r0"]),
-        "--initial-infected", str(task["initial_infected"]),
-        "--latent-days", str(task["latent_days"]),
-        "--infectious-days", str(task["infectious_days"]),
-        "--hospitalization-probability", str(task["hospitalization_probability"]),
-        "--hospital-days", str(task["hospital_days"]),
+    ]
+    for key, value in task["parameters"].items():
+        common += [flag(key), str(value)]
+    common += [
         "--transmission-multiplier", str(task["transmission_multiplier"]),
         "--fingerprint", task["fingerprint"],
         "--engine-version", task["engine_version"],
         "--output", task["output"],
     ]
+    runner_dir = ROOT / task["scenario"] / "runners"
     if task["engine"] == "epiworldR":
-        return [
-            "Rscript", "--vanilla", str(ROOT / "runners" / "epiworld.R"),
-            *common,
-        ]
+        return ["Rscript", "--vanilla", str(runner_dir / "epiworld.R"), *common]
     if task["engine"] == "ixa":
-        return [str(ixa_binary()), *common]
+        return [str(ixa_binary(task["scenario"])), *common]
     return [
         sys.executable,
-        str(ROOT / "runners" / "python_engines.py"),
+        str(runner_dir / "python_engines.py"),
         "--engine", task["engine"],
         *common,
     ]
 
 
 def run_task(task: dict[str, Any], env: dict[str, str]) -> tuple[str, bool, str]:
-    label = f"{task['engine']} n={task['n']} replicate={task['replicate']}"
+    label = f"{task['scenario']} {task['engine']} n={task['n']} replicate={task['replicate']}"
     completed = subprocess.run(
         task_command(task), cwd=ROOT, env=env, text=True, capture_output=True
     )
@@ -178,34 +211,52 @@ def run_task(task: dict[str, Any], env: dict[str, str]) -> tuple[str, bool, str]
 
 def collect_results() -> int:
     records: list[dict[str, Any]] = []
-    for path in sorted((CACHE_DIR / "results").glob("**/*.json")):
+    # Records live at cache/results/<scenario>/<engine>/...; anything else is
+    # left over from the single-scenario layout and is ignored.
+    for path in sorted((CACHE_DIR / "results").glob("scenario_*/**/*.json")):
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
             if record.get("status") == "ok":
-                records.append(record)
+                scenario = path.relative_to(CACHE_DIR / "results").parts[0]
+                records.append(record | {"scenario": scenario})
         except (OSError, ValueError):
             continue
     RESULTS_DIR.mkdir(exist_ok=True)
     output = RESULTS_DIR / "results.csv"
     fields = [
-        "engine", "engine_version", "n", "days", "replicate", "seed",
+        "scenario", "engine", "engine_version", "n", "days", "replicate", "seed",
         "network_sha256", "network_edges", "mean_degree", "target_r0",
         "transmission_multiplier",
         "setup_seconds", "simulate_seconds", "total_seconds",
         "final_susceptible", "final_exposed", "final_infected",
         "final_hospitalized", "final_recovered", "peak_hospitalized",
+        # Scenario-specific outcomes; blank for scenarios that do not report them.
+        "vaccinated", "vaccine_protected",
         "fingerprint", "timestamp_utc",
     ]
     with output.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(records)
+    # The report reads scenario names and parameters from here, so R needs no
+    # TOML parser.
+    scenarios = {}
+    for scenario in discover_scenarios():
+        scenario_config = load_scenario(scenario)
+        scenarios[scenario] = scenario_config["scenario"] | {
+            "parameters": scenario_parameters(scenario_config),
+            "calibration": scenario_config.get("calibration", {}),
+        }
+    atomic_json(RESULTS_DIR / "scenarios.json", scenarios)
     return len(records)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--profile", choices=("smoke", "full"), default="full")
+    parser.add_argument(
+        "--scenarios", nargs="+", help="subset of scenario folders (default: all scenario_*)"
+    )
     parser.add_argument("--engines", nargs="+", help="subset of configured engines")
     parser.add_argument("--sizes", nargs="+", type=int, help="override profile population sizes")
     parser.add_argument("--replicates", type=int, help="override profile replicate count")
@@ -221,26 +272,31 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     config = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-    study, network, disease, resources, calibration = (
-        config["study"], config["network"], config["disease"], config["resources"],
-        config["calibration"],
-    )
+    study, network, resources = config["study"], config["network"], config["resources"]
+    available = discover_scenarios()
+    scenarios = args.scenarios or available
+    unknown = sorted(set(scenarios) - set(available))
+    if unknown:
+        raise SystemExit(f"Unknown scenario(s): {', '.join(unknown)}")
     engines = args.engines or list(study["engines"])
     unknown = sorted(set(engines) - set(study["engines"]))
     if unknown:
         raise SystemExit(f"Unknown engine(s): {', '.join(unknown)}")
-    # Calibration keys are looked up as "<engine>_transmission_multiplier_<n>".
-    # A key whose prefix is not an engine name would silently fall back to a
-    # multiplier of 1.0, so reject it here instead.
-    stray = sorted(
-        key for key in calibration
-        if (match := re.fullmatch(r"(.+)_transmission_multiplier_\d+", key))
-        and match.group(1) not in set(study["engines"])
-    )
-    if stray:
-        raise SystemExit(
-            "Calibration key(s) do not match any engine name: " + ", ".join(stray)
+    scenario_configs = {scenario: load_scenario(scenario) for scenario in scenarios}
+    for scenario, scenario_config in scenario_configs.items():
+        # Calibration keys are looked up as "<engine>_transmission_multiplier_<n>".
+        # A key whose prefix is not an engine name would silently fall back to a
+        # multiplier of 1.0, so reject it here instead.
+        stray = sorted(
+            key for key in scenario_config.get("calibration", {})
+            if (match := re.fullmatch(r"(.+)_transmission_multiplier_\d+", key))
+            and match.group(1) not in set(study["engines"])
         )
+        if stray:
+            raise SystemExit(
+                f"{scenario}: calibration key(s) do not match any engine name: "
+                + ", ".join(stray)
+            )
     profile = study if args.profile == "full" else (study | config["smoke"])
     population_sizes = args.sizes or list(profile["population_sizes"])
     replicate_count = args.replicates or int(profile["replicates"])
@@ -250,10 +306,13 @@ def main() -> int:
 
     if shutil.which("Rscript") is None and "epiworldR" in engines:
         raise SystemExit("Rscript is required for the epiworldR runner")
-    if "ixa" in engines and not ixa_binary().is_file():
-        raise SystemExit(f"ixa runner not built at {ixa_binary()}; run `make setup`")
-    versions = engine_versions(engines)
-    code_hash = source_hash()
+    if "ixa" in engines:
+        for scenario in scenarios:
+            if not ixa_binary(scenario).is_file():
+                raise SystemExit(
+                    f"ixa runner not built at {ixa_binary(scenario)}; run `make setup`"
+                )
+    versions = engine_versions(engines, scenarios)
     host_platform = f"{platform.system()}-{platform.machine()}"
     tasks: list[dict[str, Any]] = []
     cached = 0
@@ -271,47 +330,55 @@ def main() -> int:
             float(network["rewire_probability"]),
             int(network["seed"]) + size_index,
         )
-        for engine in engines:
-            for replicate in range(1, replicate_count + 1):
-                seed = int(study["base_seed"]) + size_index * 100_000 + replicate
-                identity = {
-                    "format_version": RUNNER_FORMAT_VERSION,
-                    # Timings are host-specific, so records from a native run
-                    # and a container run are never mixed.
-                    "platform": host_platform,
-                    "source_hash": code_hash,
-                    "engine": engine,
-                    "engine_version": versions[engine],
-                    "n": int(n),
-                    "days": int(profile["days"]),
-                    "replicate": replicate,
-                    "seed": seed,
-                    "network_sha256": network_metadata["sha256"],
-                    "network_edges": network_metadata["edges"],
-                    "mean_degree": network_metadata["mean_degree_observed"],
-                    "target_r0": disease["target_r0"],
-                    "initial_infected": int(profile.get("initial_infected", disease["initial_infected"])),
-                    "latent_days": disease["latent_days"],
-                    "infectious_days": disease["infectious_days"],
-                    "hospitalization_probability": disease["hospitalization_probability"],
-                    "hospital_days": disease["hospital_days"],
-                    "transmission_multiplier": float(
-                        calibration.get(f"{engine}_transmission_multiplier_{int(n)}", 1.0)
-                    ),
-                }
-                task_fingerprint = fingerprint(identity)
-                output = CACHE_DIR / "results" / engine / f"n{n}" / f"replicate-{replicate:03d}.json"
-                if not args.force and valid_cache(output, task_fingerprint):
-                    cached += 1
-                    continue
-                tasks.append(identity | {
-                    "network": str(edge_path),
-                    "output": str(output),
-                    "fingerprint": task_fingerprint,
-                })
+        for scenario, scenario_config in scenario_configs.items():
+            code_hash = source_hash(scenario)
+            calibration = scenario_config.get("calibration", {})
+            parameters = scenario_parameters(scenario_config)
+            if "initial_infected" in profile and "initial_infected" in parameters:
+                parameters["initial_infected"] = int(profile["initial_infected"])
+            for engine in engines:
+                for replicate in range(1, replicate_count + 1):
+                    # Seeds do not depend on the scenario, so scenarios can be
+                    # compared replicate by replicate.
+                    seed = int(study["base_seed"]) + size_index * 100_000 + replicate
+                    identity = {
+                        "format_version": RUNNER_FORMAT_VERSION,
+                        # Timings are host-specific, so records from a native run
+                        # and a container run are never mixed.
+                        "platform": host_platform,
+                        "source_hash": code_hash,
+                        "scenario": scenario,
+                        "engine": engine,
+                        "engine_version": versions[engine],
+                        "n": int(n),
+                        "days": int(profile["days"]),
+                        "replicate": replicate,
+                        "seed": seed,
+                        "network_sha256": network_metadata["sha256"],
+                        "network_edges": network_metadata["edges"],
+                        "mean_degree": network_metadata["mean_degree_observed"],
+                        "parameters": parameters,
+                        "transmission_multiplier": float(
+                            calibration.get(f"{engine}_transmission_multiplier_{int(n)}", 1.0)
+                        ),
+                    }
+                    task_fingerprint = fingerprint(identity)
+                    output = (
+                        CACHE_DIR / "results" / scenario / engine / f"n{n}"
+                        / f"replicate-{replicate:03d}.json"
+                    )
+                    if not args.force and valid_cache(output, task_fingerprint):
+                        cached += 1
+                        continue
+                    tasks.append(identity | {
+                        "network": str(edge_path),
+                        "output": str(output),
+                        "fingerprint": task_fingerprint,
+                    })
 
     print(
-        f"Profile={args.profile}; engines={','.join(engines)}; "
+        f"Profile={args.profile}; scenarios={','.join(scenarios)}; "
+        f"engines={','.join(engines)}; "
         f"workers={workers}; cached={cached}; pending={len(tasks)}",
         flush=True,
     )
@@ -348,6 +415,7 @@ def main() -> int:
     count = collect_results()
     manifest = {
         "profile": args.profile,
+        "requested_scenarios": scenarios,
         "requested_engines": engines,
         "cached_before_run": cached,
         "executed": len(tasks),

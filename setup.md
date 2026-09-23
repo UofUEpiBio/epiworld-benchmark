@@ -1,7 +1,7 @@
 # Network epidemic ABM speed benchmark
 
 This folder contains a reproducible, resumable benchmark of five epidemic
-simulation engines:
+simulation engines across several scenarios of increasing complexity:
 
 - **epiworldR 0.15.1.0** (R/C++), using a custom discrete-time SEIRH model;
 - **Covasim 3.1.8** (Python), using its native disease progression and severe
@@ -13,7 +13,14 @@ simulation engines:
   plan per day on ixa's plan queue, its built-in contact network, and an
   indexed disease-status property.
 
-The full design runs 100 replicates for 100 days at 10,000 and 100,000 agents.
+Each scenario lives in its own `scenario_NN/` folder with a spec
+(`README.md`), its parameters (`scenario.toml`), and one runner per engine
+(`runners/`). Scenario 00 is the SEIRH baseline and scenario 01 adds an
+all-or-nothing vaccine. [scenarios.md](scenarios.md) explains how to add
+another.
+
+The full design runs 100 replicates for 100 days at 10,000 and 100,000 agents
+for every scenario.
 Every engine receives the exact same cached Watts--Strogatz edge list at a
 given population size. The graph has mean degree 10 and rewiring probability
 0.05. Here “average density” is interpreted as the usual sparse-network
@@ -39,8 +46,10 @@ make container-report
 Every `container-TARGET` runs `make setup TARGET` in a fresh container with the
 checkout bind-mounted at `/workspace`, so `cache/`, `results/`, and the
 rendered report land in this folder. The Python environment (`/opt/venv`) and
-the ixa build (`/opt/cargo-target`) stay inside the image and never touch a
-host `.venv/` or `target/`.
+the ixa builds (`/opt/cargo-target`, one binary per scenario) stay inside the
+image and never touch a host `.venv/` or `target/`. Set `SCENARIOS` to run
+only some scenarios, for example `SCENARIOS=scenario_01 make
+container-benchmark`.
 
 The same image is a development container: open the folder in VS Code (with
 `"dev.containers.dockerPath": "podman"`) or another devcontainer client, and
@@ -57,8 +66,8 @@ The report target produces GitHub-flavored `README.md` plus PNG figures in
 directly in a pull request.
 
 The smoke profile is deliberately tiny (1,000 agents, 10 days, one replicate)
-and tests all five integrations. `make benchmark` launches the full 1,000-run
-design. It is safe to stop and restart: each successful replicate is written
+and tests all five integrations in every scenario. `make benchmark` launches
+the full design: 1,000 runs per scenario. It is safe to stop and restart: each successful replicate is written
 atomically beneath `cache/results/`, and a later invocation only schedules
 missing or stale results.
 
@@ -68,7 +77,8 @@ Useful targeted runs include:
 # Preview work without launching a model
 .venv/bin/python run.py --profile full --dry-run
 
-# Run just one engine, or preflight one replicate at both full sizes
+# Run just one scenario or engine, or preflight one replicate at both full sizes
+.venv/bin/python run.py --profile full --scenarios scenario_01
 .venv/bin/python run.py --profile full --engines epiworldR
 .venv/bin/python run.py --profile full --replicates 1
 
@@ -76,10 +86,14 @@ Useful targeted runs include:
 .venv/bin/python run.py --profile full --engines EoN --force
 ```
 
-Do not delete `cache/` between runs. The cache key covers the configuration,
-runner source, engine version, and shared-network checksum. `results/results.csv`
-is rebuilt from all successful cached records after each invocation; the report
-filters it to the full 10,000/100,000-agent, 100-day design.
+Do not delete `cache/` between runs. Records live at
+`cache/results/<scenario>/<engine>/n<n>/`, and the cache key covers the shared
+configuration, the scenario's parameters and runner sources, the engine
+version, and the shared-network checksum. Changing one scenario's runners
+invalidates only that scenario. `results/results.csv` (with a `scenario`
+column) and `results/scenarios.json` are rebuilt from all successful cached
+records after each invocation. The report filters them to the full
+10,000/100,000-agent, 100-day design.
 
 ## Resource policy
 
