@@ -6,6 +6,8 @@
 - [Simulation time](#simulation-time)
 - [Speed relative to epiworldR](#speed-relative-to-epiworldr)
 - [Epidemiological sanity checks](#epidemiological-sanity-checks)
+- [Code required to define the
+  model](#code-required-to-define-the-model)
 - [Design and interpretation](#design-and-interpretation)
 - [Reproducibility and cache](#reproducibility-and-cache)
 - [References](#references)
@@ -102,6 +104,30 @@ and Covasim’s native symptom/severe bookkeeping.
 | ixa       | 100000 |                    0.062 |                     31.0 |
 
 ![](README_files/figure-commonmark/outcomes-plot-1.png)
+
+## Code required to define the model
+
+A rough measure of effort: how much code each engine needs to express
+the common SEIRH model. *Model lines* counts non-blank, non-comment
+lines that build the population and network, define the disease, and run
+the simulation. Argument parsing, edge-file reading, timing, and writing
+results are excluded because every runner shares them. *Files* counts
+the files a user writes, including build manifests. They are counted
+from the runner sources when this report is rendered.
+
+| Engine    | Language | Files | Model lines |
+|:----------|:---------|------:|------------:|
+| EoN       | Python   |     1 |          37 |
+| epiworldR | R        |     1 |          47 |
+| covasim   | Python   |     1 |          64 |
+| epydemic  | Python   |     1 |          70 |
+| ixa       | Rust     |     3 |         133 |
+
+Model lines vary with how much of the model an engine provides built in.
+For example, EoN describes transitions as rate graphs, Covasim needs its
+native parameters overridden to restrict it to SEIRH, and the ixa runner
+writes its daily step by hand. The Python engines share one runner file,
+and ixa needs a Cargo project that is compiled before it runs.
 
 ## Design and interpretation
 

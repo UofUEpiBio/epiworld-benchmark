@@ -212,6 +212,98 @@ if (has_full) {
 }
 ```
 
+## Code required to define the model
+
+A rough measure of effort: how much code each engine needs to express the
+common SEIRH model. *Model lines* counts non-blank, non-comment lines that
+build the population and network, define the disease, and run the simulation.
+Argument parsing, edge-file reading, timing, and writing results are excluded
+because every runner shares them. *Files* counts the files a user writes,
+including build manifests. They are counted from the runner sources when this
+report is rendered.
+
+```{r}
+#| label: code-effort
+# Each region runs from the first line matching `from` to the next line
+# matching `to` (both inclusive). The anchors live here rather than as markers
+# in the runners because runner sources are part of the cache fingerprint.
+region <- function(from, to = from) list(from = from, to = to)
+model_code <- list(
+  epiworldR = list(language = "R", files = "runners/epiworld.R",
+    regions = list(
+      region("^recovery <- 1", "^  \\(1 - hospital_probability"),
+      region("^model <- Model\\(\\)", "^verbose_off\\(model\\)"),
+      region("^run\\(model")
+    )),
+  covasim = list(language = "Python", files = "runners/python_engines.py",
+    regions = list(
+      region("^def discrete_transmission_probability", "^    return"),
+      region("^def run_covasim", "^    sim.run\\(\\)")
+    )),
+  EoN = list(language = "Python", files = "runners/python_engines.py",
+    regions = list(
+      region("^def make_graph", "^    return graph"),
+      region("^def run_eon", "^    \\)$")
+    )),
+  epydemic = list(language = "Python", files = "runners/python_engines.py",
+    regions = list(
+      region("^def discrete_transmission_probability", "^    return"),
+      region("^def hospitalization_daily_probability", "^    \\)$"),
+      region("^def make_graph", "^    return graph"),
+      region("^def run_epydemic", "^    result = dynamics")
+    )),
+  ixa = list(language = "Rust",
+    files = c("runners/ixa/src/main.rs", "runners/ixa/Cargo.toml",
+              "runners/ixa/rust-toolchain.toml"),
+    regions = list(
+      region("^define_entity!", "^define_rng!\\(ProgressionRng"),
+      region("^struct Rates", "^}"),
+      region("^impl Rates", "^}"),
+      region("^fn build_context", "^}"),
+      region("^fn with_status", "^}"),
+      region("^fn roulette", "^}"),
+      region("^fn step", "^}"),
+      region("^fn schedule_days", "^}"),
+      region("let rates = Rates::from_args"),
+      region("let mut context = build_context"),
+      region("let peak = schedule_days"),
+      region("context.execute\\(\\)")
+    ))
+)
+
+count_model_lines <- function(spec) {
+  lines <- readLines(spec$files[[1]], warn = FALSE)
+  keep <- logical(length(lines))
+  for (r in spec$regions) {
+    start <- grep(r$from, lines)[1]
+    if (is.na(start)) stop("Anchor not found in ", spec$files[[1]], ": ", r$from)
+    end <- start - 1L + grep(r$to, lines[start:length(lines)])[1]
+    if (is.na(end)) stop("Anchor not found in ", spec$files[[1]], ": ", r$to)
+    keep[start:end] <- TRUE
+  }
+  code <- trimws(lines[keep])
+  timing <- "perf_counter|proc\\.time|Instant::now|elapsed"
+  sum(nzchar(code) & !grepl("^(#|//|\"\"\")", code) & !grepl(timing, code))
+}
+
+effort <- data.frame(
+  engine = names(model_code),
+  language = vapply(model_code, `[[`, "", "language"),
+  files = vapply(model_code, function(x) length(x$files), 0L),
+  model_lines = vapply(model_code, count_model_lines, 0L)
+)
+effort <- effort[order(effort$model_lines), ]
+knitr::kable(effort,
+  col.names = c("Engine", "Language", "Files", "Model lines"),
+  row.names = FALSE)
+```
+
+Model lines vary with how much of the model an engine provides built in. For
+example, EoN describes transitions as rate graphs, Covasim needs its native
+parameters overridden to restrict it to SEIRH, and the ixa runner writes its
+daily step by hand. The Python engines share one runner file, and ixa needs a
+Cargo project that is compiled before it runs.
+
 ## Design and interpretation
 
 The common disease graph is susceptible $\rightarrow$ exposed $\rightarrow$
