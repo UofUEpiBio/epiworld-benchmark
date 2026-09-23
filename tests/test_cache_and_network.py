@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from run import fingerprint, task_command, valid_cache
+from run import ROOT, fingerprint, source_paths, task_command, valid_cache
 from scripts.generate_network import ensure_network, sha256_file
 
 
@@ -51,7 +51,16 @@ def test_task_command_passes_transmission_multiplier_to_each_runner() -> None:
         "engine_version": "version",
         "output": "result.json",
     }
-    for engine in ("covasim", "epiworldR"):
+    for engine in ("covasim", "epiworldR", "ixa"):
         command = task_command(task | {"engine": engine})
         index = command.index("--transmission-multiplier")
         assert command[index + 1] == "0.71"
+
+
+def test_source_paths_cover_ixa_runner_but_not_build_output() -> None:
+    paths = {path.relative_to(ROOT).as_posix() for path in source_paths()}
+    assert "runners/ixa/src/main.rs" in paths
+    assert "runners/ixa/Cargo.toml" in paths
+    assert "runners/ixa/Cargo.lock" in paths
+    assert "runners/epiworld.R" in paths
+    assert not any("/target/" in path for path in paths)

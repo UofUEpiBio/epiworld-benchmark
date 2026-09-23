@@ -29,6 +29,17 @@ CACHE_DIR = ROOT / "cache"
 RESULTS_DIR = ROOT / "results"
 RUNNER_FORMAT_VERSION = 1
 DIST_NAMES = {"covasim": "covasim", "EoN": "EoN", "epydemic": "epydemic"}
+IXA_DIR = ROOT / "runners" / "ixa"
+
+
+def ixa_binary() -> Path:
+    target = Path(os.environ.get("CARGO_TARGET_DIR", IXA_DIR / "target"))
+    return target / "release" / "ixa-benchmark"
+
+
+def ixa_version() -> str:
+    lock = tomllib.loads((IXA_DIR / "Cargo.lock").read_text(encoding="utf-8"))
+    return next(package["version"] for package in lock["package"] if package["name"] == "ixa")
 
 
 def atomic_json(path: Path, value: dict[str, Any]) -> None:
@@ -44,14 +55,24 @@ def atomic_json(path: Path, value: dict[str, Any]) -> None:
             os.unlink(temporary)
 
 
-def source_hash() -> str:
-    digest = hashlib.sha256()
-    paths = (
+def source_paths() -> list[Path]:
+    """Files whose contents define the benchmark, excluding build output."""
+    runners = [
+        path for path in sorted((ROOT / "runners").rglob("*"))
+        if path.is_file()
+        and "target" not in path.relative_to(ROOT / "runners").parts
+        and "__pycache__" not in path.parts
+    ]
+    return (
         [CONFIG_PATH, ROOT / "run.py"]
-        + sorted((ROOT / "runners").glob("*"))
+        + runners
         + sorted((ROOT / "scripts").glob("*.py"))
     )
-    for path in paths:
+
+
+def source_hash() -> str:
+    digest = hashlib.sha256()
+    for path in source_paths():
         if path.is_file():
             digest.update(path.relative_to(ROOT).as_posix().encode())
             digest.update(path.read_bytes())
@@ -71,6 +92,8 @@ def engine_versions(engines: list[str]) -> dict[str, str]:
                 capture_output=True,
             )
             versions[engine] = completed.stdout.strip()
+        elif engine == "ixa":
+            versions[engine] = ixa_version()
     return versions
 
 
@@ -132,6 +155,8 @@ def task_command(task: dict[str, Any]) -> list[str]:
             "Rscript", "--vanilla", str(ROOT / "runners" / "epiworld.R"),
             *common,
         ]
+    if task["engine"] == "ixa":
+        return [str(ixa_binary()), *common]
     return [
         sys.executable,
         str(ROOT / "runners" / "python_engines.py"),
@@ -225,8 +250,11 @@ def main() -> int:
 
     if shutil.which("Rscript") is None and "epiworldR" in engines:
         raise SystemExit("Rscript is required for the epiworldR runner")
+    if "ixa" in engines and not ixa_binary().is_file():
+        raise SystemExit(f"ixa runner not built at {ixa_binary()}; run `make setup`")
     versions = engine_versions(engines)
     code_hash = source_hash()
+    host_platform = f"{platform.system()}-{platform.machine()}"
     tasks: list[dict[str, Any]] = []
     cached = 0
 
@@ -248,6 +276,9 @@ def main() -> int:
                 seed = int(study["base_seed"]) + size_index * 100_000 + replicate
                 identity = {
                     "format_version": RUNNER_FORMAT_VERSION,
+                    # Timings are host-specific, so records from a native run
+                    # and a container run are never mixed.
+                    "platform": host_platform,
                     "source_hash": code_hash,
                     "engine": engine,
                     "engine_version": versions[engine],

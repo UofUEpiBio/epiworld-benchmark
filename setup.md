@@ -1,14 +1,17 @@
 # Network epidemic ABM speed benchmark
 
-This folder contains a reproducible, resumable benchmark of four epidemic
+This folder contains a reproducible, resumable benchmark of five epidemic
 simulation engines:
 
 - **epiworldR 0.15.1.0** (R/C++), using a custom discrete-time SEIRH model;
 - **Covasim 3.1.8** (Python), using its native disease progression and severe
   state as the hospitalization proxy;
 - **EoN 1.92** (Python), using a continuous-time SEIRH model run with the
-  event-driven `fast_simple_contagion` algorithm; and
-- **epydemic 1.14.1** (Python), using a custom synchronous SEIRH model.
+  event-driven `fast_simple_contagion` algorithm;
+- **epydemic 1.14.1** (Python), using a custom synchronous SEIRH model; and
+- **ixa 3.1.0** (Rust), using a custom synchronous SEIRH model driven by one
+  plan per day on ixa's plan queue, its built-in contact network, and an
+  indexed disease-status property.
 
 The full design runs 100 replicates for 100 days at 10,000 and 100,000 agents.
 Every engine receives the exact same cached Watts--Strogatz edge list at a
@@ -19,23 +22,42 @@ to grow linearly with population size.
 
 ## Quick start
 
-Prerequisites are Python 3.12, [uv](https://docs.astral.sh/uv/), R,
-`epiworldR`, `jsonlite`, and Quarto. From this folder:
+The benchmark is meant to run inside the container defined in
+`.devcontainer/`. It pins R 4.5.1 with epiworldR 0.15.1.0, Python 3.12 via uv,
+Rust 1.98.0, and Quarto 1.10.18, so every engine is built and timed on the same
+toolchain. The only host prerequisite is [podman](https://podman.io/) (or
+Docker: pass `CONTAINER=docker`). From this folder:
 
 ```sh
-uv sync --frozen
-make check
-make smoke
-make benchmark
-make report
+make container-image
+make container-check
+make container-smoke
+N_THREADS=6 make container-benchmark
+make container-report
 ```
 
-The report target produces GitHub-flavored `report.md` plus PNG figures in
-`report_files/figure-commonmark/`, so the rendered results remain readable
+Every `container-TARGET` runs `make setup TARGET` in a fresh container with the
+checkout bind-mounted at `/workspace`, so `cache/`, `results/`, and the
+rendered report land in this folder. The Python environment (`/opt/venv`) and
+the ixa build (`/opt/cargo-target`) stay inside the image and never touch a
+host `.venv/` or `target/`.
+
+The same image is a development container: open the folder in VS Code (with
+`"dev.containers.dockerPath": "podman"`) or another devcontainer client, and
+`make setup`, `make check`, `make benchmark`, and so on work unchanged in its
+shell.
+
+Running natively is still possible given Python 3.12, uv, R with `epiworldR`
+and `jsonlite`, a Rust toolchain, and Quarto (`make setup check smoke
+benchmark report`). Cache records carry the host OS and architecture in their
+fingerprint, so native and container timings are never mixed.
+
+The report target produces GitHub-flavored `README.md` plus PNG figures in
+`README_files/figure-commonmark/`, so the rendered results remain readable
 directly in a pull request.
 
 The smoke profile is deliberately tiny (1,000 agents, 10 days, one replicate)
-and tests all four integrations. `make benchmark` launches the full 800-run
+and tests all five integrations. `make benchmark` launches the full 1,000-run
 design. It is safe to stop and restart: each successful replicate is written
 atomically beneath `cache/results/`, and a later invocation only schedules
 missing or stale results.
@@ -70,7 +92,7 @@ Concurrency is opt-in through the `N_THREADS` environment variable, capped by
 `resources.max_workers` in `config.toml` and by the host core count:
 
 ```sh
-N_THREADS=3 make benchmark
+N_THREADS=3 make container-benchmark
 ```
 
 `--workers` overrides `N_THREADS` when both are given. `N_THREADS` is not part
@@ -78,8 +100,9 @@ of the cache fingerprint, so changing it does not invalidate cached results.
 
 Replicates running side by side contend for memory bandwidth and, on hybrid
 CPUs, for performance cores, and the penalty differs by engine. Median
-`simulate_seconds` at 100,000 agents, relative to a sequential run, measured on
-an 11-core M3 Pro (5 performance + 6 efficiency), 12 replicates per cell:
+`simulate_seconds` at 100,000 agents, relative to a sequential run, measured
+natively (before the container workflow and before ixa was added) on an 11-core
+M3 Pro (5 performance + 6 efficiency), 12 replicates per cell:
 
 | workers | epiworldR   | covasim     | EoN         |
 |--------:|------------:|------------:|------------:|
@@ -121,4 +144,5 @@ leakage and making failures independently resumable.
 
 Relevant upstream documentation: [Covasim](https://docs.covasim.org/),
 [EoN generalized contagion](https://epidemicsonnetworks.readthedocs.io/en/latest/functions/EoN.fast_simple_contagion.html),
-and [epydemic synchronous dynamics](https://pyepydemic.readthedocs.io/en/latest/synchronousdynamics.html).
+[epydemic synchronous dynamics](https://pyepydemic.readthedocs.io/en/latest/synchronousdynamics.html),
+and [ixa](https://ixa.rs/).

@@ -1,0 +1,6 @@
+.git
+.venv
+cache
+runners/ixa/target
+**/__pycache__
+.pytest_cache

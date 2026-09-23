@@ -1,21 +1,33 @@
-.PHONY: setup check smoke benchmark report clean-cache 
+.PHONY: help setup check smoke benchmark report clean-cache container-image
 
-PYTHON := .venv/bin/python
+# Inside the container, PYTHON and CARGO_TARGET_DIR come from the image.
+PYTHON ?= .venv/bin/python
+CARGO := cargo
+IXA_MANIFEST := runners/ixa/Cargo.toml
+
+CONTAINER ?= podman
+IMAGE ?= epiworld-benchmark
 
 help:
 	@echo "Available targets:"
-	@echo "  setup         - Install dependencies and sync the environment"
-	@echo "  check         - Run tests and check R package dependencies"
-	@echo "  smoke         - Run a quick smoke test of the simulation"
-	@echo "  benchmark     - Run the full benchmark simulation"
-	@echo "  report        - Render the report using Quarto"
-	@echo "  clean-cache   - Remove benchmark/cache manually if you really want to discard reusable runs."
+	@echo "  setup           - Sync the Python environment and build the ixa runner"
+	@echo "  check           - Run tests and check R package dependencies"
+	@echo "  smoke           - Run a quick smoke test of the simulation"
+	@echo "  benchmark       - Run the full benchmark simulation"
+	@echo "  report          - Render the report using Quarto"
+	@echo "  clean-cache     - Remove benchmark/cache manually if you really want to discard reusable runs."
+	@echo ""
+	@echo "Container targets (the documented way to run the benchmark):"
+	@echo "  container-image - Build the $(IMAGE) image with $(CONTAINER)"
+	@echo "  container-TARGET - Run 'make setup TARGET' in the container, e.g. container-benchmark"
 
 setup:
 	uv sync --frozen
+	$(CARGO) build --release --locked --manifest-path $(IXA_MANIFEST)
 
 check:
 	$(PYTHON) -m pytest
+	$(CARGO) test --release --locked --manifest-path $(IXA_MANIFEST)
 	Rscript --vanilla -e 'stopifnot(requireNamespace("epiworldR", quietly = TRUE), requireNamespace("jsonlite", quietly = TRUE))'
 
 smoke:
@@ -24,10 +36,17 @@ smoke:
 benchmark:
 	$(PYTHON) run.py --profile full
 
-README.md: README.qmd
+README.md: README.qmd results/results.csv
 	quarto render README.qmd
 
 report: README.md
 
 clean-cache:
 	@echo "Remove benchmark/cache manually if you really want to discard reusable runs."
+
+container-image:
+	$(CONTAINER) build -t $(IMAGE) -f .devcontainer/Dockerfile .
+
+container-%:
+	$(CONTAINER) run --rm -v "$(CURDIR)":/workspace -w /workspace \
+		-e N_THREADS $(IMAGE) make setup $*
