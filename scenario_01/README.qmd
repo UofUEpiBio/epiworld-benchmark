@@ -1,0 +1,220 @@
+---
+title: "Scenario 01: SEIRH + all-or-nothing vaccination"
+subtitle: "Network epidemic ABM speed benchmark"
+date: last-modified
+format:
+  gfm:
+    toc: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+source("../report/common.R")
+bench <- load_benchmark("scenario_01")
+baseline <- "scenario_00"
+full <- bench$full
+base <- bench$every[bench$every$scenario == baseline, ]
+attack <- function(data, n) if (nrow(data)) sprintf("%.2g", median(data$attack_rate[data$n == n])) else "?"
+```
+
+[Back to the project overview](../README.md) ·
+[Scenario 00 report](../scenario_00/README.md)
+
+[Scenario 00](../scenario_00/README.md) plus a vaccine given before
+transmission starts. The disease, network, seeds, run length, and calibration
+are identical. So for any engine, size, and replicate, the two scenarios
+differ only in the vaccine, and this report compares them replicate by
+replicate.
+
+## Model
+
+### Vaccine
+
+| Parameter (`scenario.toml`) | Value | Meaning                                         |
+|:----------------------------|------:|:------------------------------------------------|
+| `vaccine_coverage`          |  0.30 | Share of all agents vaccinated                  |
+| `vaccine_efficacy`          |  0.80 | Probability that a vaccinated agent is protected |
+
+- Before the first day, `round(vaccine_coverage * n)` agents are chosen
+  uniformly at random and vaccinated.
+- The vaccine is **all-or-nothing**. Each vaccinated agent is independently
+  protected with probability `vaccine_efficacy`. A protected agent can never
+  be infected. An unprotected one behaves exactly like an unvaccinated agent.
+  A *leaky* vaccine would instead lower everyone's per-contact risk by 80%.
+- Vaccination is independent of the initial infections. A seed case that also
+  gets vaccinated stays infected.
+
+About 24% of agents end up protected, so the effective reproduction number
+falls from about 2 to about 1.5. The disease parameters are those of
+scenario 00.
+
+### Outputs
+
+Runners add two fields to each result record:
+
+- `vaccinated`: the number of agents vaccinated.
+- `vaccine_protected`: how many of them are protected, including any who were
+  also seed cases.
+
+Protected agents who are never infected are counted in `final_susceptible`.
+So the five compartments still sum to `n`, and the attack rate is still
+`1 - final_susceptible / n`.
+
+### Engine implementations
+
+Each engine uses its own way of expressing the vaccine, so the model-lines
+comparison reflects what a user of that engine would write.
+
+- **epiworldR**: a `tool()` with `susceptibility_reduction = 1`. epiworld's
+  C++ library has an all-or-nothing `ToolVaccine`, but epiworldR does not
+  expose it. Unprotected vaccinees need no tool, so the runner draws the
+  number of protected agents from a binomial and lets epiworld place the tool
+  on that many randomly chosen agents.
+- **Covasim**: two day-0 `cv.simple_vaccine` interventions targeted with
+  `subtarget`. One gives the protected agents `rel_sus = 0`, the other leaves
+  the remaining vaccinees unchanged. A single `simple_vaccine` would be leaky.
+  Covasim tracks `people.vaccinated` itself.
+- **EoN**: protected agents start in a status `"V"` that has no transitions,
+  so no induced transmission rate ever reaches them.
+- **epydemic**: a `V` compartment with no events. It sits outside the S–I
+  edge locus that drives infection. The vaccine is drawn in
+  `initialCompartments`, which runs inside the timed simulation call; this
+  adds well under a millisecond.
+- **ixa**: a `VaccineStatus` property (`Unvaccinated`, `Protected`,
+  `Unprotected`) on `Person`. The daily step skips protected neighbours when
+  it looks for susceptible contacts.
+
+## Results
+
+```{r}
+#| label: completion-status
+#| results: asis
+completion_status(bench)
+```
+
+```{r}
+#| label: environment
+table_environment(bench)
+```
+
+```{r}
+#| label: summary-table
+table_summary(bench)
+```
+
+### Simulation time
+
+The primary measure is wall-clock time inside each engine's simulation call.
+The logarithmic scale keeps fast and slow engines legible in one panel.
+
+```{r}
+#| label: simulation-time-plot
+#| fig-width: 9
+#| fig-height: 5
+if (bench$has_full) print(plot_simulation_time(bench))
+```
+
+### Speed relative to epiworldR
+
+Ratios are matched by population size and replicate seed. Values above one
+mean that epiworldR completed the simulation call faster.
+
+```{r}
+#| label: speedup
+table_speedup(bench)
+```
+
+### Epidemiological sanity checks
+
+Speed is interpretable only if the simulations produce plausible epidemics.
+These checks show the final attack rate, peak hospitalization load, and the
+share of agents the vaccine protected.
+
+```{r}
+#| label: outcomes-table
+table_outcomes(bench)
+```
+
+```{r}
+#| label: outcomes-plot
+#| fig-width: 9
+#| fig-height: 5
+if (bench$has_full) {
+  print(plot_outcomes(bench, "The calibrated outcomes are closely aligned within each population size"))
+}
+```
+
+## Cost of the added complexity
+
+### Run time compared with scenario 00
+
+Each replicate is paired with the scenario 00 replicate that has the same
+engine, population size, and seed. Values above one mean that this scenario
+took longer.
+
+```{r}
+#| label: time-versus-baseline
+table_time_versus(bench, baseline)
+```
+
+Run time does not isolate the cost of the vaccine machinery. The vaccine cuts
+the median attack rate from about `r attack(base, 10000)` to
+`r attack(full, 10000)` at 10,000 agents and from `r attack(base, 100000)` to
+`r attack(full, 100000)` at 100,000. Engines whose work tracks the number of
+active infections (EoN, epydemic, epiworldR, and ixa) get faster for that
+reason alone. Covasim's vectorized daily update touches every agent
+regardless of the outbreak's size, so its time barely moves. A ratio below
+one therefore does not mean the vaccine is free. It means that the engine's
+handling of the vaccine costs less than the smaller outbreak saves. A ratio
+above one would mean the feature itself is expensive, as described below for
+epiworldR's `distribute_tool_to_set()`.
+
+### Code required to define the model
+
+A rough measure of effort: how much code each engine needs to express this
+scenario, and how much it added to scenario 00. The counting rules are
+described in the [project overview](../README.md#measuring-implementation-effort),
+and the counted regions are listed in [`code_regions.yml`](code_regions.yml).
+
+```{r}
+#| label: code-effort
+table_code_effort(bench, baseline)
+```
+
+EoN and epydemic only need a compartment with no transitions. Covasim has a
+vaccine intervention, but it is leaky, so an all-or-nothing vaccine takes two
+targeted doses. epiworldR has a tool that removes susceptibility. ixa adds an
+agent property that its hand-written transmission step has to consult.
+
+## Interpretation
+
+### An implementation choice that mattered: epiworldR's `distribute_tool_to_set()`
+
+The most direct epiworldR implementation draws the protected agents in R and
+hands them to the tool with `distribute_tool_to_set()`. In epiworldR 0.15.1.0
+that function is quadratic in the number of agents. Every per-agent
+`add_tool()` clones the tool, and the clone carries a copy of the whole list
+of target IDs. Placing the tool on about 24,000 named agents took roughly
+4.6 seconds per run at 100,000 agents, against 0.03 seconds with the approach
+the runner uses now: draw the number of protected agents, and let epiworld
+place the tool at random. Both give the same vaccine statistically. The
+upstream fix is to share the ID list between clones rather than copy it, as
+`distribute_tool_randomly()` already does.
+
+### Calibration
+
+The transmission multipliers are copied from scenario 00. They correct each
+engine's transmission semantics rather than anything specific to this
+scenario, so they were not recalibrated. The table above shows that the
+engines' attack rates stay aligned with the vaccine in place.
+
+## Recorded versions
+
+```{r}
+#| label: versions
+table_versions(bench)
+```

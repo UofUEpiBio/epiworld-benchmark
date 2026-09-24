@@ -1,22 +1,18 @@
 # Network epidemic ABM speed benchmark
 
-2026-09-23
 
-- [Executive summary](#executive-summary)
-- [Simulation time](#simulation-time)
-- [Speed relative to epiworldR](#speed-relative-to-epiworldr)
-- [Epidemiological sanity checks](#epidemiological-sanity-checks)
-- [Code required to define the
-  model](#code-required-to-define-the-model)
-- [Design and interpretation](#design-and-interpretation)
-- [Reproducibility and cache](#reproducibility-and-cache)
+- [Scenarios](#scenarios)
+- [Common design](#common-design)
+- [What is measured](#what-is-measured)
+  - [Run time](#run-time)
+  - [Measuring implementation effort](#measuring-implementation-effort)
+- [Running the benchmark](#running-the-benchmark)
+- [Repository layout](#repository-layout)
 - [References](#references)
 
-## Executive summary
-
-This benchmark compares simulation speed for 100-day network epidemics
-at 10,000 and 100,000 agents, with 100 independent replicates per engine
-and size. The included engines are
+This project compares how fast five epidemic simulation engines run the
+same agent-based model on the same contact network, and how much code
+each engine needs to express that model. The engines are
 <a href="https://uofuepibio.github.io/epiworldR/"
 target="_blank">epiworldR</a> (Meyer and Vega Yon 2023),
 <a href="https://covasim.org/" target="_blank">Covasim</a> (Kerr et al.
@@ -26,195 +22,117 @@ target="_blank">EoN</a> (Miller and Ting 2019),
 <a href="https://github.com/simoninireland/epydemic"
 target="_blank">epydemic</a> (Dobson 2022), and
 <a href="https://ixa.rs/" target="_blank">ixa</a> (The Ixa Developers
-2026). All engines use the exact same cached Watts–Strogatz edge list
-for a population size (mean degree 10, rewiring probability 0.05) and
-target an early-outbreak $R_0 = 2$. epiworldR and EoN run at the
-analytic transmission rate. The restricted Covasim cells apply
-size-specific transmission multipliers of 0.715 at 10,000 agents and
-0.710 at 100,000 agents, and the ixa cells apply 0.983 and 0.988. These
-empirical factors align realized attack rates under the frameworks’
-different transmission semantics.
+2026).
 
-> [!TIP]
->
-> The complete 1,000-run design is available.
+The benchmark is organized as **scenarios** of increasing complexity.
+Each scenario adds a feature to an earlier one, so together they show
+how run time and implementation effort grow as the model grows. Each
+scenario has its own folder, and its own report with the specification,
+results, and interpretation.
 
-| Field               | Value                                                 |
-|:--------------------|:------------------------------------------------------|
-| Platform            | Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39 |
-| Python              | 3.12.11                                               |
-| Workers             | 1                                                     |
-| Latest run failures | 0                                                     |
+## Scenarios
 
-| Engine    | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
-|:----------|-------:|-----:|----------------------:|-------:|-------:|
-| ixa       |  10000 |  100 |                 0.005 |  0.004 |  0.005 |
-| epiworldR |  10000 |  100 |                 0.022 |  0.021 |  0.024 |
-| covasim   |  10000 |  100 |                 0.066 |  0.064 |  0.070 |
-| EoN       |  10000 |  100 |                 0.077 |  0.074 |  0.083 |
-| epydemic  |  10000 |  100 |                 0.545 |  0.497 |  0.589 |
-| ixa       | 100000 |  100 |                 0.010 |  0.008 |  0.013 |
-| epiworldR | 100000 |  100 |                 0.059 |  0.052 |  0.069 |
-| EoN       | 100000 |  100 |                 0.302 |  0.287 |  0.322 |
-| covasim   | 100000 |  100 |                 0.364 |  0.335 |  0.403 |
-| epydemic  | 100000 |  100 |                 1.857 |  1.771 |  2.244 |
+| Scenario | Model | Report |
+|:---|:---|:---|
+| 00 | SEIRH epidemic with a hospitalization branch, no interventions | [scenario_00/README.md](scenario_00/README.md) |
+| 01 | Scenario 00 plus a day-0 all-or-nothing vaccine (30% coverage, 80% efficacy) | [scenario_01/README.md](scenario_01/README.md) |
 
-## Simulation time
+[scenarios.md](scenarios.md) explains how to add a scenario.
 
-The primary measure is wall-clock time inside each engine’s simulation
-call. The logarithmic scale keeps fast and slow engines legible in one
-panel.
+## Common design
 
-![](README_files/figure-commonmark/simulation-time-plot-1.png)
+Every scenario shares the following design, set in `config.toml`.
 
-## Speed relative to epiworldR
+- **Population and network.** 10,000 and 100,000 agents on a
+  Watts–Strogatz contact network with mean degree 10 and rewiring
+  probability 0.05. At each size, every engine reads the exact same
+  cached edge list and treats it as an undirected graph. The network
+  fixes mean degree rather than literal graph density, which keeps the
+  edge count, run time, and memory from growing quadratically with
+  population size.
+- **Replicates.** 100 independent replicates of 100 days per engine,
+  size, and scenario. Replicate seeds do not depend on the scenario, so
+  two scenarios can be compared replicate by replicate.
+- **Transmission.** Each engine targets an early-outbreak $R_0 = 2$
+  through a shared analytic mapping from $R_0$, mean degree, and
+  infectious period to a per-contact transmission rate. The engines have
+  different transmission semantics (synchronous daily steps, continuous
+  time, or Covasim’s native model), so a scenario may set empirical,
+  size-specific transmission multipliers that align the engines’
+  realized attack rates. Each scenario’s report states and justifies its
+  factors.
+- **Engines.** epiworldR, epydemic, and ixa use synchronous daily
+  transitions. EoN uses continuous-time hazards simulated exactly with
+  its event-driven `fast_simple_contagion` algorithm. Covasim runs its
+  native model, restricted as far as its public API allows. The reports
+  therefore measure representative framework throughput under aligned
+  network and disease targets, not bit-for-bit epidemiological
+  equivalence.
 
-Ratios are matched by population size and replicate seed. Values above
-one mean that epiworldR completed the simulation call faster.
+## What is measured
 
-| Engine   | Agents | Median time / epiworldR |    Q1 |    Q3 |
-|:---------|-------:|------------------------:|------:|------:|
-| covasim  |  10000 |                    3.00 |  2.81 |  3.23 |
-| EoN      |  10000 |                    3.49 |  3.13 |  3.95 |
-| epydemic |  10000 |                   24.47 | 21.87 | 27.42 |
-| ixa      |  10000 |                    0.21 |  0.18 |  0.23 |
-| covasim  | 100000 |                    6.10 |  5.28 |  7.30 |
-| EoN      | 100000 |                    5.10 |  4.39 |  5.97 |
-| epydemic | 100000 |                   33.71 | 26.70 | 38.58 |
-| ixa      | 100000 |                    0.17 |  0.14 |  0.24 |
+### Run time
 
-## Epidemiological sanity checks
+Each replicate runs in a fresh process and records:
 
-Speed is interpretable only if the simulations produce plausible
-epidemics. These checks show final attack rate and peak hospitalization
-load; differences also expose the engines’ non-identical time semantics
-and Covasim’s native symptom/severe bookkeeping.
+- `simulate_seconds`, the primary measure: wall-clock time inside the
+  engine’s simulation call, including engine-native initialization that
+  happens inside that call;
+- `setup_seconds`: reading the shared edge list and building engine
+  objects;
+- `total_seconds`: setup plus simulation inside the runner process.
 
-| Engine    | Agents | Median final attack rate | Median peak hospitalized |
-|:----------|-------:|-------------------------:|-------------------------:|
-| epiworldR |  10000 |                    0.382 |                     19.0 |
-| covasim   |  10000 |                    0.392 |                     23.0 |
-| EoN       |  10000 |                    0.379 |                     21.0 |
-| epydemic  |  10000 |                    0.396 |                     25.0 |
-| ixa       |  10000 |                    0.378 |                     18.5 |
-| epiworldR | 100000 |                    0.060 |                     30.0 |
-| covasim   | 100000 |                    0.061 |                     35.0 |
-| EoN       | 100000 |                    0.060 |                     32.0 |
-| epydemic  | 100000 |                    0.064 |                     41.0 |
-| ixa       | 100000 |                    0.062 |                     31.0 |
+Interpreter and package startup and network generation are excluded.
+Published results are collected one replicate at a time, with native
+math libraries pinned to one thread, inside the container defined in
+`.devcontainer/`. Concurrent replicates distort timings unevenly across
+engines; see [setup.md](setup.md#resource-policy).
 
-![](README_files/figure-commonmark/outcomes-plot-1.png)
+### Measuring implementation effort
 
-## Code required to define the model
+Each report also counts how much code each engine needs to express the
+scenario. *Model lines* counts non-blank, non-comment lines that build
+the population and network, define the disease and any interventions,
+and run the simulation. Argument parsing, edge-file reading, timing, and
+writing results are excluded because every runner shares them. *Files*
+counts the files a user writes, including build manifests. The counted
+regions of each runner are listed in the scenario’s `code_regions.yml`,
+and the counts are recomputed from the runner sources whenever a report
+is rendered.
 
-A rough measure of effort: how much code each engine needs to express
-the common SEIRH model. *Model lines* counts non-blank, non-comment
-lines that build the population and network, define the disease, and run
-the simulation. Argument parsing, edge-file reading, timing, and writing
-results are excluded because every runner shares them. *Files* counts
-the files a user writes, including build manifests. They are counted
-from the runner sources when this report is rendered.
+Each engine implements a scenario with its own native tools, such as
+built-in interventions, compartments, or agent properties, so the counts
+reflect what a user of that engine would write.
 
-| Engine    | Language | Files | Model lines |
-|:----------|:---------|------:|------------:|
-| EoN       | Python   |     1 |          37 |
-| epiworldR | R        |     1 |          47 |
-| covasim   | Python   |     1 |          64 |
-| epydemic  | Python   |     1 |          70 |
-| ixa       | Rust     |     3 |         133 |
+## Running the benchmark
 
-Model lines vary with how much of the model an engine provides built in.
-For example, EoN describes transitions as rate graphs, Covasim needs its
-native parameters overridden to restrict it to SEIRH, and the ixa runner
-writes its daily step by hand. The Python engines share one runner file,
-and ixa needs a Cargo project that is compiled before it runs.
+The benchmark runs inside a container that pins every engine’s
+toolchain. The only host requirement is podman (or Docker, with
+`CONTAINER=docker`):
 
-## Design and interpretation
+``` sh
+make container-image
+make container-check
+make container-smoke
+make container-benchmark     # every scenario; SCENARIOS=scenario_01 for a subset
+make container-report        # renders every scenario's README.md
+```
 
-The common disease graph is susceptible $\rightarrow$ exposed
-$\rightarrow$ infectious $\rightarrow$ recovered, with a competing
-infectious $\rightarrow$ hospitalized $\rightarrow$ recovered branch.
-Mean latent and infectious periods are 4 and 7 days, lifetime
-hospitalization probability is 5%, and the hospital stay is 7 days.
-Initial infections are 100 in the full profile. They start infectious in
-every engine except epiworldR, whose R API cannot seed a custom model’s
-initial cases in a state other than the one new infections enter, so
-they start exposed there.
+Results are cached one replicate at a time, so an interrupted run
+resumes where it stopped. [setup.md](setup.md) covers the container,
+running natively, targeted runs, the cache, and the resource policy.
 
-The shared analytic transmission mapping produced different realized
-attack rates across frameworks. Calibration therefore selected
-size-specific factors for restricted Covasim (0.715 at 10,000 agents and
-0.710 at 100,000) and for ixa (0.983 and 0.988). epiworldR needs none:
-its uncalibrated median attack rates match EoN’s exact continuous-time
-results. All 100 replicates in each adjusted cell were then rerun. These
-empirical corrections are intentionally population-specific; they align
-benchmark outcomes but mean that none of the calibrated engines has a
-strictly analytic $R_0$ of 2. The values live in `config.toml` and
-participate in the cache fingerprint.
+## Repository layout
 
-epiworldR, epydemic, and ixa use synchronous daily transitions. The ixa
-runner schedules one plan per day on ixa’s plan queue, samples
-transmission along ixa’s built-in contact-network edges, and stores
-disease status as an indexed entity property; its competing infectious
-$\rightarrow$ hospitalized/recovered step reuses epiworldR’s roulette
-rule.
-
-The two fastest engines organize the daily work differently. ixa’s step
-visits only exposed, infectious, and hospitalized agents, found through
-its indexed status property, and tries transmission outward from each
-infectious agent to its susceptible neighbours, so its cost follows the
-size of the outbreak. epiworldR’s queuing system skips agents with no
-infected contact, but each queued susceptible agent (every neighbour of
-an exposed, infectious, or hospitalized agent) scans all of its
-neighbours for infectious ones, which is roughly ten times as many
-neighbour visits. Its daily loop also checks every agent’s queue flag,
-about 12% of its run time at 100,000 agents. An exact push-style
-alternative for epiworld is proposed in
-[UofUEpiBio/epiworld#264](https://github.com/UofUEpiBio/epiworld/issues/264).
-Both runners are single-threaded, and all five engines treat the shared
-edge list as an undirected graph. EoN uses continuous-time hazards,
-simulated exactly with its event-driven `fast_simple_contagion`
-algorithm. Covasim retains its native exposed, infectious, symptomatic,
-and severe bookkeeping, with severe prevalence used as the
-hospitalization proxy. Its runner disables waning immunity and fixes
-individual transmissibility and viral load to one, making recovered
-people permanently removed and removing those sources of heterogeneity.
-Covasim does not expose a public switch to remove the remaining
-symptom/severity bookkeeping. Thus this report measures restricted,
-representative framework throughput under aligned network and disease
-targets; it does not claim bit-for-bit epidemiological equivalence.
-
-The sparse contact network fixes mean degree rather than literal graph
-density. At 10,000 and 100,000 agents its densities are approximately
-0.001 and 0.0001, respectively, while every agent still has about ten
-contacts. This prevents the edge count, runtime, and memory from growing
-quadratically.
-
-More details regarding the project setup can be found in
-[setup.md](./setup.md).
-
-## Reproducibility and cache
-
-Every successful replicate is an atomic JSON cache record keyed by model
-configuration, runner source, engine version, and contact-network
-SHA-256. Rerunning `make benchmark` schedules only missing or stale
-records. The default worker count is one, and common native math-library
-thread counts are pinned to one. Concurrency is opt-in through the
-`N_THREADS` environment variable. Concurrent replicates contend for
-memory bandwidth and performance cores, and the penalty differs by
-engine, so timings are comparable only across runs at the same
-concurrency. The platform and worker count for the run behind this
-report are shown in the table above; the benchmark runs inside the
-container defined in `.devcontainer/` (see [setup.md](./setup.md)),
-which pins every engine’s toolchain.
-
-| Engine    | Recorded version |
-|:----------|:-----------------|
-| covasim   | 3.1.8            |
-| EoN       | 1.92             |
-| epiworldR | 0.15.1.0         |
-| epydemic  | 1.14.1           |
-| ixa       | 3.1.0            |
+    config.toml          shared study, network, resource, and smoke settings
+    run.py, scripts/     orchestration, network generation, result collection
+    report/common.R      tables and figures shared by the scenario reports
+    scenario_NN/
+      README.qmd         the scenario's report (rendered to README.md)
+      scenario.toml      model parameters and calibration
+      code_regions.yml   regions counted as model code
+      runners/           one runner per engine
+    results/             collected results for every scenario
 
 ## References
 

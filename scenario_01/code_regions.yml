@@ -1,0 +1,61 @@
+# Anchors for the report's "Code required to define the model" table.
+#
+# Each region runs from the first line matching `from` to the next line
+# matching `to` (both inclusive; `to` defaults to `from`). Regex anchors use R
+# syntax. Paths are relative to this scenario folder, and the first file is the
+# one the regions are searched in; any other files only add to the file count.
+#
+# This file is not part of the cache fingerprint, so editing it never
+# invalidates results. Count only code that builds the population and network,
+# defines the disease, and runs the simulation: argument parsing, edge-file
+# reading, timing, and result writing are shared by every runner and excluded.
+epiworldR:
+  language: R
+  files: [runners/epiworld.R]
+  regions:
+    - {from: '^vaccine_coverage <- number', to: '^vaccine_efficacy <- number'}
+    - {from: '^recovery <- 1', to: '^  \(1 - hospital_probability'}
+    - {from: '^model <- Model\(\)', to: '^verbose_off\(model\)'}
+    - {from: '^set\.seed', to: '^add_tool\(model, vaccine\)'}
+    - {from: '^run\(model'}
+covasim:
+  language: Python
+  files: [runners/python_engines.py]
+  regions:
+    - {from: '^def discrete_transmission_probability', to: '^    return'}
+    - {from: '^def draw_vaccine', to: '^    return vaccinated, protected'}
+    - {from: '^def run_covasim', to: '^    sim.run\(\)'}
+EoN:
+  language: Python
+  files: [runners/python_engines.py]
+  regions:
+    - {from: '^def make_graph', to: '^    return graph'}
+    - {from: '^def draw_vaccine', to: '^    return vaccinated, protected'}
+    - {from: '^def run_eon', to: '^    \)$'}
+epydemic:
+  language: Python
+  files: [runners/python_engines.py]
+  regions:
+    - {from: '^def discrete_transmission_probability', to: '^    return'}
+    - {from: '^def hospitalization_daily_probability', to: '^    \)$'}
+    - {from: '^def make_graph', to: '^    return graph'}
+    - {from: '^def draw_vaccine', to: '^    return vaccinated, protected'}
+    - {from: '^def run_epydemic', to: '^    result = dynamics'}
+ixa:
+  language: Rust
+  files: [runners/ixa/src/main.rs, runners/ixa/Cargo.toml, runners/ixa/rust-toolchain.toml]
+  regions:
+    - {from: '^define_entity!', to: '^define_rng!\(VaccineRng'}
+    - {from: '^struct Rates', to: '^}'}
+    - {from: '^impl Rates', to: '^}'}
+    - {from: '^struct Vaccine', to: '^}'}
+    - {from: '^fn build_context', to: '^}'}
+    - {from: '^fn with_status', to: '^}'}
+    - {from: '^fn roulette', to: '^}'}
+    - {from: '^fn step', to: '^}'}
+    - {from: '^fn schedule_days', to: '^}'}
+    - {from: 'let rates = Rates::from_args'}
+    - {from: 'let vaccine = Vaccine'}
+    - {from: 'let mut context = build_context'}
+    - {from: 'let peak = schedule_days'}
+    - {from: 'context.execute\(\)'}

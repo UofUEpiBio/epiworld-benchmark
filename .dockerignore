@@ -1,6 +1,6 @@
 .git
 .venv
 cache
-runners/ixa/target
+scenario_*/runners/ixa/target
 **/__pycache__
 .pytest_cache

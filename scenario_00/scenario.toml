@@ -1,0 +1,37 @@
+[scenario]
+name = "SEIRH baseline"
+description = "SEIRH epidemic with a hospitalization branch and no interventions."
+
+# Every key in [disease] (and [intervention], when present) is passed to each
+# runner as a --kebab-case flag, so runners must accept exactly these keys.
+[disease]
+target_r0 = 2.0
+initial_infected = 100
+latent_days = 4.0
+infectious_days = 7.0
+# Hospitalization is retained as a common outcome parameter. Engines whose
+# native SEIR supports an H state use it directly; Covasim reports its native
+# severe/hospital load. The primary timing comparison is the common SEIR core.
+hospitalization_probability = 0.05
+hospital_days = 7.0
+
+[calibration]
+# These empirical factors align each engine's median day-100 attack rate with
+# the common benchmark target at each full-profile population size.
+#
+# Covasim's factors were calibrated after restricting it to fixed transmission
+# and permanent immunity; its native daily transmission semantics otherwise
+# produced substantially larger final attack rates under the shared analytic
+# mapping.
+#
+# epiworldR needs no factor: its uncalibrated median attack rates (0.382 and
+# 0.060) match EoN's exact continuous-time results.
+covasim_transmission_multiplier_10000 = 0.715
+covasim_transmission_multiplier_100000 = 0.710
+#
+# ixa shares the synchronous daily semantics of epiworldR and epydemic, but
+# its uncalibrated median attack rates (0.407 and 0.067) sat above the other
+# engines: it seeds the initial cases as infectious and samples each
+# infectious contact independently rather than with epiworld's roulette.
+ixa_transmission_multiplier_10000 = 0.983
+ixa_transmission_multiplier_100000 = 0.988

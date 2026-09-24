@@ -50,14 +50,15 @@ WORKDIR /opt/benchmark-deps
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen && rm -rf /root/.cache/uv
 
-# Pre-fetch and pre-build the ixa runner's dependencies so `make setup` only
-# compiles the runner itself.
-COPY runners/ixa/Cargo.toml runners/ixa/Cargo.lock runners/ixa/rust-toolchain.toml ./ixa/
+# Pre-fetch and pre-build the ixa runners' dependencies so `make setup` only
+# compiles the runners themselves. Every scenario's crate pins the same
+# dependency versions, so scenario_00's lock file warms the cache for all.
+COPY scenario_00/runners/ixa/Cargo.toml scenario_00/runners/ixa/Cargo.lock scenario_00/runners/ixa/rust-toolchain.toml ./ixa/
 RUN mkdir -p ixa/src && echo 'fn main() {}' > ixa/src/main.rs \
     && cargo build --release --locked --manifest-path ixa/Cargo.toml \
-    && rm -rf ixa "${CARGO_TARGET_DIR}/release/ixa-benchmark" \
-        "${CARGO_TARGET_DIR}/release/deps/ixa_benchmark-"* \
-        "${CARGO_TARGET_DIR}/release/.fingerprint/ixa-benchmark-"*
+    && rm -rf ixa "${CARGO_TARGET_DIR}/release/ixa-scenario-"* \
+        "${CARGO_TARGET_DIR}/release/deps/ixa_scenario_"* \
+        "${CARGO_TARGET_DIR}/release/.fingerprint/ixa-scenario-"*
 
 WORKDIR /workspace
 CMD ["bash"]
