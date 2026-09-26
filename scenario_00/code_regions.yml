@@ -16,6 +16,20 @@ epiworldR:
     - {from: '^recovery <- 1', to: '^  \(1 - hospital_probability'}
     - {from: '^model <- Model\(\)', to: '^verbose_off\(model\)'}
     - {from: '^run\(model'}
+epiworldpy:
+  language: Python
+  files: [runners/python_engines.py]
+  regions:
+    - {from: '^def discrete_transmission_probability', to: '^    return'}
+    - {from: '^def hospitalization_daily_probability', to: '^    \)$'}
+    - {from: '^def run_epiworldpy', to: '^    model.run\(args'}
+epiworld:
+  language: C++
+  files: [runners/epiworld/main.cpp]
+  regions:
+    - {from: '^    double recovery = 1.0', to: '^        \(1.0 - hospital_probability'}
+    - {from: '^    Model<> model;', to: '^    model.verbose_off\(\);'}
+    - {from: '^    model.run\(days'}
 covasim:
   language: Python
   files: [runners/python_engines.py]

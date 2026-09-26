@@ -5,3 +5,5 @@ __pycache__/
 cache/
 report.html
 scenario_*/runners/ixa/target/
+scenario_*/runners/epiworld/build/
+.deps

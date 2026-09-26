@@ -1,17 +1,20 @@
 # Scenario 00: SEIRH baseline
 
-2026-09-23
+2026-09-26
 
 - [Model](#model)
   - [Engine implementations](#engine-implementations)
 - [Results](#results)
   - [Simulation time](#simulation-time)
   - [Speed relative to epiworldR](#speed-relative-to-epiworldr)
+  - [The epiworld family](#the-epiworld-family)
   - [Epidemiological sanity checks](#epidemiological-sanity-checks)
   - [Code required to define the
     model](#code-required-to-define-the-model)
 - [Interpretation](#interpretation)
   - [Calibration](#calibration)
+  - [The language layer costs nothing measurable in the
+    simulation](#the-language-layer-costs-nothing-measurable-in-the-simulation)
   - [Why the two fastest engines
     differ](#why-the-two-fastest-engines-differ)
   - [Equivalence across engines](#equivalence-across-engines)
@@ -40,14 +43,30 @@ Watts–Strogatz contact network (mean degree 10, rewiring probability
 | `hospitalization_probability` | 0.05 | Lifetime probability that an infectious agent is hospitalized |
 | `hospital_days` | 7.0 | Mean hospital stay |
 
-Initial cases start infectious in every engine except epiworldR. Its R
-API cannot seed a custom model’s initial cases in any state other than
-the one new infections enter, so they start exposed there.
+Initial cases start infectious in every engine except the epiworld
+family. epiworldR’s API cannot seed a custom model’s initial cases in
+any state other than the one new infections enter, so they start exposed
+there. The C++ and Python runners do the same, so that all three
+epiworld runners build exactly the same model.
 
 ### Engine implementations
 
-- **epiworldR**: a custom model built from `add_state()` and the
-  package’s update-function factories. New infections enter Exposed.
+- **epiworld** (C++): a custom model built from `add_state()` and the
+  library’s update-function factories,
+  `sampler::make_update_susceptible()` and
+  `new_state_update_transition()`. New infections enter Exposed. It is
+  compiled with the flags R uses for epiworldR (`-O2 -DNDEBUG`, double
+  precision).
+- **epiworldR**: the same model through the R wrapper, with
+  `update_fun_susceptible()` and `update_fun_rate()`.
+- **epiworldpy**: the same model through the Python wrapper, with
+  `UpdateFun.susceptible()` and `UpdateFun.rate()`. These were added for
+  this benchmark in
+  [UofUEpiBio/epiworldpy#17](https://github.com/UofUEpiBio/epiworldpy/pull/17).
+  Before, a custom model’s other states needed Python callbacks, which
+  epiworld calls for every agent every day. epiworldpy compiles epiworld
+  with its default single-precision `float`, and with the same seed it
+  still gives the same epidemics as the other two.
 - **Covasim**: native disease progression restricted to SEIRH. Waning is
   off, and individual transmissibility and viral load are fixed. The
   severe state serves as the hospitalization proxy.
@@ -62,7 +81,7 @@ the one new infections enter, so they start exposed there.
 
 > [!TIP]
 >
-> The complete 1,000-run design for this scenario is available.
+> The complete 1,400-run design for this scenario is available.
 
 | Field               | Value                                                 |
 |:--------------------|:------------------------------------------------------|
@@ -71,18 +90,22 @@ the one new infections enter, so they start exposed there.
 | Workers             | 1                                                     |
 | Latest run failures | 0                                                     |
 
-| Engine    | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
-|:----------|-------:|-----:|----------------------:|-------:|-------:|
-| ixa       |  10000 |  100 |                 0.004 |  0.004 |  0.005 |
-| epiworldR |  10000 |  100 |                 0.022 |  0.021 |  0.024 |
-| covasim   |  10000 |  100 |                 0.068 |  0.067 |  0.070 |
-| EoN       |  10000 |  100 |                 0.083 |  0.078 |  0.087 |
-| epydemic  |  10000 |  100 |                 0.526 |  0.502 |  0.552 |
-| ixa       | 100000 |  100 |                 0.008 |  0.008 |  0.009 |
-| epiworldR | 100000 |  100 |                 0.062 |  0.054 |  0.072 |
-| EoN       | 100000 |  100 |                 0.327 |  0.316 |  0.342 |
-| covasim   | 100000 |  100 |                 0.369 |  0.363 |  0.378 |
-| epydemic  | 100000 |  100 |                 1.867 |  1.808 |  1.953 |
+| Engine     | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
+|:-----------|-------:|-----:|----------------------:|-------:|-------:|
+| ixa        |  10000 |  100 |                 0.004 |  0.004 |  0.005 |
+| epiworldpy |  10000 |  100 |                 0.008 |  0.008 |  0.009 |
+| epiworldR  |  10000 |  100 |                 0.009 |  0.008 |  0.009 |
+| epiworld   |  10000 |  100 |                 0.009 |  0.009 |  0.010 |
+| covasim    |  10000 |  100 |                 0.064 |  0.063 |  0.066 |
+| EoN        |  10000 |  100 |                 0.077 |  0.072 |  0.080 |
+| epydemic   |  10000 |  100 |                 0.489 |  0.468 |  0.520 |
+| ixa        | 100000 |  100 |                 0.008 |  0.008 |  0.009 |
+| epiworldpy | 100000 |  100 |                 0.015 |  0.013 |  0.016 |
+| epiworldR  | 100000 |  100 |                 0.016 |  0.014 |  0.017 |
+| epiworld   | 100000 |  100 |                 0.026 |  0.024 |  0.028 |
+| EoN        | 100000 |  100 |                 0.293 |  0.280 |  0.308 |
+| covasim    | 100000 |  100 |                 0.326 |  0.323 |  0.331 |
+| epydemic   | 100000 |  100 |                 1.727 |  1.659 |  1.812 |
 
 ### Simulation time
 
@@ -97,16 +120,34 @@ panel.
 Ratios are matched by population size and replicate seed. Values above
 one mean that epiworldR completed the simulation call faster.
 
-| Engine   | Agents | Median time / epiworldR |    Q1 |    Q3 |
-|:---------|-------:|------------------------:|------:|------:|
-| covasim  |  10000 |                    3.12 |  2.89 |  3.29 |
-| EoN      |  10000 |                    3.69 |  3.41 |  4.06 |
-| epydemic |  10000 |                   24.08 | 22.49 | 25.04 |
-| ixa      |  10000 |                    0.21 |  0.18 |  0.22 |
-| covasim  | 100000 |                    6.00 |  5.11 |  6.94 |
-| EoN      | 100000 |                    5.38 |  4.58 |  6.18 |
-| epydemic | 100000 |                   30.31 | 25.47 | 35.22 |
-| ixa      | 100000 |                    0.13 |  0.11 |  0.15 |
+| Engine     | Agents | Median time / epiworldR |    Q1 |     Q3 |
+|:-----------|-------:|------------------------:|------:|-------:|
+| epiworld   |  10000 |                    1.08 |  1.02 |   1.14 |
+| epiworldpy |  10000 |                    0.97 |  0.93 |   1.04 |
+| covasim    |  10000 |                    7.61 |  7.07 |   8.12 |
+| EoN        |  10000 |                    8.85 |  8.08 |   9.90 |
+| epydemic   |  10000 |                   56.79 | 52.37 |  62.82 |
+| ixa        |  10000 |                    0.48 |  0.44 |   0.54 |
+| epiworld   | 100000 |                    1.66 |  1.58 |   1.77 |
+| epiworldpy | 100000 |                    0.94 |  0.90 |   0.97 |
+| covasim    | 100000 |                   21.51 | 19.10 |  23.23 |
+| EoN        | 100000 |                   19.00 | 17.37 |  21.05 |
+| epydemic   | 100000 |                  112.74 | 99.77 | 124.87 |
+| ixa        | 100000 |                    0.53 |  0.47 |   0.59 |
+
+### The epiworld family
+
+The three epiworld runners build the same model on the same C++ core,
+and in this scenario they produce identical epidemics for every seed.
+This table compares the two wrappers with the C++ runner, replicate by
+replicate.
+
+| Engine     | Agents | Median time / epiworld |   Q1 |   Q3 |
+|:-----------|-------:|-----------------------:|-----:|-----:|
+| epiworldR  |  10000 |                   0.93 | 0.88 | 0.98 |
+| epiworldpy |  10000 |                   0.91 | 0.89 | 0.93 |
+| epiworldR  | 100000 |                   0.60 | 0.56 | 0.63 |
+| epiworldpy | 100000 |                   0.57 | 0.53 | 0.59 |
 
 ### Epidemiological sanity checks
 
@@ -115,18 +156,22 @@ epidemics. These checks show the final attack rate and peak
 hospitalization load. Differences also expose the engines’ non-identical
 time semantics and Covasim’s native symptom/severe bookkeeping.
 
-| Engine    | Agents | Median final attack rate | Median peak hospitalized |
-|:----------|-------:|-------------------------:|-------------------------:|
-| covasim   |  10000 |                    0.392 |                     23.0 |
-| EoN       |  10000 |                    0.379 |                     21.0 |
-| epiworldR |  10000 |                    0.382 |                     19.0 |
-| epydemic  |  10000 |                    0.396 |                     25.0 |
-| ixa       |  10000 |                    0.378 |                     18.5 |
-| covasim   | 100000 |                    0.061 |                     35.0 |
-| EoN       | 100000 |                    0.060 |                     32.0 |
-| epiworldR | 100000 |                    0.060 |                     30.0 |
-| epydemic  | 100000 |                    0.064 |                     41.0 |
-| ixa       | 100000 |                    0.062 |                     31.0 |
+| Engine     | Agents | Median final attack rate | Median peak hospitalized |
+|:-----------|-------:|-------------------------:|-------------------------:|
+| covasim    |  10000 |                    0.392 |                     23.0 |
+| EoN        |  10000 |                    0.379 |                     21.0 |
+| epiworld   |  10000 |                    0.385 |                     19.0 |
+| epiworldpy |  10000 |                    0.385 |                     19.0 |
+| epiworldR  |  10000 |                    0.385 |                     19.0 |
+| epydemic   |  10000 |                    0.396 |                     25.0 |
+| ixa        |  10000 |                    0.378 |                     18.5 |
+| covasim    | 100000 |                    0.061 |                     35.0 |
+| EoN        | 100000 |                    0.060 |                     32.0 |
+| epiworld   | 100000 |                    0.060 |                     30.0 |
+| epiworldpy | 100000 |                    0.060 |                     30.0 |
+| epiworldR  | 100000 |                    0.060 |                     30.0 |
+| epydemic   | 100000 |                    0.064 |                     41.0 |
+| ixa        | 100000 |                    0.062 |                     31.0 |
 
 ![](README_files/figure-commonmark/outcomes-plot-1.png)
 
@@ -137,13 +182,15 @@ the model. The counting rules are described in the [project
 overview](../README.md#measuring-implementation-effort), and the counted
 regions are listed in [`code_regions.yml`](code_regions.yml).
 
-| Engine    | Language | Files | Model lines |
-|:----------|:---------|------:|------------:|
-| EoN       | Python   |     1 |          37 |
-| epiworldR | R        |     1 |          47 |
-| covasim   | Python   |     1 |          64 |
-| epydemic  | Python   |     1 |          70 |
-| ixa       | Rust     |     3 |         133 |
+| Engine     | Language | Files | Model lines |
+|:-----------|:---------|------:|------------:|
+| epiworld   | C++      |     1 |          26 |
+| epiworldpy | Python   |     1 |          34 |
+| EoN        | Python   |     1 |          37 |
+| epiworldR  | R        |     1 |          47 |
+| covasim    | Python   |     1 |          64 |
+| epydemic   | Python   |     1 |          70 |
+| ixa        | Rust     |     3 |         133 |
 
 Model lines vary with how much of the model an engine provides built in.
 For example, EoN describes transitions as rate graphs, Covasim needs its
@@ -160,7 +207,8 @@ attack rates across frameworks. Calibration therefore selected
 size-specific factors for restricted Covasim (0.715 at 10,000 agents and
 0.710 at 100,000) and for ixa (0.983 and 0.988). epiworldR needs none:
 its uncalibrated median attack rates match EoN’s exact continuous-time
-results. All 100 replicates in each adjusted cell were then rerun. These
+results, and so do epiworld’s and epiworldpy’s, which run the same
+model. All 100 replicates in each adjusted cell were then rerun. These
 empirical corrections are intentionally population-specific; they align
 benchmark outcomes but mean that none of the calibrated engines has a
 strictly analytic $R_0$ of 2. The values live in
@@ -174,19 +222,45 @@ sat above the other engines: it seeds the initial cases as infectious
 and samples each infectious contact independently rather than with
 epiworld’s roulette.
 
+### The language layer costs nothing measurable in the simulation
+
+Neither wrapper is slower than the C++ runner. At 10,000 agents
+epiworldR and epiworldpy are even 7-9% faster, and at 100,000 agents
+they take about 0.015 seconds against the C++ runner’s 0.026, although
+all three run the same compiled code on the same model. The C++ runner
+is not doing more work: run twice in the same process, its second run
+takes 0.016 seconds. Raising glibc’s `mmap` threshold
+(`MALLOC_MMAP_THRESHOLD_`), so that large blocks come from the ordinary
+heap, also brings its first run down to 0.017 seconds. The difference is
+where the model’s large per-agent arrays land in memory. In the C++
+runner, each array gets its own fresh, page-aligned `mmap` region. The R
+and Python processes have already grown and freed a large heap while
+starting up and reading the edge list, so the arrays land there instead.
+The run makes no page faults in either case, which points to cache or
+TLB effects of the placement rather than to first-touch cost. The runner
+is timed as a C++ user would write it, so the published numbers keep
+this effect. Allocating those arrays together would likely remove it
+upstream.
+
+Outside the simulation call the ordering flips. The C++ runner reads the
+edge list and builds the model fastest, so its `total_seconds` (which
+excludes interpreter startup) is the lowest of the three.
+
 ### Why the two fastest engines differ
 
-ixa’s step visits only exposed, infectious, and hospitalized agents,
-found through its indexed status property, and tries transmission
-outward from each infectious agent to its susceptible neighbours, so its
-cost follows the size of the outbreak. epiworldR’s queuing system skips
-agents with no infected contact, but each queued susceptible agent
-(every neighbour of an exposed, infectious, or hospitalized agent) scans
-all of its neighbours for infectious ones, which is roughly ten times as
-many neighbour visits. Its daily loop also checks every agent’s queue
-flag, about 12% of its run time at 100,000 agents. An exact push-style
-alternative for epiworld is proposed in
-[UofUEpiBio/epiworld#264](https://github.com/UofUEpiBio/epiworld/issues/264).
+epiworld 0.16.1 made network transmission push-based when that is
+cheaper: infectious agents push infection to their neighbours instead of
+every queued susceptible agent scanning all of its neighbours for
+infectious ones (the change proposed in
+[UofUEpiBio/epiworld#264](https://github.com/UofUEpiBio/epiworld/issues/264)).
+Together with the other changes through 0.17.0, this made epiworldR
+about four times faster here than 0.15.1.0 was at 100,000 agents (median
+0.062 to 0.016 seconds). In push mode, both engines’ daily cost now
+follows the outbreak rather than the population: each visits only the
+exposed, infectious, and hospitalized agents, and tries transmission
+outward from the infectious ones. ixa is still about twice as fast at
+100,000 agents. This report does not profile where the remaining gap
+comes from.
 
 ### Equivalence across engines
 
@@ -204,10 +278,12 @@ epidemiological equivalence.
 
 ## Recorded versions
 
-| Engine    | Recorded version |
-|:----------|:-----------------|
-| covasim   | 3.1.8            |
-| EoN       | 1.92             |
-| epiworldR | 0.15.1.0         |
-| epydemic  | 1.14.1           |
-| ixa       | 3.1.0            |
+| Engine     | Recorded version  |
+|:-----------|:------------------|
+| covasim    | 3.1.8             |
+| EoN        | 1.92              |
+| epiworld   | 0.17.0            |
+| epiworldpy | 0.17.0-0+g583c55e |
+| epiworldR  | 0.17.0.0          |
+| epydemic   | 1.14.1            |
+| ixa        | 3.1.0             |

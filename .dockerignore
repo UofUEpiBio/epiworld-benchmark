@@ -4,3 +4,5 @@ cache
 scenario_*/runners/ixa/target
 **/__pycache__
 .pytest_cache
+scenario_*/runners/epiworld/build
+.deps

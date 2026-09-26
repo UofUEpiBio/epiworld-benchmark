@@ -5,6 +5,7 @@ import json
 from run import (
     ROOT,
     discover_scenarios,
+    epiworld_binary,
     fingerprint,
     ixa_binary,
     load_scenario,
@@ -61,7 +62,7 @@ def base_task(**overrides) -> dict:
 
 
 def test_task_command_passes_transmission_multiplier_to_each_runner() -> None:
-    for engine in ("covasim", "epiworldR", "ixa"):
+    for engine in ("covasim", "epiworldR", "epiworldpy", "epiworld", "ixa"):
         command = task_command(base_task(engine=engine))
         index = command.index("--transmission-multiplier")
         assert command[index + 1] == "0.71"
@@ -71,14 +72,14 @@ def test_scenario_parameters_become_runner_flags() -> None:
     parameters = scenario_parameters(load_scenario("scenario_01"))
     assert parameters["vaccine_coverage"] == 0.30
     assert parameters["vaccine_efficacy"] == 0.80
-    for engine in ("covasim", "epiworldR", "ixa"):
+    for engine in ("covasim", "epiworldR", "epiworldpy", "epiworld", "ixa"):
         command = task_command(
             base_task(engine=engine, scenario="scenario_01", parameters=parameters)
         )
         assert command[command.index("--vaccine-coverage") + 1] == "0.3"
         assert command[command.index("--latent-days") + 1] == "4.0"
         runner = " ".join(command[:3])
-        assert "scenario_01" in runner or "ixa-scenario-01" in runner
+        assert "scenario_01" in runner or "-scenario-01" in runner
 
 
 def test_runners_accept_exactly_their_scenario_parameters() -> None:
@@ -89,10 +90,12 @@ def test_runners_accept_exactly_their_scenario_parameters() -> None:
             "python": (runners / "python_engines.py").read_text(),
             "R": (runners / "epiworld.R").read_text(),
             "ixa": (runners / "ixa" / "src" / "main.rs").read_text(),
+            "C++": (runners / "epiworld" / "main.cpp").read_text(),
         }
         for key in scenario_parameters(load_scenario(scenario)):
             assert f"--{key.replace('_', '-')}" in sources["python"], (scenario, key)
             assert f'"{key}"' in sources["R"], (scenario, key)
+            assert f'"{key}"' in sources["C++"], (scenario, key)
             assert f"{key}:" in sources["ixa"], (scenario, key)
 
 
@@ -108,8 +111,9 @@ def test_source_paths_cover_only_the_scenario_runners() -> None:
         assert f"{scenario}/runners/ixa/Cargo.toml" in paths
         assert f"{scenario}/runners/ixa/Cargo.lock" in paths
         assert f"{scenario}/runners/epiworld.R" in paths
+        assert f"{scenario}/runners/epiworld/main.cpp" in paths
         assert "config.toml" in paths
-        assert not any("/target/" in path for path in paths)
+        assert not any("/target/" in path or "/build/" in path for path in paths)
         assert not any(
             path.endswith(("README.md", "README.qmd", "code_regions.yml")) or "README_files" in path
             for path in paths
@@ -126,3 +130,12 @@ def test_ixa_binary_is_named_after_the_scenario() -> None:
     assert ixa_binary("scenario_01").name == "ixa-scenario-01"
     manifest = (ROOT / "scenario_01" / "runners" / "ixa" / "Cargo.toml").read_text()
     assert 'name = "ixa-scenario-01"' in manifest
+
+
+def test_epiworld_binary_is_named_after_the_scenario(monkeypatch) -> None:
+    monkeypatch.delenv("EPIWORLD_BUILD_DIR", raising=False)
+    binary = epiworld_binary("scenario_01")
+    assert binary.name == "epiworld-scenario-01"
+    assert binary.parent == ROOT / "scenario_01" / "runners" / "epiworld" / "build"
+    monkeypatch.setenv("EPIWORLD_BUILD_DIR", "/opt/epiworld-build")
+    assert str(epiworld_binary("scenario_00")) == "/opt/epiworld-build/epiworld-scenario-00"

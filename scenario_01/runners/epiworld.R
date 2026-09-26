@@ -81,8 +81,8 @@ add_virus(model, pathogen)
 # API does not expose it. Unprotected vaccinees behave exactly like unvaccinated
 # agents, so only the protected ones need a tool: their number is drawn here,
 # and epiworld places a tool removing all susceptibility on that many agents
-# chosen at random. (distribute_tool_to_set() would also work, but in epiworldR
-# 0.15.1.0 its cost grows with the square of the set size.)
+# chosen at random. (distribute_tool_to_set() also works; before epiworldR
+# 0.16.1 its cost grew with the square of the set size.)
 set.seed(integer("seed"))
 vaccinated <- round(vaccine_coverage * n)
 protected <- stats::rbinom(1L, vaccinated, vaccine_efficacy)

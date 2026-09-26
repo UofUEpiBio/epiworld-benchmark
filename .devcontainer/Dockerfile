@@ -4,23 +4,33 @@
 #   podman build -t epiworld-benchmark -f .devcontainer/Dockerfile .
 FROM docker.io/rocker/r-ver:4.5.1
 
-ARG EPIWORLDR_SHA=74266774a12475003ba8b1676d87123c30e74fcf
+ARG EPIWORLDR_SHA=41c300eeffad8506e10c7bef52b7fb3ce2bafc1a
+ARG EPIWORLD_TAG=epiworld-v0.17.0
 ARG QUARTO_VERSION=1.10.18
 ARG RUST_VERSION=1.98.0
 ARG PYTHON_VERSION=3.12
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        ca-certificates curl git make pkg-config \
+        ca-certificates cmake curl git make pkg-config zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# R: report dependencies plus epiworldR pinned to the commit that reports
-# version 0.15.1.0 (CRAN only carries 0.14.0.0).
+# R: report dependencies plus epiworldR pinned to the commit on main that
+# reports version 0.17.0.0 (it vendors epiworld 0.17.0).
 RUN Rscript -e 'install.packages(c("cpp11", "jsonlite", "ggplot2", "knitr", "rmarkdown"), Ncpus = parallel::detectCores())' \
     && curl -fsSL "https://github.com/UofUEpiBio/epiworldR/archive/${EPIWORLDR_SHA}.tar.gz" -o /tmp/epiworldR.tar.gz \
     && R CMD INSTALL /tmp/epiworldR.tar.gz \
     && rm /tmp/epiworldR.tar.gz \
-    && Rscript -e 'stopifnot(packageVersion("epiworldR") == "0.15.1.0")'
+    && Rscript -e 'stopifnot(packageVersion("epiworldR") == "0.17.0.0")'
+
+# epiworld's C++ headers, for the epiworld (C++) runner. The library is
+# header-only; each scenario's runner is compiled by `make setup`.
+ENV EPIWORLD_INCLUDE=/opt/epiworld/include \
+    EPIWORLD_BUILD_DIR=/opt/epiworld-build
+RUN mkdir -p /opt/epiworld \
+    && curl -fsSL "https://github.com/UofUEpiBio/epiworld/archive/refs/tags/${EPIWORLD_TAG}.tar.gz" \
+        | tar -xz -C /opt/epiworld --strip-components=1 \
+    && grep -q 'EPIWORLD_VERSION_MINOR 17' /opt/epiworld/include/epiworld/epiworld.hpp
 
 # Quarto, for rendering README.qmd.
 RUN arch="$(dpkg --print-architecture)" \
