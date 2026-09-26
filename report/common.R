@@ -4,7 +4,8 @@
 # repository root one level up. Each function returns a knitr table or a
 # ggplot object, or NULL when there is nothing to show yet.
 
-engine_levels <- c("epiworldR", "covasim", "EoN", "epydemic", "ixa")
+# "epiworld" is the C++ library; epiworldR and epiworldpy wrap it.
+engine_levels <- c("epiworld", "epiworldR", "epiworldpy", "covasim", "EoN", "epydemic", "ixa")
 size_levels <- c(10000, 100000)
 full_days <- 100
 expected_per_cell <- 100L
@@ -111,12 +112,11 @@ plot_simulation_time <- function(bench) {
     ggplot2::stat_summary(
       fun = median, geom = "text",
       ggplot2::aes(label = ggplot2::after_stat(sprintf("%.2gs", y))),
-      vjust = -1, size = 4.5, hjust = -.3
+      vjust = -1.6, size = 3.6
     ) +
     ggplot2::facet_wrap(~ agents, scales = "free_y") +
     ggplot2::coord_cartesian(clip = "off") +
     ggplot2::scale_y_log10(expand = ggplot2::expansion(mult = c(0.05, 0.12))) +
-    ggplot2::scale_x_discrete(expand = ggplot2::expansion(add = c(0, 1))) +
     ggplot2::labs(
       x = NULL,
       y = "Simulation wall time\n(seconds, log scale)",
@@ -130,13 +130,18 @@ plot_simulation_time <- function(bench) {
     )
 }
 
-table_speedup <- function(bench) {
+#' Paired simulate-time ratio of each engine against `reference`, matched by
+#' size and seed. `engines` restricts the rows (default: every other engine).
+table_speedup <- function(bench, reference = "epiworldR", engines = NULL) {
   full <- bench$full
-  if (!nrow(full) || !any(full$engine == "epiworldR")) return(NULL)
-  base <- full[full$engine == "epiworldR", c("n", "seed", "simulate_seconds")]
-  names(base)[3] <- "epiworld_seconds"
-  ratios <- merge(full[full$engine != "epiworldR", ], base, by = c("n", "seed"))
-  ratios$ratio <- ratios$simulate_seconds / ratios$epiworld_seconds
+  if (!nrow(full) || !any(full$engine == reference)) return(NULL)
+  base <- full[full$engine == reference, c("n", "seed", "simulate_seconds")]
+  names(base)[3] <- "reference_seconds"
+  others <- full[full$engine != reference, ]
+  if (!is.null(engines)) others <- others[others$engine %in% engines, ]
+  if (!nrow(others)) return(NULL)
+  ratios <- merge(others, base, by = c("n", "seed"))
+  ratios$ratio <- ratios$simulate_seconds / ratios$reference_seconds
   rows <- do.call(rbind, lapply(split(ratios, list(ratios$engine, ratios$n), drop = TRUE),
     function(d) data.frame(
       engine = d$engine[[1]],
@@ -145,9 +150,9 @@ table_speedup <- function(bench) {
       q25 = q(d$ratio, .25),
       q75 = q(d$ratio, .75)
     )))
-  rows <- rows[order(rows$agents, rows$engine), ]
+  rows <- rows[order(rows$agents, factor(rows$engine, levels = engine_levels)), ]
   knitr::kable(rows, digits = 2,
-    col.names = c("Engine", "Agents", "Median time / epiworldR", "Q1", "Q3"),
+    col.names = c("Engine", "Agents", paste("Median time /", reference), "Q1", "Q3"),
     row.names = FALSE)
 }
 

@@ -17,7 +17,8 @@ scenario_NN/
   code_regions.yml      # line-count anchors for the report
   runners/
     epiworld.R          # epiworldR
-    python_engines.py   # covasim, EoN, epydemic
+    epiworld/main.cpp   # epiworld (C++), built by `make setup`
+    python_engines.py   # epiworldpy, covasim, EoN, epydemic
     ixa/                # Cargo crate named ixa-scenario-NN
 ```
 
@@ -34,6 +35,7 @@ complete model. The report leaves that shared plumbing out of the line counts.
 
 1. **Copy the latest scenario.**
    `cp -R scenario_01 scenario_02`, then delete `runners/ixa/target`,
+   `runners/epiworld/build`,
    `README.md`, and `README_files/` if you copied them.
 
 2. **Rename the ixa crate.** In `runners/ixa/Cargo.toml`, set the package and
@@ -53,8 +55,8 @@ complete model. The report leaves that shared plumbing out of the line counts.
 
 4. **Implement the change in every runner.**
    - Accept exactly the new flags: argparse in `python_engines.py`,
-     `number("...")` or `integer("...")` in `epiworld.R`, and `Args` in
-     `main.rs`. `tests/test_cache_and_network.py` checks that every
+     `number("...")` or `integer("...")` in `epiworld.R` and `main.cpp`, and
+     `Args` in `main.rs`. `tests/test_cache_and_network.py` checks that every
      parameter appears in each runner.
    - Use each engine's **own way** of expressing the feature: its built-in
      interventions, tools, compartments, or properties. The benchmark measures

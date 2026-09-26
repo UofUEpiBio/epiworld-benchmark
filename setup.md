@@ -1,9 +1,16 @@
 # Network epidemic ABM speed benchmark
 
-This folder contains a reproducible, resumable benchmark of five epidemic
+This folder contains a reproducible, resumable benchmark of seven epidemic
 simulation engines across several scenarios of increasing complexity:
 
-- **epiworldR 0.15.1.0** (R/C++), using a custom discrete-time SEIRH model;
+- **epiworld 0.17.0** (C++), the header-only library, using a custom
+  discrete-time SEIRH model built from its state update functions;
+- **epiworldR 0.17.0.0** (R wrapper of epiworld), building the same model;
+- **epiworldpy 0.17.0-0** (Python wrapper of epiworld), building the same
+  model. The runner needs the native update functions added in
+  [UofUEpiBio/epiworldpy#17](https://github.com/UofUEpiBio/epiworldpy/pull/17),
+  so `pyproject.toml` pins the epiworldpy commit on main that merged it,
+  until a release includes it;
 - **Covasim 3.1.8** (Python), using its native disease progression and severe
   state as the hospitalization proxy;
 - **EoN 1.92** (Python), using a continuous-time SEIRH model run with the
@@ -30,8 +37,9 @@ to grow linearly with population size.
 ## Quick start
 
 The benchmark is meant to run inside the container defined in
-`.devcontainer/`. It pins R 4.5.1 with epiworldR 0.15.1.0, Python 3.12 via uv,
-Rust 1.98.0, and Quarto 1.10.18, so every engine is built and timed on the same
+`.devcontainer/`. It pins R 4.5.1 with epiworldR 0.17.0.0, epiworld's
+`epiworld-v0.17.0` headers, Python 3.12 via uv (with epiworldpy), Rust 1.98.0,
+and Quarto 1.10.18, so every engine is built and timed on the same
 toolchain. The only host prerequisite is [podman](https://podman.io/) (or
 Docker: pass `CONTAINER=docker`). From this folder:
 
@@ -46,7 +54,8 @@ make container-report
 Every `container-TARGET` runs `make setup TARGET` in a fresh container with the
 checkout bind-mounted at `/workspace`, so `cache/`, `results/`, and the
 rendered report land in this folder. The Python environment (`/opt/venv`) and
-the ixa builds (`/opt/cargo-target`, one binary per scenario) stay inside the
+the ixa and epiworld builds (`/opt/cargo-target` and `/opt/epiworld-build`, one
+binary per scenario and engine) stay inside the
 image and never touch a host `.venv/` or `target/`. Set `SCENARIOS` to run
 only some scenarios, for example `SCENARIOS=scenario_01 make
 container-benchmark`.
@@ -57,9 +66,10 @@ The same image is a development container: open the folder in VS Code (with
 shell.
 
 Running natively is still possible given Python 3.12, uv, R with `epiworldR`
-and `jsonlite`, a Rust toolchain, and Quarto (`make setup check smoke
-benchmark report`). Cache records carry the host OS and architecture in their
-fingerprint, so native and container timings are never mixed.
+and `jsonlite`, a Rust toolchain, a C++17 compiler with zlib, and Quarto
+(`make setup check smoke benchmark report`); `make setup` downloads epiworld's
+headers into `.deps/`. Cache records carry the host OS and architecture in
+their fingerprint, so native and container timings are never mixed.
 
 The report target renders the data-free project overview (`README.md`) and
 one GitHub-flavored report per scenario (`scenario_NN/README.md`, with PNG
@@ -67,7 +77,7 @@ figures in `scenario_NN/README_files/`), so the rendered results stay readable
 directly in a pull request.
 
 The smoke profile is deliberately tiny (1,000 agents, 10 days, one replicate)
-and tests all five integrations in every scenario. `make benchmark` launches
+and tests all seven integrations in every scenario. `make benchmark` launches
 the full design: 1,000 runs per scenario. It is safe to stop and restart: each successful replicate is written
 atomically beneath `cache/results/`, and a later invocation only schedules
 missing or stale results.

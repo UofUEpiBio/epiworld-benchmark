@@ -69,11 +69,18 @@ So the five compartments still sum to `n`, and the attack rate is still
 Each engine uses its own way of expressing the vaccine, so the model-lines
 comparison reflects what a user of that engine would write.
 
-- **epiworldR**: a `tool()` with `susceptibility_reduction = 1`. epiworld's
-  C++ library has an all-or-nothing `ToolVaccine`, but epiworldR does not
-  expose it. Unprotected vaccinees need no tool, so the runner draws the
-  number of protected agents from a binomial and lets epiworld place the tool
-  on that many randomly chosen agents.
+- **epiworldR**: a `tool()` with `susceptibility_reduction = 1`. Unprotected
+  vaccinees need no tool, so the runner draws the number of protected agents
+  from a binomial and lets epiworld place the tool on that many randomly
+  chosen agents.
+- **epiworld** (C++) and **epiworldpy**: the same tool, placed the same way.
+  Each draws the number of protected agents with its own language's random
+  numbers, so unlike in scenario 00 the three runners' epidemics differ
+  replicate by replicate, though not in distribution. The C++ library also
+  has an all-or-nothing `ToolVaccine`, which neither wrapper exposes. It
+  decides whether an agent is protected only when the agent is first exposed,
+  so the number protected, which every runner reports, is not observable
+  with it.
 - **Covasim**: two day-0 `cv.simple_vaccine` interventions targeted with
   `subtarget`. One gives the protected agents `rel_sus = 0`, the other leaves
   the remaining vaccinees unchanged. A single `simple_vaccine` would be leaky.
@@ -113,7 +120,7 @@ The logarithmic scale keeps fast and slow engines legible in one panel.
 
 ```{r}
 #| label: simulation-time-plot
-#| fig-width: 9
+#| fig-width: 12
 #| fig-height: 5
 if (bench$has_full) print(plot_simulation_time(bench))
 ```
@@ -126,6 +133,20 @@ mean that epiworldR completed the simulation call faster.
 ```{r}
 #| label: speedup
 table_speedup(bench)
+```
+
+### The epiworld family
+
+The wrappers compared with the C++ runner. Here the three draw the number of
+protected agents with different random numbers, so they are matched by seed
+but do not run identical epidemics. As in
+[scenario 00](../scenario_00/README.md#the-language-layer-costs-nothing-measurable-in-the-simulation),
+the C++ runner's slower simulation at 100,000 agents comes from where its
+arrays land in memory, not from the language layer.
+
+```{r}
+#| label: epiworld-family
+table_speedup(bench, reference = "epiworld", engines = c("epiworldR", "epiworldpy"))
 ```
 
 ### Epidemiological sanity checks
@@ -165,13 +186,13 @@ Run time does not isolate the cost of the vaccine machinery. The vaccine cuts
 the median attack rate from about `r attack(base, 10000)` to
 `r attack(full, 10000)` at 10,000 agents and from `r attack(base, 100000)` to
 `r attack(full, 100000)` at 100,000. Engines whose work tracks the number of
-active infections (EoN, epydemic, epiworldR, and ixa) get faster for that
+active infections (EoN, epydemic, the epiworld family, and ixa) get faster for that
 reason alone. Covasim's vectorized daily update touches every agent
 regardless of the outbreak's size, so its time barely moves. A ratio below
 one therefore does not mean the vaccine is free. It means that the engine's
 handling of the vaccine costs less than the smaller outbreak saves. A ratio
-above one would mean the feature itself is expensive, as described below for
-epiworldR's `distribute_tool_to_set()`.
+above one would mean the feature itself is expensive, as epiworldR's
+`distribute_tool_to_set()` was before version 0.16.1 (see below).
 
 ### Code required to define the model
 
@@ -196,14 +217,14 @@ agent property that its hand-written transmission step has to consult.
 
 The most direct epiworldR implementation draws the protected agents in R and
 hands them to the tool with `distribute_tool_to_set()`. In epiworldR 0.15.1.0
-that function is quadratic in the number of agents. Every per-agent
-`add_tool()` clones the tool, and the clone carries a copy of the whole list
+that function was quadratic in the number of agents. Every per-agent
+`add_tool()` cloned the tool, and the clone carried a copy of the whole list
 of target IDs. Placing the tool on about 24,000 named agents took roughly
 4.6 seconds per run at 100,000 agents, against 0.03 seconds with the approach
-the runner uses now: draw the number of protected agents, and let epiworld
-place the tool at random. Both give the same vaccine statistically. The
-upstream fix is to share the ID list between clones rather than copy it, as
-`distribute_tool_randomly()` already does.
+the runner uses: draw the number of protected agents, and let epiworld place
+the tool at random. Both give the same vaccine statistically. epiworldR
+0.16.1 fixed the quadratic cost, so either approach is now fast; the runner
+keeps the second.
 
 ### Calibration
 

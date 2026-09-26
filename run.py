@@ -28,7 +28,9 @@ CONFIG_PATH = ROOT / "config.toml"
 CACHE_DIR = ROOT / "cache"
 RESULTS_DIR = ROOT / "results"
 RUNNER_FORMAT_VERSION = 2
-DIST_NAMES = {"covasim": "covasim", "EoN": "EoN", "epydemic": "epydemic"}
+DIST_NAMES = {
+    "covasim": "covasim", "EoN": "EoN", "epydemic": "epydemic", "epiworldpy": "epiworldpy",
+}
 # Scenario tables whose keys are forwarded to every runner as --kebab-case flags.
 PARAMETER_TABLES = ("disease", "intervention")
 
@@ -62,6 +64,22 @@ def ixa_binary(scenario: str) -> Path:
     return target / "release" / f"ixa-{scenario.replace('_', '-')}"
 
 
+def epiworld_binary(scenario: str) -> Path:
+    """The scenario's compiled epiworld (C++) runner; `make setup` builds it."""
+    build = Path(
+        os.environ.get("EPIWORLD_BUILD_DIR", ROOT / scenario / "runners" / "epiworld" / "build")
+    )
+    return build / f"epiworld-{scenario.replace('_', '-')}"
+
+
+def dist_version(name: str) -> str:
+    """Installed version, plus the commit for packages installed from git."""
+    version = importlib.metadata.version(name)
+    direct_url = importlib.metadata.distribution(name).read_text("direct_url.json")
+    commit = json.loads(direct_url or "{}").get("vcs_info", {}).get("commit_id")
+    return f"{version}+g{commit[:7]}" if commit else version
+
+
 def ixa_version(scenario: str) -> str:
     lock = tomllib.loads((ixa_dir(scenario) / "Cargo.lock").read_text(encoding="utf-8"))
     return next(package["version"] for package in lock["package"] if package["name"] == "ixa")
@@ -90,7 +108,7 @@ def source_paths(scenario: str) -> list[Path]:
     runners = [
         path for path in sorted(runner_dir.rglob("*"))
         if path.is_file()
-        and "target" not in path.relative_to(runner_dir).parts
+        and not {"target", "build"} & set(path.relative_to(runner_dir).parts)
         and "__pycache__" not in path.parts
     ]
     return (
@@ -113,7 +131,7 @@ def engine_versions(engines: list[str], scenarios: list[str]) -> dict[str, str]:
     versions: dict[str, str] = {}
     for engine in engines:
         if engine in DIST_NAMES:
-            versions[engine] = importlib.metadata.version(DIST_NAMES[engine])
+            versions[engine] = dist_version(DIST_NAMES[engine])
         elif engine == "epiworldR":
             completed = subprocess.run(
                 ["Rscript", "--vanilla", "-e", "cat(as.character(packageVersion('epiworldR')))"] ,
@@ -126,6 +144,20 @@ def engine_versions(engines: list[str], scenarios: list[str]) -> dict[str, str]:
             found = {ixa_version(scenario) for scenario in scenarios}
             if len(found) != 1:
                 raise SystemExit(f"Scenarios pin different ixa versions: {sorted(found)}")
+            versions[engine] = found.pop()
+        elif engine == "epiworld":
+            # Each runner reports the epiworld headers it was compiled against.
+            found = {
+                subprocess.run(
+                    [str(epiworld_binary(scenario)), "--version"],
+                    check=True, text=True, capture_output=True,
+                ).stdout.strip()
+                for scenario in scenarios
+            }
+            if len(found) != 1:
+                raise SystemExit(
+                    f"Scenarios were built with different epiworld versions: {sorted(found)}"
+                )
             versions[engine] = found.pop()
     return versions
 
@@ -190,6 +222,8 @@ def task_command(task: dict[str, Any]) -> list[str]:
         return ["Rscript", "--vanilla", str(runner_dir / "epiworld.R"), *common]
     if task["engine"] == "ixa":
         return [str(ixa_binary(task["scenario"])), *common]
+    if task["engine"] == "epiworld":
+        return [str(epiworld_binary(task["scenario"])), *common]
     return [
         sys.executable,
         str(runner_dir / "python_engines.py"),
@@ -311,6 +345,12 @@ def main() -> int:
             if not ixa_binary(scenario).is_file():
                 raise SystemExit(
                     f"ixa runner not built at {ixa_binary(scenario)}; run `make setup`"
+                )
+    if "epiworld" in engines:
+        for scenario in scenarios:
+            if not epiworld_binary(scenario).is_file():
+                raise SystemExit(
+                    f"epiworld runner not built at {epiworld_binary(scenario)}; run `make setup`"
                 )
     versions = engine_versions(engines, scenarios)
     host_platform = f"{platform.system()}-{platform.machine()}"

@@ -1,12 +1,15 @@
 [project]
 name = "abm-speed-benchmark"
 version = "0.1.0"
-description = "Reproducible network epidemic benchmark for epiworldR and Python ABM engines"
+description = "Reproducible network epidemic benchmark for the epiworld family and other ABM engines"
 requires-python = ">=3.12,<3.14"
 dependencies = [
   "covasim==3.1.8",
   "EoN==1.92",
   "epydemic==1.14.1",
+  # epiworldpy main after UofUEpiBio/epiworldpy#17 (native update functions
+  # for custom models); no release includes it yet.
+  "epiworldpy @ git+https://github.com/UofUEpiBio/epiworldpy@40a98d3e48bb3a8b05805fdb933c292c51f397f2",
   "networkx==3.6.1",
   "numpy==2.2.6",
   "scipy==1.15.3",

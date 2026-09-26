@@ -40,14 +40,29 @@ There are no interventions.
 | `hospitalization_probability` |  0.05 | Lifetime probability that an infectious agent is hospitalized |
 | `hospital_days`               |   7.0 | Mean hospital stay                               |
 
-Initial cases start infectious in every engine except epiworldR. Its R API
-cannot seed a custom model's initial cases in any state other than the one
-new infections enter, so they start exposed there.
+Initial cases start infectious in every engine except the epiworld family.
+epiworldR's API cannot seed a custom model's initial cases in any state other
+than the one new infections enter, so they start exposed there. The C++ and
+Python runners do the same, so that all three epiworld runners build exactly
+the same model.
 
 ### Engine implementations
 
-- **epiworldR**: a custom model built from `add_state()` and the package's
-  update-function factories. New infections enter Exposed.
+- **epiworld** (C++): a custom model built from `add_state()` and the
+  library's update-function factories, `sampler::make_update_susceptible()` and
+  `new_state_update_transition()`. New infections enter Exposed. It is
+  compiled with the flags R uses for epiworldR (`-O2 -DNDEBUG`, double
+  precision).
+- **epiworldR**: the same model through the R wrapper, with
+  `update_fun_susceptible()` and `update_fun_rate()`.
+- **epiworldpy**: the same model through the Python wrapper, with
+  `UpdateFun.susceptible()` and `UpdateFun.rate()`. These were added for this
+  benchmark in
+  [UofUEpiBio/epiworldpy#17](https://github.com/UofUEpiBio/epiworldpy/pull/17).
+  Before, a custom model's other states needed Python callbacks, which
+  epiworld calls for every agent every day. epiworldpy compiles epiworld with
+  its default single-precision `float`, and with the same seed it still gives
+  the same epidemics as the other two.
 - **Covasim**: native disease progression restricted to SEIRH. Waning is off,
   and individual transmissibility and viral load are fixed. The severe state
   serves as the hospitalization proxy.
@@ -83,7 +98,7 @@ The logarithmic scale keeps fast and slow engines legible in one panel.
 
 ```{r}
 #| label: simulation-time-plot
-#| fig-width: 9
+#| fig-width: 12
 #| fig-height: 5
 if (bench$has_full) print(plot_simulation_time(bench))
 ```
@@ -96,6 +111,17 @@ mean that epiworldR completed the simulation call faster.
 ```{r}
 #| label: speedup
 table_speedup(bench)
+```
+
+### The epiworld family
+
+The three epiworld runners build the same model on the same C++ core, and
+in this scenario they produce identical epidemics for every seed. This table
+compares the two wrappers with the C++ runner, replicate by replicate.
+
+```{r}
+#| label: epiworld-family
+table_speedup(bench, reference = "epiworld", engines = c("epiworldR", "epiworldpy"))
 ```
 
 ### Epidemiological sanity checks
@@ -145,7 +171,8 @@ The shared analytic transmission mapping produced different realized attack
 rates across frameworks. Calibration therefore selected size-specific factors
 for restricted Covasim (0.715 at 10,000 agents and 0.710 at 100,000) and for
 ixa (0.983 and 0.988). epiworldR needs none: its uncalibrated median attack
-rates match EoN's exact continuous-time results. All 100 replicates in each
+rates match EoN's exact continuous-time results, and so do epiworld's and
+epiworldpy's, which run the same model. All 100 replicates in each
 adjusted cell were then rerun. These empirical corrections are intentionally
 population-specific; they align benchmark outcomes but mean that none of the
 calibrated engines has a strictly analytic $R_0$ of 2. The values live in
@@ -157,18 +184,43 @@ epiworldR and epydemic, but its uncalibrated attack rates sat above the other
 engines: it seeds the initial cases as infectious and samples each infectious
 contact independently rather than with epiworld's roulette.
 
+### The language layer costs nothing measurable in the simulation
+
+Neither wrapper is slower than the C++ runner. At 10,000 agents epiworldR
+and epiworldpy are even 7-9% faster, and at 100,000 agents they take about
+0.015 seconds against the C++ runner's 0.026, although all three run the
+same compiled code on the same model. The C++ runner is not doing more work: run twice in the same
+process, its second run takes 0.016 seconds. Raising glibc's `mmap`
+threshold (`MALLOC_MMAP_THRESHOLD_`), so that large blocks come from the
+ordinary heap, also brings its first run down to 0.017 seconds. The
+difference is where the model's large per-agent arrays land in memory. In
+the C++ runner, each array gets its own fresh, page-aligned `mmap` region.
+The R and Python processes have already grown and freed a large heap while
+starting up and reading the edge list, so the arrays land there instead.
+The run makes no page faults in either case, which points to cache or TLB
+effects of the placement rather than to first-touch cost. The runner is
+timed as a C++ user would write it, so the published numbers keep this
+effect. Allocating those arrays together would likely remove it upstream.
+
+Outside the simulation call the ordering flips. The C++ runner reads the
+edge list and builds the model fastest, so its `total_seconds` (which
+excludes interpreter startup) is the lowest of the three.
+
 ### Why the two fastest engines differ
 
-ixa's step visits only exposed, infectious, and hospitalized agents, found
-through its indexed status property, and tries transmission outward from each
-infectious agent to its susceptible neighbours, so its cost follows the size
-of the outbreak. epiworldR's queuing system skips agents with no infected
-contact, but each queued susceptible agent (every neighbour of an exposed,
-infectious, or hospitalized agent) scans all of its neighbours for infectious
-ones, which is roughly ten times as many neighbour visits. Its daily loop also
-checks every agent's queue flag, about 12% of its run time at 100,000 agents.
-An exact push-style alternative for epiworld is proposed in
-[UofUEpiBio/epiworld#264](https://github.com/UofUEpiBio/epiworld/issues/264).
+epiworld 0.16.1 made network transmission push-based when that is cheaper:
+infectious agents push infection to their neighbours instead of every queued
+susceptible agent scanning all of its neighbours for infectious ones (the
+change proposed in
+[UofUEpiBio/epiworld#264](https://github.com/UofUEpiBio/epiworld/issues/264)).
+Together with the other changes through 0.17.0, this made epiworldR about
+four times faster here than 0.15.1.0 was at 100,000 agents (median 0.062 to
+0.016 seconds). In push mode, both engines' daily cost now follows the
+outbreak rather than the population: each visits only the exposed,
+infectious, and hospitalized agents, and tries transmission outward from the
+infectious ones.
+ixa is still about twice as fast at 100,000 agents. This report does not
+profile where the remaining gap comes from.
 
 ### Equivalence across engines
 

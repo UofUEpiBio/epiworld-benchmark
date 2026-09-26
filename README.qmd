@@ -1,16 +1,22 @@
 ---
 title: "Network epidemic ABM speed benchmark"
-subtitle: "epiworldR, Covasim, EoN, epydemic, and ixa"
+subtitle: "epiworld (C++, R, and Python), Covasim, EoN, epydemic, and ixa"
 format:
   gfm:
     toc: true
 bibliography: references.bib
 ---
 
-This project compares how fast five epidemic simulation engines run the same
+This project compares how fast seven epidemic simulation engines run the same
 agent-based model on the same contact network, and how much code each engine
-needs to express that model. The engines are
-[epiworldR](https://uofuepibio.github.io/epiworldR/){target="_blank"} [@meyerEpiworldRFastAgentBased2023],
+needs to express that model. Three of them are the epiworld family: the
+header-only C++ library
+[epiworld](https://github.com/UofUEpiBio/epiworld){target="_blank"} [@vegayonEpiworld2026]
+and its two wrappers,
+[epiworldR](https://uofuepibio.github.io/epiworldR/){target="_blank"} [@meyerEpiworldRFastAgentBased2023]
+for R and
+[epiworldpy](https://github.com/UofUEpiBio/epiworldpy){target="_blank"} [@vegayonEpiworldpy2026]
+for Python. The other four are
 [Covasim](https://covasim.org/){target="_blank"} [@kerrCovasimAgentbasedModel2021],
 [EoN](https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html){target="_blank"} [@millerEoNEpidemicsNetworks2019],
 [epydemic](https://github.com/simoninireland/epydemic){target="_blank"} [@dobson2022epydemic], and
@@ -51,7 +57,10 @@ Every scenario shares the following design, set in `config.toml`.
   model), so a scenario may set empirical, size-specific transmission
   multipliers that align the engines' realized attack rates. Each scenario's
   report states and justifies its factors.
-- **Engines.** epiworldR, epydemic, and ixa use synchronous daily transitions.
+- **Engines.** The epiworld family, epydemic, and ixa use synchronous daily
+  transitions. The three epiworld runners build the same model on the same
+  C++ core; in scenario 00 they produce identical epidemics for each seed, so
+  their run-time differences come from the language layer, not the model.
   EoN uses continuous-time hazards simulated exactly with its event-driven
   `fast_simple_contagion` algorithm. Covasim runs its native model, restricted
   as far as its public API allows. The reports therefore measure

@@ -10,11 +10,17 @@
 - [Repository layout](#repository-layout)
 - [References](#references)
 
-This project compares how fast five epidemic simulation engines run the
+This project compares how fast seven epidemic simulation engines run the
 same agent-based model on the same contact network, and how much code
-each engine needs to express that model. The engines are
+each engine needs to express that model. Three of them are the epiworld
+family: the header-only C++ library
+<a href="https://github.com/UofUEpiBio/epiworld"
+target="_blank">epiworld</a> (Vega Yon 2026) and its two wrappers,
 <a href="https://uofuepibio.github.io/epiworldR/"
-target="_blank">epiworldR</a> (Meyer and Vega Yon 2023),
+target="_blank">epiworldR</a> (Meyer and Vega Yon 2023) for R and
+<a href="https://github.com/UofUEpiBio/epiworldpy"
+target="_blank">epiworldpy</a> (Vega Yon and Banks 2026) for Python. The
+other four are
 <a href="https://covasim.org/" target="_blank">Covasim</a> (Kerr et al.
 2021),
 <a href="https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html"
@@ -61,8 +67,11 @@ Every scenario shares the following design, set in `config.toml`.
   size-specific transmission multipliers that align the engines’
   realized attack rates. Each scenario’s report states and justifies its
   factors.
-- **Engines.** epiworldR, epydemic, and ixa use synchronous daily
-  transitions. EoN uses continuous-time hazards simulated exactly with
+- **Engines.** The epiworld family, epydemic, and ixa use synchronous
+  daily transitions. The three epiworld runners build the same model on
+  the same C++ core; in scenario 00 they produce identical epidemics for
+  each seed, so their run-time differences come from the language layer,
+  not the model. EoN uses continuous-time hazards simulated exactly with
   its event-driven `fast_simple_contagion` algorithm. Covasim runs its
   native model, restricted as far as its public API allows. The reports
   therefore measure representative framework throughput under aligned
@@ -180,6 +189,22 @@ The Ixa Developers. 2026. *<span class="nocase">ixa</span>: A Framework
 for Building Agent-Based Models*. V. 3.1.0. Centers for Disease Control;
 Prevention, Center for Forecasting; Outbreak Analytics, released.
 <https://github.com/CDCgov/ixa>.
+
+</div>
+
+<div id="ref-vegayonEpiworld2026" class="csl-entry">
+
+Vega Yon, George G. 2026. *<span class="nocase">epiworld</span>: A
+Flexible and General Agent-Based Model Engine*. V. 0.17.0. Released.
+<https://github.com/UofUEpiBio/epiworld>.
+
+</div>
+
+<div id="ref-vegayonEpiworldpy2026" class="csl-entry">
+
+Vega Yon, George G., and Olivia Banks. 2026.
+*<span class="nocase">epiworldpy</span>: Python Bindings for Epiworld*.
+V. 0.17.0-0. Released. <https://github.com/UofUEpiBio/epiworldpy>.
 
 </div>
 
