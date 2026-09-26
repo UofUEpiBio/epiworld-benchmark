@@ -30,7 +30,7 @@ dev = [
 requires-dist = [
     { name = "covasim", specifier = "==3.1.8" },
     { name = "eon", specifier = "==1.92" },
-    { name = "epiworldpy", git = "https://github.com/UofUEpiBio/epiworldpy?rev=583c55e23ec633c7bea8988430c1398c2489833d" },
+    { name = "epiworldpy", git = "https://github.com/UofUEpiBio/epiworldpy?rev=40a98d3e48bb3a8b05805fdb933c292c51f397f2" },
     { name = "epydemic", specifier = "==1.14.1" },
     { name = "networkx", specifier = "==3.6.1" },
     { name = "numpy", specifier = "==2.2.6" },
@@ -323,7 +323,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/6c/1a/bf0ed171c05d368c0
 [[package]]
 name = "epiworldpy"
 version = "0.17.0.post0"
-source = { git = "https://github.com/UofUEpiBio/epiworldpy?rev=583c55e23ec633c7bea8988430c1398c2489833d#583c55e23ec633c7bea8988430c1398c2489833d" }
+source = { git = "https://github.com/UofUEpiBio/epiworldpy?rev=40a98d3e48bb3a8b05805fdb933c292c51f397f2#40a98d3e48bb3a8b05805fdb933c292c51f397f2" }
 dependencies = [
     { name = "numpy" },
     { name = "pybind11" },

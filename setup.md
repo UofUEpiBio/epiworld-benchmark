@@ -9,7 +9,8 @@ simulation engines across several scenarios of increasing complexity:
 - **epiworldpy 0.17.0-0** (Python wrapper of epiworld), building the same
   model. The runner needs the native update functions added in
   [UofUEpiBio/epiworldpy#17](https://github.com/UofUEpiBio/epiworldpy/pull/17),
-  so `pyproject.toml` pins that commit until it is released;
+  so `pyproject.toml` pins the epiworldpy commit on main that merged it,
+  until a release includes it;
 - **Covasim 3.1.8** (Python), using its native disease progression and severe
   state as the hospitalization proxy;
 - **EoN 1.92** (Python), using a continuous-time SEIRH model run with the

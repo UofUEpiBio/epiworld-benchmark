@@ -113,14 +113,14 @@ model-lines comparison reflects what a user of that engine would write.
 | Engine     | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:-----------|-------:|-----:|----------------------:|-------:|-------:|
 | ixa        |  10000 |  100 |                 0.002 |  0.002 |  0.002 |
-| epiworldpy |  10000 |  100 |                 0.004 |  0.003 |  0.004 |
+| epiworldpy |  10000 |  100 |                 0.004 |  0.004 |  0.004 |
 | epiworldR  |  10000 |  100 |                 0.004 |  0.004 |  0.004 |
 | epiworld   |  10000 |  100 |                 0.005 |  0.005 |  0.005 |
 | EoN        |  10000 |  100 |                 0.034 |  0.033 |  0.036 |
 | covasim    |  10000 |  100 |                 0.062 |  0.062 |  0.064 |
 | epydemic   |  10000 |  100 |                 0.206 |  0.195 |  0.215 |
 | ixa        | 100000 |  100 |                 0.002 |  0.002 |  0.002 |
-| epiworldpy | 100000 |  100 |                 0.008 |  0.008 |  0.009 |
+| epiworldpy | 100000 |  100 |                 0.009 |  0.008 |  0.009 |
 | epiworldR  | 100000 |  100 |                 0.009 |  0.009 |  0.010 |
 | epiworld   | 100000 |  100 |                 0.019 |  0.019 |  0.020 |
 | EoN        | 100000 |  100 |                 0.209 |  0.205 |  0.216 |
@@ -143,13 +143,13 @@ one mean that epiworldR completed the simulation call faster.
 | Engine     | Agents | Median time / epiworldR |     Q1 |     Q3 |
 |:-----------|-------:|------------------------:|-------:|-------:|
 | epiworld   |  10000 |                    1.19 |   1.09 |   1.34 |
-| epiworldpy |  10000 |                    0.96 |   0.84 |   1.07 |
+| epiworldpy |  10000 |                    0.95 |   0.82 |   1.08 |
 | covasim    |  10000 |                   15.55 |  14.79 |  16.12 |
 | EoN        |  10000 |                    8.51 |   7.49 |   9.07 |
 | epydemic   |  10000 |                   50.39 |  45.28 |  54.88 |
 | ixa        |  10000 |                    0.41 |   0.35 |   0.48 |
 | epiworld   | 100000 |                    2.11 |   2.00 |   2.24 |
-| epiworldpy | 100000 |                    0.89 |   0.83 |   0.96 |
+| epiworldpy | 100000 |                    0.96 |   0.89 |   1.05 |
 | covasim    | 100000 |                   37.00 |  35.20 |  40.19 |
 | EoN        | 100000 |                   23.33 |  22.21 |  25.17 |
 | epydemic   | 100000 |                  120.62 | 115.84 | 129.83 |
@@ -167,9 +167,9 @@ its arrays land in memory, not from the language layer.
 | Engine     | Agents | Median time / epiworld |   Q1 |   Q3 |
 |:-----------|-------:|-----------------------:|-----:|-----:|
 | epiworldR  |  10000 |                   0.84 | 0.75 | 0.92 |
-| epiworldpy |  10000 |                   0.79 | 0.71 | 0.86 |
+| epiworldpy |  10000 |                   0.80 | 0.70 | 0.88 |
 | epiworldR  | 100000 |                   0.47 | 0.45 | 0.50 |
-| epiworldpy | 100000 |                   0.42 | 0.40 | 0.45 |
+| epiworldpy | 100000 |                   0.45 | 0.43 | 0.48 |
 
 ### Epidemiological sanity checks
 
@@ -210,11 +210,11 @@ scenario took longer.
 | epydemic | 10000 | 0.489 | 0.206 | 0.41 | 0.39 | 0.44 |
 | epiworldR | 10000 | 0.009 | 0.004 | 0.44 | 0.40 | 0.56 |
 | EoN | 10000 | 0.077 | 0.034 | 0.45 | 0.41 | 0.48 |
-| epiworldpy | 10000 | 0.008 | 0.004 | 0.46 | 0.40 | 0.52 |
+| epiworldpy | 10000 | 0.008 | 0.004 | 0.46 | 0.40 | 0.51 |
 | epiworld | 10000 | 0.009 | 0.005 | 0.52 | 0.47 | 0.57 |
 | covasim | 10000 | 0.064 | 0.062 | 0.97 | 0.94 | 1.00 |
 | ixa | 100000 | 0.008 | 0.002 | 0.27 | 0.24 | 0.30 |
-| epiworldpy | 100000 | 0.015 | 0.008 | 0.55 | 0.50 | 0.61 |
+| epiworldpy | 100000 | 0.015 | 0.009 | 0.57 | 0.52 | 0.64 |
 | epiworldR | 100000 | 0.016 | 0.009 | 0.57 | 0.53 | 0.67 |
 | epydemic | 100000 | 1.727 | 1.097 | 0.63 | 0.60 | 0.67 |
 | EoN | 100000 | 0.293 | 0.209 | 0.72 | 0.68 | 0.76 |
@@ -286,7 +286,7 @@ the engines’ attack rates stay aligned with the vaccine in place.
 | covasim    | 3.1.8             |
 | EoN        | 1.92              |
 | epiworld   | 0.17.0            |
-| epiworldpy | 0.17.0-0+g583c55e |
+| epiworldpy | 0.17.0-0+g40a98d3 |
 | epiworldR  | 0.17.0.0          |
 | epydemic   | 1.14.1            |
 | ixa        | 3.1.0             |

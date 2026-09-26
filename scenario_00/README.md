@@ -100,7 +100,7 @@ epiworld runners build exactly the same model.
 | EoN        |  10000 |  100 |                 0.077 |  0.072 |  0.080 |
 | epydemic   |  10000 |  100 |                 0.489 |  0.468 |  0.520 |
 | ixa        | 100000 |  100 |                 0.008 |  0.008 |  0.009 |
-| epiworldpy | 100000 |  100 |                 0.015 |  0.013 |  0.016 |
+| epiworldpy | 100000 |  100 |                 0.015 |  0.014 |  0.017 |
 | epiworldR  | 100000 |  100 |                 0.016 |  0.014 |  0.017 |
 | epiworld   | 100000 |  100 |                 0.026 |  0.024 |  0.028 |
 | EoN        | 100000 |  100 |                 0.293 |  0.280 |  0.308 |
@@ -123,13 +123,13 @@ one mean that epiworldR completed the simulation call faster.
 | Engine     | Agents | Median time / epiworldR |    Q1 |     Q3 |
 |:-----------|-------:|------------------------:|------:|-------:|
 | epiworld   |  10000 |                    1.08 |  1.02 |   1.14 |
-| epiworldpy |  10000 |                    0.97 |  0.93 |   1.04 |
+| epiworldpy |  10000 |                    0.98 |  0.94 |   1.04 |
 | covasim    |  10000 |                    7.61 |  7.07 |   8.12 |
 | EoN        |  10000 |                    8.85 |  8.08 |   9.90 |
 | epydemic   |  10000 |                   56.79 | 52.37 |  62.82 |
 | ixa        |  10000 |                    0.48 |  0.44 |   0.54 |
 | epiworld   | 100000 |                    1.66 |  1.58 |   1.77 |
-| epiworldpy | 100000 |                    0.94 |  0.90 |   0.97 |
+| epiworldpy | 100000 |                    0.98 |  0.91 |   1.03 |
 | covasim    | 100000 |                   21.51 | 19.10 |  23.23 |
 | EoN        | 100000 |                   19.00 | 17.37 |  21.05 |
 | epydemic   | 100000 |                  112.74 | 99.77 | 124.87 |
@@ -145,9 +145,9 @@ replicate.
 | Engine     | Agents | Median time / epiworld |   Q1 |   Q3 |
 |:-----------|-------:|-----------------------:|-----:|-----:|
 | epiworldR  |  10000 |                   0.93 | 0.88 | 0.98 |
-| epiworldpy |  10000 |                   0.91 | 0.89 | 0.93 |
+| epiworldpy |  10000 |                   0.91 | 0.90 | 0.94 |
 | epiworldR  | 100000 |                   0.60 | 0.56 | 0.63 |
-| epiworldpy | 100000 |                   0.57 | 0.53 | 0.59 |
+| epiworldpy | 100000 |                   0.59 | 0.56 | 0.62 |
 
 ### Epidemiological sanity checks
 
@@ -283,7 +283,7 @@ epidemiological equivalence.
 | covasim    | 3.1.8             |
 | EoN        | 1.92              |
 | epiworld   | 0.17.0            |
-| epiworldpy | 0.17.0-0+g583c55e |
+| epiworldpy | 0.17.0-0+g40a98d3 |
 | epiworldR  | 0.17.0.0          |
 | epydemic   | 1.14.1            |
 | ixa        | 3.1.0             |
