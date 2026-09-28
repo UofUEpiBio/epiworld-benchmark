@@ -222,9 +222,16 @@ scenario 03 one):
 
 Times are in milliseconds.
 
-- **At 10,000 agents the two are level.** ixa's rebuild is small here
-  (about 2.6 ms), and roughly offsets what the parameter lookup and `reset()`
-  cost epiworld.
+- **At 10,000 agents the two are close.** ixa's rebuild is small here
+  (about 2.6 ms). In the benchmark the two are level; run one at a time, ixa
+  is about 20% faster (7.2 against 9.3 ms in scenario 00, 4.2 against 4.4 ms
+  in scenario 01). Four concurrent runs slow ixa more than epiworld at this
+  size, so the ordering here is within the effect of concurrency.
+- **Concurrency inflates both engines' times** by 35 to 90% at 100,000
+  agents, ixa's more than epiworld's (compare the side measurements above,
+  taken one at a time, with this table). The ratios below shift accordingly,
+  from 2.4 to 2.7 in scenario 00 and from 3.2 to 3.8 in scenario 01, but
+  not the ordering.
 - **At 100,000 agents epiworld is about three times faster per replicate.**
   Rebuilding ixa's context now takes more time than the whole of epiworld's
   `run()`. The ratio is largest in scenarios 01 and 02, where the vaccine

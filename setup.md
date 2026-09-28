@@ -172,11 +172,15 @@ The container behaves the same way, more strongly. A 6-worker run of the full
 design in the podman VM (10 vCPUs) inflated median epiworldR `simulate_seconds`
 at 100,000 agents about 2.8x relative to a sequential run of the same model,
 and ixa only 1.2-1.4x, roughly doubling the apparent ixa/epiworldR speed
-ratio. The published results are collected with four workers
-(`N_THREADS=4 make container-benchmark`), which keeps the full design,
-including scenario 03's 1,000,000-agent runs, to a manageable run time. Every record in
-them was collected at that concurrency, so they are comparable with each
-other, but not with a sequential run.
+ratio. The published results for scenarios 00 to 02 are collected with four
+workers (`N_THREADS=4 make container-benchmark`), which keeps the full
+design to a manageable run time. Scenario 03 runs one replicate at a time
+whatever `N_THREADS` says (`workers = 1` in its `[design]` table): four
+concurrent million-agent processes competed for memory and doubled
+epydemic's time. Within a scenario, every record was collected at the same
+concurrency, so its engines are comparable with each other. Absolute times
+are not comparable with a sequential run, nor between scenario 03 and the
+others.
 
 Epidemiological outputs are unaffected by concurrency; only the timings are.
 

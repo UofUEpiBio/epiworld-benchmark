@@ -43,8 +43,13 @@ others skip. Here every engine has to deliver the same information, so
 the comparison includes that bookkeeping for all of them.
 
 The model, network, seeds, run length, and calibration are those of
-scenario 01. For any engine, size, and replicate, the two scenarios run
-the same epidemic, and this report compares them replicate by replicate.
+scenario 01. For every engine but individual, the two scenarios run the
+same epidemic for a given size and replicate, and this report compares
+them replicate by replicate. individual’s runner picks each new case’s
+source with R’s global random numbers, which its disease processes also
+use, so from the first such draw its epidemic differs from scenario 01’s
+for the same seed. The two are still the same model, with the same
+distribution of outcomes; only the pairing by seed is lost.
 
 ## Model
 
@@ -346,8 +351,8 @@ seed them as infected.
 
 Each replicate is paired with the scenario 01 replicate that has the
 same engine, population size, and seed. Both scenarios run the same
-epidemic, so a ratio above one is the cost of recording the outputs
-during the run.
+epidemic (for individual, one from the same distribution), so a ratio
+above one is the cost of recording the outputs during the run.
 
 | Engine | Agents | Median scenario 01 (s) | Median scenario 02 (s) | Median time / scenario 01 | Q1 | Q3 |
 |:---|---:|---:|---:|---:|---:|---:|
