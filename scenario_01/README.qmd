@@ -52,8 +52,10 @@ replicate.
   draw differs in every run, and epiworld places its tools inside `run()`, so
   the other runners time their draw too. EoN's timer covers building its
   initial status dictionary. Covasim's covers the draw, and Covasim gives the
-  doses on day 0 inside `sim.run()`. epydemic draws inside its simulation
-  call, and ixa in a plan at time 0, inside `execute()`. The epiworld runners
+  doses on day 0 inside `sim.run()`. Starsim draws the vaccinees when its
+  day-0 campaign runs, inside `sim.run()`. epydemic draws inside its
+  simulation call, and ixa in a plan at time 0, inside `execute()`.
+  individual's timer covers its draw. The epiworld runners
   draw only the number of protected agents (one binomial draw) before
   `run()`.
 
@@ -94,6 +96,12 @@ comparison reflects what a user of that engine would write.
   `subtarget`. One gives the protected agents `rel_sus = 0`, the other leaves
   the remaining vaccinees unchanged. A single `simple_vaccine` would be leaky.
   Covasim tracks `people.vaccinated` itself.
+- **Starsim**: its own all-or-nothing vaccine, `ss.simple_vx(leaky=False)`,
+  delivered by a day-0 `ss.campaign_vx` to the drawn agents (the campaign's
+  eligibility function returns them). The vaccine sets `rel_sus = 0` for the
+  protected vaccinees; Starsim applies interventions before transmission
+  within a step. `simple_vx` draws who is protected from NumPy's global
+  generator, so the runner seeds it.
 - **EoN**: protected agents start in a status `"V"` that has no transitions,
   so no induced transmission rate ever reaches them.
 - **epydemic**: a `V` compartment with no events. It sits outside the S–I
@@ -102,6 +110,9 @@ comparison reflects what a user of that engine would write.
 - **ixa**: a `VaccineStatus` property (`Unvaccinated`, `Protected`,
   `Unprotected`) on `Person`, set by a plan at time 0. The daily step skips
   protected neighbours when it looks for susceptible contacts.
+- **individual**: no intervention objects, so the protected agents are a
+  `Bitset`, and the infection process intersects the susceptible agents with
+  its complement.
 
 ## Results
 
@@ -196,7 +207,10 @@ the median attack rate from about `r attack(base, 10000)` to
 `r attack(full, 100000)` at 100,000. Engines whose work tracks the number of
 active infections (EoN, epydemic, the epiworld family, and ixa) get faster for that
 reason alone. Covasim's vectorized daily update touches every agent
-regardless of the outbreak's size, so its time barely moves. A ratio below
+regardless of the outbreak's size, and Starsim's draws transmission on every
+edge every day, so their times barely move. individual's infection process
+scans the infectious agents' neighbours but also works on full-population
+bitsets every day, so it sits in between. A ratio below
 one therefore does not mean the vaccine is free. It means that the engine's
 handling of the vaccine costs less than the smaller outbreak saves. A ratio
 above one would mean the feature itself is expensive, as epiworldR's
@@ -216,8 +230,11 @@ table_code_effort(bench, baseline)
 
 EoN and epydemic only need a compartment with no transitions. Covasim has a
 vaccine intervention, but it is leaky, so an all-or-nothing vaccine takes two
-targeted doses. epiworldR has a tool that removes susceptibility. ixa adds an
-agent property that its hand-written transmission step has to consult.
+targeted doses. Starsim's own vaccine product supports all-or-nothing
+protection directly, and needs only a campaign to deliver it. epiworldR has a
+tool that removes susceptibility. ixa adds an agent property that its
+hand-written transmission step has to consult, and individual a set that its
+infection process leaves out.
 
 ## Interpretation
 

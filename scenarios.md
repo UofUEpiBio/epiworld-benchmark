@@ -17,10 +17,12 @@ scenario_NN/
   code_regions.yml      # line-count anchors for the report
   runners/
     epiworld.R          # epiworldR
+    individual.R        # individual
     epiworld/main.cpp   # epiworld (C++), built by `make setup`
     run_epiworldpy.py   # one script per Python engine: run_epiworldpy.py,
-    run_covasim.py      #   run_covasim.py, run_eon.py, run_epydemic.py; each
-    run_eon.py          #   holds that engine's whole model
+    run_covasim.py      #   run_covasim.py, run_starsim.py, run_eon.py,
+    run_starsim.py      #   run_epydemic.py; each holds that engine's whole
+    run_eon.py          #   model
     run_epydemic.py
     runner_common.py    # argument parsing and result writing for the Python runners
     ixa/                # Cargo crate named ixa-scenario-NN
@@ -59,7 +61,8 @@ complete model. The report leaves that shared plumbing out of the line counts.
 
 4. **Implement the change in every runner.**
    - Accept exactly the new flags: argparse in `runner_common.py`,
-     `number("...")` or `integer("...")` in `epiworld.R` and `main.cpp`, and
+     `number("...")` or `integer("...")` in `epiworld.R`, `individual.R`, and
+     `main.cpp`, and
      `Args` in `main.rs`. `tests/test_cache_and_network.py` checks that every
      parameter appears in each runner.
    - Use each engine's **own way** of expressing the feature: its built-in
@@ -83,8 +86,10 @@ complete model. The report leaves that shared plumbing out of the line counts.
    - Time everything that differs from run to run. The simulation timer
      covers each run's initial conditions (seeding, vaccination, and the
      like), because epiworld sets them up inside `run()`. ixa does this in
-     plans at time 0; the Python runners start their timer before building
-     the initial state.
+     plans at time 0; the Python runners and `individual.R` start their timer
+     before building the initial state. Starsim is the exception for seeding,
+     which happens in `sim.init()`; interventions such as scenario 01's
+     vaccine run inside `sim.run()`.
    - Keep randomness seeded from `--seed`. Seeds do not depend on the
      scenario, so the report can compare scenarios replicate by replicate.
    - Add Rust unit tests for the new behaviour to `main.rs`.
@@ -126,6 +131,10 @@ complete model. The report leaves that shared plumbing out of the line counts.
    SCENARIOS=scenario_03 make container-benchmark
    make container-report
    ```
+   Only the scenarios listed in `[large]` in `config.toml` also run at
+   1,000,000 agents. Adding one there reruns every scenario, as any edit to
+   `config.toml` does, and needs transmission multipliers for that size in
+   its `[calibration]`.
    Keep `N_THREADS` at 1 (the default) for published timings. `make report`
    renders the overview and every `scenario_*/README.qmd`. Check that the
    prose in the new report still matches its numbers.

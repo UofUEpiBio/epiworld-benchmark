@@ -36,6 +36,13 @@ covasim:
   regions:
     - {from: '^def discrete_transmission_probability', to: '^    return'}
     - {from: '^def run_covasim', to: '^    sim.run\(\)'}
+starsim:
+  language: Python
+  files: [runners/run_starsim.py]
+  regions:
+    - {from: '^def discrete_transmission_probability', to: '^    return'}
+    - {from: '^def seirh_classes', to: '^    return EdgeListNet, SEIRH'}
+    - {from: '^def run_starsim', to: '^    sim.run\(\)'}
 EoN:
   language: Python
   files: [runners/run_eon.py]
@@ -68,3 +75,10 @@ ixa:
     - {from: 'schedule_seeding\(&mut context, args'}
     - {from: 'let peak = schedule_days'}
     - {from: 'context.execute\(\)'}
+individual:
+  language: R
+  files: [runners/individual.R]
+  regions:
+    - {from: '^recovery <- 1', to: '^beta <- beta \*'}
+    - {from: '^from <- c\(edges', to: '^neighbours_of <- function'}
+    - {from: '^set\.seed', to: '^simulation_loop\('}

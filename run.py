@@ -31,13 +31,17 @@ RESULTS_DIR = ROOT / "results"
 RUNNER_FORMAT_VERSION = 2
 DIST_NAMES = {
     "covasim": "covasim", "EoN": "EoN", "epydemic": "epydemic", "epiworldpy": "epiworldpy",
+    "starsim": "starsim",
 }
 # One script per Python engine in each scenario's runners/ folder. They are
 # not named after the engine, which the script would then shadow on import.
 PYTHON_RUNNERS = {
     "covasim": "run_covasim.py", "EoN": "run_eon.py", "epydemic": "run_epydemic.py",
-    "epiworldpy": "run_epiworldpy.py",
+    "epiworldpy": "run_epiworldpy.py", "starsim": "run_starsim.py",
 }
+# R engines and their runner in each scenario's runners/ folder.
+R_RUNNERS = {"epiworldR": "epiworld.R", "individual": "individual.R"}
+R_PACKAGES = {"epiworldR": "epiworldR", "individual": "individual"}
 # Scenario tables whose keys are forwarded to every runner as --kebab-case flags.
 PARAMETER_TABLES = ("disease", "intervention")
 
@@ -139,9 +143,12 @@ def engine_versions(engines: list[str], scenarios: list[str]) -> dict[str, str]:
     for engine in engines:
         if engine in DIST_NAMES:
             versions[engine] = dist_version(DIST_NAMES[engine])
-        elif engine == "epiworldR":
+        elif engine in R_PACKAGES:
             completed = subprocess.run(
-                ["Rscript", "--vanilla", "-e", "cat(as.character(packageVersion('epiworldR')))"] ,
+                [
+                    "Rscript", "--vanilla", "-e",
+                    f"cat(as.character(packageVersion('{R_PACKAGES[engine]}')))",
+                ],
                 check=True,
                 text=True,
                 capture_output=True,
@@ -225,8 +232,8 @@ def task_command(task: dict[str, Any]) -> list[str]:
         "--output", task["output"],
     ]
     runner_dir = ROOT / task["scenario"] / "runners"
-    if task["engine"] == "epiworldR":
-        return ["Rscript", "--vanilla", str(runner_dir / "epiworld.R"), *common]
+    if task["engine"] in R_RUNNERS:
+        return ["Rscript", "--vanilla", str(runner_dir / R_RUNNERS[task["engine"]]), *common]
     if task["engine"] == "ixa":
         return [str(ixa_binary(task["scenario"])), *common]
     if task["engine"] == "epiworld":
@@ -312,15 +319,57 @@ def collect_results() -> int:
     write_daily_series(records)
     # The report reads scenario names and parameters from here, so R needs no
     # TOML parser.
+    config = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     scenarios = {}
     for scenario in discover_scenarios():
         scenario_config = load_scenario(scenario)
         scenarios[scenario] = scenario_config["scenario"] | {
             "parameters": scenario_parameters(scenario_config),
             "calibration": scenario_config.get("calibration", {}),
+            # The full design: replicates per engine at each population size.
+            "design": [
+                {"n": n, "replicates": replicates}
+                for n, _, _, replicates in size_plan(config, "full", [scenario])
+            ],
         }
     atomic_json(RESULTS_DIR / "scenarios.json", scenarios)
     return len(records)
+
+
+def size_plan(
+    config: dict[str, Any],
+    profile: str,
+    scenarios: list[str],
+    sizes: list[int] | None = None,
+    replicates: int | None = None,
+) -> list[tuple[int, int, list[str], int]]:
+    """(n, size index, scenarios, replicates) for each population size to run.
+
+    The sizes in [large] run only in the full profile (or when requested with
+    --sizes), for their own replicate count and only in the scenarios they
+    list. A size's index, which picks its network and seeds, is its position
+    in [study] then [large] population_sizes, however the size is requested.
+    """
+    study, large = config["study"], config["large"]
+    profile_config = study if profile == "full" else (study | config["smoke"])
+    large_sizes = [int(n) for n in large["population_sizes"]]
+    design_sizes = [int(n) for n in study["population_sizes"]] + large_sizes
+    requested = sizes or (
+        [int(n) for n in profile_config["population_sizes"]]
+        + (large_sizes if profile == "full" else [])
+    )
+    plan = []
+    for fallback_index, n in enumerate(requested):
+        size_index = design_sizes.index(n) if n in design_sizes else fallback_index
+        if n in large_sizes:
+            size_scenarios = [scenario for scenario in scenarios if scenario in large["scenarios"]]
+            count = replicates or int(large["replicates"])
+        else:
+            size_scenarios = list(scenarios)
+            count = replicates or int(profile_config["replicates"])
+        if size_scenarios:
+            plan.append((n, size_index, size_scenarios, count))
+    return plan
 
 
 def parse_args() -> argparse.Namespace:
@@ -370,14 +419,13 @@ def main() -> int:
                 + ", ".join(stray)
             )
     profile = study if args.profile == "full" else (study | config["smoke"])
-    population_sizes = args.sizes or list(profile["population_sizes"])
-    replicate_count = args.replicates or int(profile["replicates"])
-    if replicate_count < 1:
+    if args.replicates is not None and args.replicates < 1:
         raise SystemExit("--replicates must be at least one")
+    plan = size_plan(config, args.profile, scenarios, args.sizes, args.replicates)
     workers = resolve_workers(args.workers, resources)
 
-    if shutil.which("Rscript") is None and "epiworldR" in engines:
-        raise SystemExit("Rscript is required for the epiworldR runner")
+    if shutil.which("Rscript") is None and set(R_RUNNERS) & set(engines):
+        raise SystemExit("Rscript is required for the R runners")
     if "ixa" in engines:
         for scenario in scenarios:
             if not ixa_binary(scenario).is_file():
@@ -395,12 +443,7 @@ def main() -> int:
     tasks: list[dict[str, Any]] = []
     cached = 0
 
-    for fallback_index, n in enumerate(population_sizes):
-        size_index = (
-            list(study["population_sizes"]).index(n)
-            if n in study["population_sizes"]
-            else fallback_index
-        )
+    for n, size_index, size_scenarios, replicate_count in plan:
         edge_path, network_metadata = ensure_network(
             CACHE_DIR,
             int(n),
@@ -408,7 +451,8 @@ def main() -> int:
             float(network["rewire_probability"]),
             int(network["seed"]) + size_index,
         )
-        for scenario, scenario_config in scenario_configs.items():
+        for scenario in size_scenarios:
+            scenario_config = scenario_configs[scenario]
             code_hash = source_hash(scenario)
             calibration = scenario_config.get("calibration", {})
             parameters = scenario_parameters(scenario_config)
@@ -480,6 +524,8 @@ def main() -> int:
         "MKL_NUM_THREADS": "1", "VECLIB_MAXIMUM_THREADS": "1",
         "NUMEXPR_NUM_THREADS": "1", "NUMBA_NUM_THREADS": "1",
         "RCPP_PARALLEL_NUM_THREADS": "1", "PYTHONHASHSEED": "0",
+        # Starsim otherwise rebuilds matplotlib's font cache on import.
+        "STARSIM_INSTALL_FONTS": "0",
     })
     failures: list[tuple[str, str]] = []
     with ThreadPoolExecutor(max_workers=workers) as pool:

@@ -57,6 +57,16 @@ RUN mkdir -p ixa/src && echo 'fn main() {}' > ixa/src/main.rs \
         "${CARGO_TARGET_DIR}/release/deps/ixa_scenario_"* \
         "${CARGO_TARGET_DIR}/release/.fingerprint/ixa-scenario-"*
 
+# individual (mrc-ide), for its R runner. It is no longer on CRAN, so it is
+# installed from its GitHub release, pinned to the v0.1.19 tag's commit. It
+# links against testthat's C++ headers, so testthat is needed to build it.
+ARG INDIVIDUAL_SHA=50524f239e965d38b40f178290262760f252fc60
+RUN Rscript -e 'install.packages(c("R6", "Rcpp", "testthat"), Ncpus = parallel::detectCores())' \
+    && curl -fsSL "https://github.com/mrc-ide/individual/archive/${INDIVIDUAL_SHA}.tar.gz" -o /tmp/individual.tar.gz \
+    && R CMD INSTALL /tmp/individual.tar.gz \
+    && rm /tmp/individual.tar.gz \
+    && Rscript -e 'stopifnot(packageVersion("individual") == "0.1.19")'
+
 # The epiworld family last, as it changes most often. All three are pinned to
 # commits: epiworld's master and epiworldR's main after the counting-sort
 # network build (UofUEpiBio/epiworld#274), which still report version 0.17.0.

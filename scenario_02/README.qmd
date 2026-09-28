@@ -128,6 +128,12 @@ never infected are still counted as susceptible.
   has no transition matrix, but it dates each agent's transitions
   (`date_exposed`, `date_infectious`, `date_severe`, `date_recovered`, some of
   them in the future), and the runner counts those that fall within the run.
+- **Starsim**: adding its `ss.infection_log` analyzer makes the disease log
+  the source and target of every infection, in a NetworkX graph, as it
+  happens; daily new infections are a standard result. Like Covasim, Starsim
+  has no transition matrix but keeps each agent's transition times, some of
+  them scheduled in the future, and the runner counts those that fall within
+  the run.
 - **EoN**: `return_full_data=True` makes `fast_simple_contagion` record each
   node's status history and every transmission, and return them in a
   `Simulation_Investigation`. The runner builds the matrix from the node
@@ -142,10 +148,17 @@ never infected are still counted as susceptible.
   when it applies it. A subscription to ixa's `PropertyChangeEvent` for the
   disease status counts every transition. After the run, the runner derives
   incidence and the reproductive number from the plugin.
+- **individual**: no built-in record of events or sources. The infection
+  process picks each new case's source uniformly among its infectious
+  neighbours, as epiworld does, and records it with the day. A second
+  process compares the agents in each state at the start of consecutive days
+  to count the transitions. After the run, the runner derives the
+  reproductive number from the tree.
 
-The EoN, epydemic, Covasim, and ixa runners use epiworld's definition of the
-reproductive number. Each Python runner has its own copy of a small helper that
-computes it from the tree, and that helper counts as model code.
+The EoN, epydemic, Covasim, Starsim, ixa, and individual runners use
+epiworld's definition of the reproductive number. Each Python runner has its
+own copy of a small helper that computes it from the tree, and that helper
+counts as model code.
 
 ## Results
 
@@ -216,8 +229,8 @@ table_output_checks(bench)
 ```
 
 The daily series, as medians across replicates. The epiworld family seeds its
-initial cases as exposed, and so does Covasim, so their incidence starts a few
-days later than that of the engines that seed them as infected.
+initial cases as exposed, and so do Covasim and Starsim, so their incidence
+starts a few days later than that of the engines that seed them as infected.
 
 ```{r}
 #| label: daily-plot

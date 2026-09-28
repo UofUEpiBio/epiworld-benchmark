@@ -37,7 +37,8 @@ vaccine_efficacy = 0.80
 # mapping.
 #
 # epiworldR needs no factor: its uncalibrated median attack rates (0.382 and
-# 0.060) match EoN's exact continuous-time results.
+# 0.060) match EoN's exact continuous-time results. Starsim needs none either:
+# its uncalibrated medians were 0.387 and 0.060.
 covasim_transmission_multiplier_10000 = 0.715
 covasim_transmission_multiplier_100000 = 0.710
 #
@@ -47,3 +48,10 @@ covasim_transmission_multiplier_100000 = 0.710
 # infectious contact independently rather than with epiworld's roulette.
 ixa_transmission_multiplier_10000 = 0.983
 ixa_transmission_multiplier_100000 = 0.988
+#
+# individual's uncalibrated median attack rates (0.441 and 0.074) sat highest:
+# it seeds the initial cases as infectious, like ixa, and its infectious
+# period averages the full infectious_days, where the epiworld family's
+# competing hospitalization rate shortens it.
+individual_transmission_multiplier_10000 = 0.951
+individual_transmission_multiplier_100000 = 0.951

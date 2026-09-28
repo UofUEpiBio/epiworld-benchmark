@@ -12,6 +12,7 @@ from run import (
     ixa_binary,
     load_scenario,
     scenario_parameters,
+    size_plan,
     source_hash,
     source_paths,
     task_command,
@@ -64,7 +65,11 @@ def base_task(**overrides) -> dict:
 
 
 def test_task_command_passes_transmission_multiplier_to_each_runner() -> None:
-    for engine in ("covasim", "EoN", "epydemic", "epiworldR", "epiworldpy", "epiworld", "ixa"):
+    engines = (
+        "covasim", "starsim", "EoN", "epydemic", "epiworldR", "epiworldpy", "epiworld", "ixa",
+        "individual",
+    )
+    for engine in engines:
         command = task_command(base_task(engine=engine))
         index = command.index("--transmission-multiplier")
         assert command[index + 1] == "0.71"
@@ -102,14 +107,43 @@ def test_runners_accept_exactly_their_scenario_parameters() -> None:
             # The Python runners share their argument parser.
             "python": (runners / "runner_common.py").read_text(),
             "R": (runners / "epiworld.R").read_text(),
+            "individual": (runners / "individual.R").read_text(),
             "ixa": (runners / "ixa" / "src" / "main.rs").read_text(),
             "C++": (runners / "epiworld" / "main.cpp").read_text(),
         }
         for key in scenario_parameters(load_scenario(scenario)):
             assert f"--{key.replace('_', '-')}" in sources["python"], (scenario, key)
             assert f'"{key}"' in sources["R"], (scenario, key)
+            assert f'"{key}"' in sources["individual"], (scenario, key)
             assert f'"{key}"' in sources["C++"], (scenario, key)
             assert f"{key}:" in sources["ixa"], (scenario, key)
+
+
+def test_r_engines_run_their_own_script() -> None:
+    for engine, script in (("epiworldR", "epiworld.R"), ("individual", "individual.R")):
+        command = task_command(base_task(engine=engine))
+        assert command[:3] == ["Rscript", "--vanilla", str(ROOT / "scenario_00" / "runners" / script)]
+
+
+def test_large_sizes_run_fewer_replicates_in_their_scenarios_only() -> None:
+    config = {
+        "study": {"population_sizes": [10, 100], "replicates": 5},
+        "smoke": {"population_sizes": [3], "replicates": 1},
+        "large": {"population_sizes": [1000], "replicates": 2, "scenarios": ["scenario_00"]},
+    }
+    scenarios = ["scenario_00", "scenario_01"]
+    assert size_plan(config, "full", scenarios) == [
+        (10, 0, scenarios, 5),
+        (100, 1, scenarios, 5),
+        (1000, 2, ["scenario_00"], 2),
+    ]
+    assert size_plan(config, "smoke", scenarios) == [(3, 0, scenarios, 1)]
+    # A requested large size keeps its index (network and seeds) and design.
+    assert size_plan(config, "full", scenarios, sizes=[1000]) == [(1000, 2, ["scenario_00"], 2)]
+    assert size_plan(config, "full", scenarios, sizes=[1000], replicates=1) == [
+        (1000, 2, ["scenario_00"], 1)
+    ]
+    assert size_plan(config, "full", ["scenario_01"], sizes=[1000]) == []
 
 
 def test_scenarios_are_discovered() -> None:
@@ -124,6 +158,7 @@ def test_source_paths_cover_only_the_scenario_runners() -> None:
         assert f"{scenario}/runners/ixa/Cargo.toml" in paths
         assert f"{scenario}/runners/ixa/Cargo.lock" in paths
         assert f"{scenario}/runners/epiworld.R" in paths
+        assert f"{scenario}/runners/individual.R" in paths
         assert f"{scenario}/runners/epiworld/main.cpp" in paths
         assert "config.toml" in paths
         assert not any("/target/" in path or "/build/" in path for path in paths)

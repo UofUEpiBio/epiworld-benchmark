@@ -1,6 +1,6 @@
 # Network epidemic ABM speed benchmark
 
-This folder contains a reproducible, resumable benchmark of seven epidemic
+This folder contains a reproducible, resumable benchmark of nine epidemic
 simulation engines across several scenarios of increasing complexity:
 
 - **epiworld 0.17.0** (C++), the header-only library, using a custom
@@ -10,12 +10,18 @@ simulation engines across several scenarios of increasing complexity:
   model;
 - **Covasim 3.1.8** (Python), using its native disease progression and severe
   state as the hospitalization proxy;
+- **Starsim 3.6.1** (Python), Covasim's successor, using its native SEIR
+  disease with a hospital state added;
 - **EoN 1.92** (Python), using a continuous-time SEIRH model run with the
   event-driven `fast_simple_contagion` algorithm;
-- **epydemic 1.14.1** (Python), using a custom synchronous SEIRH model; and
+- **epydemic 1.14.1** (Python), using a custom synchronous SEIRH model;
 - **ixa 3.1.0** (Rust), using a custom synchronous SEIRH model driven by one
   plan per day on ixa's plan queue, its built-in contact network, and an
-  indexed disease-status property.
+  indexed disease-status property; and
+- **individual 0.1.19** (R, from mrc-ide), using a categorical state variable,
+  its built-in transition processes, and an infection process over the
+  network written for the benchmark. individual is not on CRAN, so the
+  container installs the v0.1.19 release from GitHub.
 
 The three epiworld packages are pinned to commits after the counting-sort network build
 ([UofUEpiBio/epiworld#274](https://github.com/UofUEpiBio/epiworld/issues/274)),
@@ -32,7 +38,8 @@ all-or-nothing vaccine. [scenarios.md](scenarios.md) explains how to add
 another.
 
 The full design runs 100 replicates for 100 days at 10,000 and 100,000 agents
-for every scenario.
+for every scenario, and 20 replicates at 1,000,000 agents for scenario 00
+(`[large]` in `config.toml`).
 Every engine receives the exact same cached Watts--Strogatz edge list at a
 given population size. The graph has mean degree 10 and rewiring probability
 0.05. Here “average density” is interpreted as the usual sparse-network
@@ -42,8 +49,9 @@ to grow linearly with population size.
 ## Quick start
 
 The benchmark is meant to run inside the container defined in
-`.devcontainer/`. It pins R 4.5.1 with epiworldR 0.17.0.0, epiworld's
-0.17.0 headers (both at the commits above), Python 3.12 via uv (with epiworldpy), Rust 1.98.0,
+`.devcontainer/`. It pins R 4.5.1 with epiworldR 0.17.0.0 and individual
+0.1.19, epiworld's 0.17.0 headers (both epiworld pins at the commits above),
+Python 3.12 via uv (with epiworldpy and Starsim), Rust 1.98.0,
 and Quarto 1.10.18, so every engine is built and timed on the same
 toolchain. The only host prerequisite is [podman](https://podman.io/) (or
 Docker: pass `CONTAINER=docker`). From this folder:
@@ -70,8 +78,8 @@ The same image is a development container: open the folder in VS Code (with
 `make setup`, `make check`, `make benchmark`, and so on work unchanged in its
 shell.
 
-Running natively is still possible given Python 3.12, uv, R with `epiworldR`
-and `jsonlite`, a Rust toolchain, a C++17 compiler with zlib, and Quarto
+Running natively is still possible given Python 3.12, uv, R with `epiworldR`,
+`individual`, and `jsonlite`, a Rust toolchain, a C++17 compiler with zlib, and Quarto
 (`make setup check smoke benchmark report`); `make setup` downloads epiworld's
 headers into `.deps/`. Cache records carry the host OS and architecture in
 their fingerprint, so native and container timings are never mixed.
@@ -82,8 +90,9 @@ figures in `scenario_NN/README_files/`), so the rendered results stay readable
 directly in a pull request.
 
 The smoke profile is deliberately tiny (1,000 agents, 10 days, one replicate)
-and tests all seven integrations in every scenario. `make benchmark` launches
-the full design: 1,000 runs per scenario. It is safe to stop and restart: each successful replicate is written
+and tests all nine integrations in every scenario. `make benchmark` launches
+the full design: 1,800 runs per scenario, plus 180 at 1,000,000 agents for
+scenario 00. It is safe to stop and restart: each successful replicate is written
 atomically beneath `cache/results/`, and a later invocation only schedules
 missing or stale results.
 
@@ -110,7 +119,8 @@ invalidates only that scenario. `results/results.csv` (with a `scenario`
 column), `results/scenarios.json`, and, for scenarios that report daily
 series, `results/daily.csv` (medians across replicates) are rebuilt from all
 successful cached records after each invocation. The report filters them to the full
-10,000/100,000-agent, 100-day design.
+10,000/100,000/1,000,000-agent, 100-day design; `results/scenarios.json` records
+each scenario's sizes and replicate counts.
 
 ## Resource policy
 
@@ -181,6 +191,8 @@ leakage and making failures independently resumable.
 
 
 Relevant upstream documentation: [Covasim](https://docs.covasim.org/),
+[Starsim](https://docs.starsim.org/),
+[individual](https://mrc-ide.github.io/individual/),
 [EoN generalized contagion](https://epidemicsonnetworks.readthedocs.io/en/latest/functions/EoN.fast_simple_contagion.html),
 [epydemic synchronous dynamics](https://pyepydemic.readthedocs.io/en/latest/synchronousdynamics.html),
 and [ixa](https://ixa.rs/).

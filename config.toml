@@ -4,9 +4,21 @@ replicates = 100
 population_sizes = [10000, 100000]
 base_seed = 8675309
 # "epiworld" is the C++ library itself; epiworldR and epiworldpy wrap it.
-engines = ["epiworldR", "epiworldpy", "epiworld", "covasim", "EoN", "epydemic", "ixa"]
+engines = [
+  "epiworldR", "epiworldpy", "epiworld", "covasim", "starsim", "EoN", "epydemic", "ixa",
+  "individual",
+]
 # Scenario-specific settings (disease, interventions, calibration) live in
 # scenario_*/scenario.toml; see scenarios.md.
+
+[large]
+# Population sizes too slow to run for every scenario at the full replicate
+# count. They run in the full profile only, with their own replicate count, and
+# only for these scenarios. The network and seeds for a size follow its
+# position in population_sizes above, then here.
+population_sizes = [1000000]
+replicates = 20
+scenarios = ["scenario_00"]
 
 [network]
 type = "watts_strogatz"

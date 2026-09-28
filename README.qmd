@@ -1,13 +1,13 @@
 ---
 title: "Network epidemic ABM speed benchmark"
-subtitle: "epiworld (C++, R, and Python), Covasim, EoN, epydemic, and ixa"
+subtitle: "epiworld (C++, R, and Python), Covasim, Starsim, EoN, epydemic, ixa, and individual"
 format:
   gfm:
     toc: true
 bibliography: references.bib
 ---
 
-This project compares how fast seven epidemic simulation engines run the same
+This project compares how fast nine epidemic simulation engines run the same
 agent-based model on the same contact network, and how much code each engine
 needs to express that model. Three of them are the epiworld family: the
 header-only C++ library
@@ -16,11 +16,14 @@ and its two wrappers,
 [epiworldR](https://uofuepibio.github.io/epiworldR/){target="_blank"} [@meyerEpiworldRFastAgentBased2023]
 for R and
 [epiworldpy](https://github.com/UofUEpiBio/epiworldpy){target="_blank"} [@vegayonEpiworldpy2026]
-for Python. The other four are
-[Covasim](https://covasim.org/){target="_blank"} [@kerrCovasimAgentbasedModel2021],
+for Python. The other six are
+[Covasim](https://covasim.org/){target="_blank"} [@kerrCovasimAgentbasedModel2021]
+and its successor
+[Starsim](https://starsim.org/){target="_blank"} [@kerrStarsim2025],
 [EoN](https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html){target="_blank"} [@millerEoNEpidemicsNetworks2019],
-[epydemic](https://github.com/simoninireland/epydemic){target="_blank"} [@dobson2022epydemic], and
-[ixa](https://ixa.rs/){target="_blank"} [@ixa2026].
+[epydemic](https://github.com/simoninireland/epydemic){target="_blank"} [@dobson2022epydemic],
+[ixa](https://ixa.rs/){target="_blank"} [@ixa2026], and the R package
+[individual](https://mrc-ide.github.io/individual/){target="_blank"} [@charlesIndividual2021].
 
 The benchmark is organized as **scenarios** of increasing complexity. Each
 scenario adds a feature to an earlier one, so together they show how run time
@@ -42,15 +45,17 @@ interpretation.
 
 Every scenario shares the following design, set in `config.toml`.
 
-- **Population and network.** 10,000 and 100,000 agents on a Watts–Strogatz
+- **Population and network.** 10,000 and 100,000 agents in every scenario,
+  and 1,000,000 agents in scenario 00, on a Watts–Strogatz
   contact network with mean degree 10 and rewiring probability 0.05. At each
   size, every engine reads the exact same cached edge list and treats it as an
   undirected graph. The network fixes mean degree rather than literal graph
   density, which keeps the edge count, run time, and memory from growing
   quadratically with population size.
 - **Replicates.** 100 independent replicates of 100 days per engine, size, and
-  scenario. Replicate seeds do not depend on the scenario, so two scenarios
-  can be compared replicate by replicate.
+  scenario, and 20 at 1,000,000 agents, where the slowest engines take close
+  to a minute per replicate. Replicate seeds do not depend on the scenario, so
+  two scenarios can be compared replicate by replicate.
 - **Transmission.** Each engine targets an early-outbreak $R_0 = 2$ through a
   shared analytic mapping from $R_0$, mean degree, and infectious period to a
   per-contact transmission rate. The engines have different transmission
@@ -58,13 +63,14 @@ Every scenario shares the following design, set in `config.toml`.
   model), so a scenario may set empirical, size-specific transmission
   multipliers that align the engines' realized attack rates. Each scenario's
   report states and justifies its factors.
-- **Engines.** The epiworld family, epydemic, and ixa use synchronous daily
-  transitions. The three epiworld runners build the same model on the same
+- **Engines.** The epiworld family, epydemic, ixa, and individual use
+  synchronous daily transitions. The three epiworld runners build the same model on the same
   C++ core; in scenario 00 they produce identical epidemics for each seed, so
   their run-time differences come from the language layer, not the model.
   EoN uses continuous-time hazards simulated exactly with its event-driven
   `fast_simple_contagion` algorithm. Covasim runs its native model, restricted
-  as far as its public API allows. The reports therefore measure
+  as far as its public API allows. Starsim runs its native SEIR model with a
+  hospital state added, stepping daily with sampled (exponential) durations. The reports therefore measure
   representative framework throughput under aligned network and disease
   targets, not bit-for-bit epidemiological equivalence.
 
