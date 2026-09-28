@@ -34,9 +34,8 @@ In short:
 ## How it was measured
 
 These are side measurements, not benchmark results. They time the
-scenarios' own runners, one process at a time (scenarios 00 to 02 run four at
-once in the benchmark), in the benchmark's container, on the benchmark's
-networks and seeds. [`analysis/profile.sh`](analysis/profile.sh) reproduces
+scenarios' own runners, one process at a time as the benchmark does, in the
+benchmark's container, on the benchmark's networks and seeds. [`analysis/profile.sh`](analysis/profile.sh) reproduces
 them:
 
 ```sh
@@ -61,10 +60,6 @@ It times each runner over nine seeds, and reports the median:
 It then runs the C++ runner once per size against a copy of epiworld's
 headers with a timer around each phase of `Model::run()`
 ([`analysis/instrument_epiworld.py`](analysis/instrument_epiworld.py)).
-
-Because only one process runs at a time, the absolute times are lower than
-in the benchmark's scenarios 00 to 02. The comparisons below are between runs
-measured the same way.
 
 ## Scenario 00, by size
 
@@ -207,35 +202,29 @@ same epidemics, so the same holds there.
 ## In each scenario's results
 
 Median simulation time per replicate in the benchmark itself, from each
-scenario's report (scenarios 00 to 02 run four replicates at a time,
-scenario 03 one):
+scenario's report. Like the side measurements, the benchmark runs one
+replicate at a time:
 
 | Scenario | Agents | epiworld (C++) | epiworldR | epiworldpy | ixa | ixa / epiworld (C++) |
 |:---|---:|---:|---:|---:|---:|---:|
-| [00](scenario_00/README.md) | 10,000 | 9.5 | 10.0 | 9.1 | 10.4 | 1.09 |
-| [00](scenario_00/README.md) | 100,000 | 20.0 | 22.0 | 21.2 | 53.5 | 2.67 |
-| [01](scenario_01/README.md) | 10,000 | 6.4 | 5.5 | 4.5 | 5.1 | 0.80 |
-| [01](scenario_01/README.md) | 100,000 | 15.1 | 12.0 | 11.8 | 57.4 | 3.80 |
-| [02](scenario_02/README.md) | 10,000 | 4.7 | 5.0 | 4.6 | 5.1 | 1.10 |
-| [02](scenario_02/README.md) | 100,000 | 14.6 | 12.0 | 12.4 | 40.5 | 2.78 |
+| [00](scenario_00/README.md) | 10,000 | 8.8 | 9.0 | 8.3 | 7.2 | 0.82 |
+| [00](scenario_00/README.md) | 100,000 | 15.2 | 15.0 | 14.0 | 38.5 | 2.53 |
+| [01](scenario_01/README.md) | 10,000 | 4.3 | 4.0 | 3.9 | 4.3 | 1.00 |
+| [01](scenario_01/README.md) | 100,000 | 11.7 | 9.0 | 9.5 | 33.3 | 2.85 |
+| [02](scenario_02/README.md) | 10,000 | 4.8 | 4.0 | 3.9 | 4.7 | 0.97 |
+| [02](scenario_02/README.md) | 100,000 | 10.6 | 9.0 | 8.7 | 32.7 | 3.10 |
 | [03](scenario_03/README.md) | 1,000,000 | 35.8 | 33.0 | 39.6 | 460.2 | 12.84 |
 
 Times are in milliseconds.
 
-- **At 10,000 agents the two are close.** ixa's rebuild is small here
-  (about 2.6 ms). In the benchmark the two are level; run one at a time, ixa
-  is about 20% faster (7.2 against 9.3 ms in scenario 00, 4.2 against 4.4 ms
-  in scenario 01). Four concurrent runs slow ixa more than epiworld at this
-  size, so the ordering here is within the effect of concurrency.
-- **Concurrency inflates both engines' times** by 35 to 90% at 100,000
-  agents, ixa's more than epiworld's (compare the side measurements above,
-  taken one at a time, with this table). The ratios below shift accordingly,
-  from 2.4 to 2.7 in scenario 00 and from 3.2 to 3.8 in scenario 01, but
-  not the ordering.
+- **At 10,000 agents ixa is a little faster.** Its rebuild is small here
+  (about 2.6 ms), and costs less than the parameter lookup and `reset()` cost
+  epiworld: ixa takes 0.82 times as long as the C++ runner in scenario 00.
+  With the vaccine the two are level.
 - **At 100,000 agents epiworld is about three times faster per replicate.**
   Rebuilding ixa's context now takes more time than the whole of epiworld's
-  `run()`. The ratio is largest in scenarios 01 and 02, where the vaccine
-  shrinks the outbreak but not the rebuild.
+  `run()`. The ratio is largest in scenarios 01 and 02 (2.8 and 3.1 against
+  2.5), where the vaccine shrinks the outbreak but not the rebuild.
 - **At 1,000,000 agents ([scenario 03](scenario_03/README.md)) the rebuild
   dominates.** ixa takes about 13 times as long as epiworld per replicate,
   although its `execute()` alone is still faster than epiworld's `run()`, of

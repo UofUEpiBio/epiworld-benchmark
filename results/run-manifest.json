@@ -11,7 +11,7 @@
     "ixa": "3.1.0",
     "starsim": "3.6.1"
   },
-  "executed": 5580,
+  "executed": 5400,
   "failures": 0,
   "platform": "Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39",
   "profile": "full",
@@ -30,9 +30,8 @@
   "requested_scenarios": [
     "scenario_00",
     "scenario_01",
-    "scenario_02",
-    "scenario_03"
+    "scenario_02"
   ],
   "result_rows_available": 5616,
-  "workers": 4
+  "workers": 1
 }

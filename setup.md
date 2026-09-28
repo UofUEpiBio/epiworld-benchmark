@@ -162,25 +162,29 @@ and beyond that the fastest engine degrades the most, because it is the one
 most sensitive to being scheduled onto an efficiency core. That biases the
 cross-engine comparison rather than just adding noise.
 
-Three workers is the recommended setting on this host: roughly 3x throughput at
-no measurable timing cost, staying within the five performance cores. Eight
-workers bought only about 1.7x the throughput of three while distorting the
-comparison. Use `N_THREADS=1` if you want timings collected under exactly the
-documented sequential policy.
+The container, which is how the published results are collected, shows no
+free level of concurrency. A 6-worker run of the full design in the podman VM
+(10 vCPUs) inflated median epiworldR `simulate_seconds` at 100,000 agents
+about 2.8x relative to a sequential run, and ixa only 1.2-1.4x. A later probe
+ran 24 replicates of each engine one, two, and four at a time, as the
+benchmark schedules them (replicates of one engine side by side), at 100,000
+agents. Median `simulate_seconds` relative to one at a time:
 
-The container behaves the same way, more strongly. A 6-worker run of the full
-design in the podman VM (10 vCPUs) inflated median epiworldR `simulate_seconds`
-at 100,000 agents about 2.8x relative to a sequential run of the same model,
-and ixa only 1.2-1.4x, roughly doubling the apparent ixa/epiworldR speed
-ratio. The published results for scenarios 00 to 02 are collected with four
-workers (`N_THREADS=4 make container-benchmark`), which keeps the full
-design to a manageable run time. Scenario 03 runs one replicate at a time
-whatever `N_THREADS` says (`workers = 1` in its `[design]` table): four
-concurrent million-agent processes competed for memory and doubled
-epydemic's time. Within a scenario, every record was collected at the same
-concurrency, so its engines are comparable with each other. Absolute times
-are not comparable with a sequential run, nor between scenario 03 and the
-others.
+| Engine | Scenario 00, 2 workers | Scenario 00, 4 workers | Scenario 01, 2 workers | Scenario 01, 4 workers |
+|:---|---:|---:|---:|---:|
+| epiworld (C++) | 1.07x | 1.26x | 1.14x | 1.20x |
+| epiworldR | 1.00x | 1.06x | 1.11x | 1.56x |
+| ixa | 1.30x | 1.08x | 1.25x | 1.22x |
+| Covasim | 1.00x | 1.07x | 1.06x | 1.11x |
+| epydemic | 1.05x | 1.12x | 1.15x | 1.69x |
+
+Even two workers slowed some engines by up to 30%, unevenly, and not always
+less than four did. At 1,000,000 agents, four concurrent processes also
+competed for memory and doubled epydemic's time. The published results are
+therefore collected one replicate at a time (the default; leave `N_THREADS`
+unset). Scenario 03 also sets `workers = 1` in its `[design]` table, so it
+runs sequentially whatever `N_THREADS` says. Concurrency remains useful for
+smoke runs and exploratory runs whose timings will not be published.
 
 Epidemiological outputs are unaffected by concurrency; only the timings are.
 

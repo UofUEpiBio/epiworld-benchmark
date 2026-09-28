@@ -276,8 +276,8 @@ Together with the other changes through 0.17.0, this made epiworldR about
 four times faster here than 0.15.1.0 was at 100,000 agents. Both engines'
 daily work now follows the outbreak rather than the population.
 
-Per replicate, the two take about the same time at 10,000 agents, and
-epiworld is faster at 100,000: ixa takes `r ratio("ixa", "epiworld", 1e4)` and
+Per replicate, ixa is a little faster at 10,000 agents, and epiworld is
+faster at 100,000: ixa takes `r ratio("ixa", "epiworld", 1e4)` and
 `r ratio("ixa", "epiworld", 1e5)` times as long as the C++ runner. ixa's `execute()` can run a context only
 once, so every replicate rebuilds the population, network, and index, which
 grows with the population. epiworld builds its model once and resets it at

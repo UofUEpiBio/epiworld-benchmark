@@ -141,8 +141,8 @@ complete model. The report leaves that shared plumbing out of the line counts.
    needs transmission multipliers for that size in `[calibration]`, and a
    size index: its network and seeds follow its position after the
    `[study]` sizes, in scenario order.
-   Use `N_THREADS=4`, as the published results do, so the new scenario's
-   timings match the others' concurrency. `make report`
+   Leave `N_THREADS` unset (one replicate at a time), as the published
+   results do, so the new scenario's timings match the others'. `make report`
    renders the overview and every `scenario_*/README.qmd`. Check that the
    prose in the new report still matches its numbers.
 

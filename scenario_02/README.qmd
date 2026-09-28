@@ -303,10 +303,15 @@ transmission log leave it at `r ratio("ixa", 100000)` times its scenario 01
 time, and epydemic's handlers at `r ratio("epydemic", 100000)` times, where the
 list appends are small next to its Python event loop.
 
-The exception is **EoN**, which takes `r ratio("EoN", 10000)` times as long at
+The main exception is **EoN**, which takes `r ratio("EoN", 10000)` times as long at
 10,000 agents and `r ratio("EoN", 100000)` times at 100,000. With
 `return_full_data=True`, `fast_simple_contagion` appends to every node's
-status history, in Python, at every event.
+status history, in Python, at every event. **individual** also pays, taking
+`r ratio("individual", 10000)` times as long at 10,000 agents and
+`r ratio("individual", 100000)` times at 100,000. It has no record of
+transitions, so its runner compares the agents in each state at the start of
+consecutive days, which means working through full-population bitsets
+every day.
 
 Extraction after the run is small for every engine but epiworldR: at 100,000
 agents it takes `r extract_ms("epiworldR", 100000)` ms there, against

@@ -47,10 +47,10 @@ cases <- function(data, n) {
 parameters, the network's mean degree and rewiring probability, the 100 seed
 cases, and every runner are those of scenario 00; only the population is ten
 times its largest size. Each engine runs 20 replicates rather than 100,
-because the slowest ones take several seconds per replicate here, and one
-replicate at a time rather than four ([see why](#why-this-scenario-runs-one-replicate-at-a-time)).
-The size, replicate count, and concurrency are set in the `[design]` table of
-[`scenario.toml`](scenario.toml).
+because the slowest ones take several seconds per replicate here. Like
+every scenario, it runs one replicate at a time; its `[design]` table in
+[`scenario.toml`](scenario.toml) sets the size and replicate count, and
+enforces the one-at-a-time rule ([see why](#why-this-scenario-enforces-one-replicate-at-a-time)).
 
 The question this scenario asks is how each engine's time grows with the
 population when the outbreak does not. With 100 seed cases and the same
@@ -168,11 +168,6 @@ if (bench$has_full) {
 
 ### How time grows with the population
 
-The growth factors compare this scenario, run one replicate at a time, with
-scenario 00 at 100,000 agents, run four at a time. Concurrency slows some
-engines more than others, so the factors are approximate, and slightly low
-for the engines it slows most.
-
 - **The epiworld runners** grow by `r growth("epiworld")` (C++),
   `r growth("epiworldR")` (epiworldR), and `r growth("epiworldpy")`
   (epiworldpy) times. Their daily work follows the outbreak, which barely
@@ -211,15 +206,15 @@ their NetworkX graphs, which they also reuse. ixa and Starsim have
 almost nothing to build once, because they rebuild their whole model for
 every replicate, and that time is in their simulation time above.
 
-### Why this scenario runs one replicate at a time
+### Why this scenario enforces one replicate at a time
 
-With four workers, the scheduler ran four replicates of the same engine at
-once, and at this size they competed for memory: epydemic took 57 to 67
-seconds per replicate, against about 17 run alone, and epiworldpy and EoN
-slowed too. The `workers = 1` setting in [`scenario.toml`](scenario.toml)
-makes this scenario run sequentially whatever `N_THREADS` says. Its times are
-therefore not directly comparable with the other scenarios', which run four
-replicates at a time.
+In a first run with four workers, the scheduler ran four replicates of the
+same engine at once, and at this size they competed for memory: epydemic
+took 57 to 67 seconds per replicate, against about 17 run alone, and
+epiworldpy and EoN slowed too. The `workers = 1` setting in
+[`scenario.toml`](scenario.toml) makes this scenario run sequentially whatever
+`N_THREADS` says. The other scenarios also run sequentially, by default, so
+the growth factors above compare times collected the same way.
 
 ## Recorded versions
 

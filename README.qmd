@@ -111,10 +111,10 @@ Each replicate runs in a fresh process and records:
 - `total_seconds`: setup plus simulation inside the runner process.
 
 Interpreter and package startup and network generation are excluded.
-Published results are collected four replicates at a time (`N_THREADS=4`),
-with native math libraries pinned to one thread, inside the container defined
-in `.devcontainer/`. Every run uses the same concurrency, but concurrent
-replicates distort timings somewhat unevenly across engines; see
+Published results are collected one replicate at a time, with native math
+libraries pinned to one thread, inside the container defined in
+`.devcontainer/`. Running replicates concurrently, even two at a time,
+slowed some engines by up to 30% and others not at all; see
 [setup.md](setup.md#resource-policy).
 
 ### Measuring implementation effort

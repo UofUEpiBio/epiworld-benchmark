@@ -14,8 +14,8 @@
   - [How time grows with the
     population](#how-time-grows-with-the-population)
   - [Building once](#building-once)
-  - [Why this scenario runs one replicate at a
-    time](#why-this-scenario-runs-one-replicate-at-a-time)
+  - [Why this scenario enforces one replicate at a
+    time](#why-this-scenario-enforces-one-replicate-at-a-time)
 - [Recorded versions](#recorded-versions)
 
 [Back to the project overview](../README.md) · [Scenario 00
@@ -26,10 +26,10 @@ the parameters, the network’s mean degree and rewiring probability, the
 100 seed cases, and every runner are those of scenario 00; only the
 population is ten times its largest size. Each engine runs 20 replicates
 rather than 100, because the slowest ones take several seconds per
-replicate here, and one replicate at a time rather than four ([see
-why](#why-this-scenario-runs-one-replicate-at-a-time)). The size,
-replicate count, and concurrency are set in the `[design]` table of
-[`scenario.toml`](scenario.toml).
+replicate here. Like every scenario, it runs one replicate at a time;
+its `[design]` table in [`scenario.toml`](scenario.toml) sets the size
+and replicate count, and enforces the one-at-a-time rule ([see
+why](#why-this-scenario-enforces-one-replicate-at-a-time)).
 
 The question this scenario asks is how each engine’s time grows with the
 population when the outbreak does not. With 100 seed cases and the same
@@ -139,15 +139,15 @@ not part of the simulation time (see [Building once](#building-once)).
 
 | Engine | 10,000 agents (s) | 100,000 agents (s) | 1,000,000 agents (s) | Time at 1,000,000 / at 100,000 | Median build at 1,000,000 (s) |
 |:---|---:|---:|---:|---:|---:|
-| epiworldR | 0.010 | 0.022 | 0.033 | 1.5 | 0.194 |
-| epiworld | 0.010 | 0.020 | 0.036 | 1.8 | 0.144 |
-| epiworldpy | 0.009 | 0.021 | 0.040 | 1.9 | 0.482 |
-| individual | 0.044 | 0.081 | 0.316 | 3.9 | 0.320 |
-| ixa | 0.010 | 0.054 | 0.460 | 8.6 | 0.003 |
-| EoN | 0.089 | 0.411 | 2.606 | 6.3 | 4.290 |
-| covasim | 0.074 | 0.384 | 3.544 | 9.2 | 0.082 |
-| starsim | 0.196 | 1.244 | 11.884 | 9.6 | 0.002 |
-| epydemic | 0.845 | 2.441 | 16.569 | 6.8 | 4.339 |
+| epiworldR | 0.009 | 0.015 | 0.033 | 2.2 | 0.194 |
+| epiworld | 0.009 | 0.015 | 0.036 | 2.4 | 0.144 |
+| epiworldpy | 0.008 | 0.014 | 0.040 | 2.8 | 0.482 |
+| individual | 0.026 | 0.060 | 0.316 | 5.3 | 0.320 |
+| ixa | 0.007 | 0.038 | 0.460 | 12.0 | 0.003 |
+| EoN | 0.079 | 0.306 | 2.606 | 8.5 | 4.290 |
+| covasim | 0.065 | 0.329 | 3.544 | 10.8 | 0.082 |
+| starsim | 0.174 | 0.938 | 11.884 | 12.7 | 0.002 |
+| epydemic | 0.509 | 1.854 | 16.569 | 8.9 | 4.339 |
 
 ### Epidemiological sanity checks
 
@@ -169,27 +169,22 @@ not part of the simulation time (see [Building once](#building-once)).
 
 ### How time grows with the population
 
-The growth factors compare this scenario, run one replicate at a time,
-with scenario 00 at 100,000 agents, run four at a time. Concurrency
-slows some engines more than others, so the factors are approximate, and
-slightly low for the engines it slows most.
-
-- **The epiworld runners** grow by 1.8 (C++), 1.5 (epiworldR), and 1.9
+- **The epiworld runners** grow by 2.4 (C++), 2.2 (epiworldR), and 2.8
   (epiworldpy) times. Their daily work follows the outbreak, which
   barely grew. What does grow is `reset()` at the start of `run()`,
   which re-initializes every agent; at this size it is nearly half of
   the run.
-- **individual** grows by 3.9 times. Its infection process visits the
+- **individual** grows by 5.3 times. Its infection process visits the
   infectious agents’ neighbours, but it also tabulates contacts and
   intersects bitsets over the whole population every day.
-- **ixa** grows by 8.6 times. Its `execute()` follows the outbreak, but
+- **ixa** grows by 12.0 times. Its `execute()` follows the outbreak, but
   every replicate first rebuilds the context (a million entities, five
   million edges, and the index), which grows with the population and is
   now most of its time.
-- **EoN** (6.3 times) and **epydemic** (6.8) follow the outbreak in
+- **EoN** (8.5 times) and **epydemic** (8.9) follow the outbreak in
   their event handling, but set up state for every node of the network,
   in Python, at the start of each run.
-- **Covasim** (9.2 times) and **Starsim** (9.6) update every agent’s
+- **Covasim** (10.8 times) and **Starsim** (12.7) update every agent’s
   arrays every day, and Starsim also draws transmission on every edge,
   so they grow about as fast as the population.
 
@@ -209,16 +204,16 @@ and Starsim have almost nothing to build once, because they rebuild
 their whole model for every replicate, and that time is in their
 simulation time above.
 
-### Why this scenario runs one replicate at a time
+### Why this scenario enforces one replicate at a time
 
-With four workers, the scheduler ran four replicates of the same engine
-at once, and at this size they competed for memory: epydemic took 57 to
-67 seconds per replicate, against about 17 run alone, and epiworldpy and
-EoN slowed too. The `workers = 1` setting in
+In a first run with four workers, the scheduler ran four replicates of
+the same engine at once, and at this size they competed for memory:
+epydemic took 57 to 67 seconds per replicate, against about 17 run
+alone, and epiworldpy and EoN slowed too. The `workers = 1` setting in
 [`scenario.toml`](scenario.toml) makes this scenario run sequentially
-whatever `N_THREADS` says. Its times are therefore not directly
-comparable with the other scenarios’, which run four replicates at a
-time.
+whatever `N_THREADS` says. The other scenarios also run sequentially, by
+default, so the growth factors above compare times collected the same
+way.
 
 ## Recorded versions
 
