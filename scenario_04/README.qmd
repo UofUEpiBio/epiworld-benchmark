@@ -51,17 +51,29 @@ to vary population size independently of the source data.
 GeoPops' four contact-layer adjacency matrices (household, workplace, school,
 and group-quarters, each a checksum-verified `MatrixMarket` file pinned to a
 commit), keeps the induced subgraph on the first 200,000 rows of each, and
-unions the four layers into one undirected, unweighted graph: 376,526 edges,
-mean degree 3.77. Layer identity, edge weights, demographic attributes, and
-contacts touching excluded rows are discarded; only which pairs of the
-200,000 people are ever in contact survives. [`scenario.toml`](scenario.toml)
-records the exact commit and per-layer checksums.
+unions the four layers into one undirected, unweighted graph. Of those
+200,000 people, 34,135 (17%) have no contacts among the others; they could
+never be infected, so they are dropped and the remaining 165,865 renumbered
+in row order. The result has 376,526 edges and mean degree 4.54. Layer
+identity, edge weights, demographic attributes, and contacts touching
+excluded rows are discarded; only which pairs of people are ever in contact
+survives. [`scenario.toml`](scenario.toml) records the exact commit and
+per-layer checksums.
+
+The graph is still fragmented and heterogeneous. It splits into 17,128
+components, and the largest holds 127,291 agents (77%), which caps the
+attack rate. Degrees range from 1 to 25 (median 3). Because households form
+cliques and degrees vary, the shared analytic mapping, which divides $R_0$
+by the mean degree minus one, does not give an $R_0$ of 2 here: the mean
+excess degree is 6.9, not 3.5. The mapping is the same for every engine, so
+the comparison stays aligned, but the outbreaks are larger than the nominal
+$R_0$ suggests.
 
 | Parameter (`scenario.toml`) | Value | Meaning |
 |:-----------------------------|------:|:--------|
-| Population                   | 200,000 | GeoPops rows kept |
+| Population                   | 165,865 | people with contacts among the first 200,000 GeoPops rows |
 | Edges                        | 376,526 | after union and dedup |
-| Mean degree                  | 3.77 | observed, not fixed |
+| Mean degree                  | 4.54 | observed, not fixed |
 | Replicates                   | 20 | fewer than scenario 00; the slowest engines take seconds per replicate here |
 
 Like scenario 03, this scenario runs one replicate at a time
@@ -87,21 +99,32 @@ Two more are added:
   a compiled, DSL-driven simulator with no edge-list network primitive
   comparable to the other engines' graphs. The runner
   ([`run_FRED.py`](runners/run_FRED.py)) builds a synthetic population of
-  200,000 single-person households (so FRED's own household mixing adds no
+  165,865 single-person households (so FRED's own household mixing adds no
   contacts beyond the network) and loads the benchmark's edges verbatim as
   `Contact.add_edge` properties on FRED's `Network` group type, with
-  transmission restricted to that network. Its contact model differs from
-  the other engines' constant per-edge hazard: each infectious agent draws a
-  number of successful contacts per day proportional to its degree, so the
-  runner derives a per-day, per-edge probability that reproduces the same
-  target $R_0$ over the mean infectious period
-  ([`daily_edge_probability`](runners/run_FRED.py)).
+  transmission restricted to that network. Each day, an infectious agent
+  draws about `transmissibility` × degree contacts without replacement among
+  its neighbours, so every neighbour is reached with that daily probability,
+  and the runner uses the same per-day mapping as the synchronous engines.
+  Latent, infectious, and hospital stays are whole days with the configured
+  means. The build patches an upstream off-by-one in `Date::setup_dates()`
+  that corrupts the heap at this population size (see the
+  [Dockerfile](../.devcontainer/Dockerfile)). FRED runs one replicate per
+  process and must reread and rebuild everything each time. Its timings are
+  split with FRED's own lap timers: parsing the generated model file (which
+  holds every edge) and the population files counts as reading, like the
+  other runners' edge-file parsing; building places, the population, and
+  the network, plus the days themselves, count as simulation, as ixa's and
+  Starsim's per-replicate builds do.
 - **Agents.jl** ([JuliaDynamics/Agents.jl](https://github.com/JuliaDynamics/Agents.jl){target="_blank"}):
   a `StandardABM` with a per-agent status and a per-day `model_step!` that
   scans each infectious agent's adjacency list, matching the synchronous
   daily semantics of epiworldR, epydemic, and individual. The adjacency list
   and transmission math are written for this benchmark, since Agents.jl has
-  no built-in epidemic model.
+  no built-in epidemic model. Initial cases start infectious, as in ixa and
+  individual. Before any timer starts, the runner steps a throwaway
+  two-agent model so that Julia compiles its methods; otherwise about 0.1
+  seconds of compilation lands in the first simulation.
 
 **MEmilio is deliberately excluded.** Its ABM has no edge-list network
 primitive either — agents interact only through shared Locations (household,

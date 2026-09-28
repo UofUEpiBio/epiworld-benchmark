@@ -1,9 +1,10 @@
 [scenario]
 name = "SEIRH on a collapsed GeoPops network"
-description = "SEIRH baseline on a 200,000-person graph formed by collapsing GeoPops household, school, workplace, and group-quarters layers."
+description = "SEIRH baseline on the 165,865 people with contacts among the first 200,000 GeoPops rows, with household, school, workplace, and group-quarters layers collapsed into one graph."
 
 [design]
-population_sizes = [200000]
+# The people left once the 34,135 without contacts are removed.
+population_sizes = [165865]
 replicates = 20
 workers = 1
 engines = [
@@ -25,9 +26,12 @@ source_commit = "fe2c288cdda0410a49b101c54d882bdcb5057397"
 source_population = "Spartanburg County, South Carolina synthetic population"
 layers = ["hh", "wp", "sch", "gq"]
 # GeoPops' matrix row order is deterministic and geographically grouped. The
-# benchmark retains rows 0..199999 and takes the induced subgraph, then unions
-# the four layers, removes duplicate/self edges, and renumbers nothing.
-selection = "first_n_matrix_rows_induced_subgraph"
+# benchmark keeps rows 0..199999, takes each layer's induced subgraph, unions
+# the four layers, and removes duplicate/self edges. The 34,135 people left
+# with no contacts are then dropped and the rest renumbered in row order, so
+# the population is the 165,865 people who can take part in an outbreak.
+rows = 200000
+selection = "first_rows_induced_subgraph_without_isolates"
 collapse = "undirected_unweighted_union"
 
 [network.source_sha256]

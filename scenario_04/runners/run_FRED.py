@@ -14,29 +14,26 @@ from __future__ import annotations
 import argparse
 import csv
 import os
+import re
 from pathlib import Path
 import subprocess
 import tempfile
-from time import perf_counter
 
 import numpy as np
 
 from runner_common import main
 
 
-def daily_edge_probability(target_r0: float, degree: float, infectious_days: float) -> float:
-    """Per-day, per-edge transmission probability matching R0 over infectious_days.
+def discrete_transmission_probability(target_r0: float, degree: float, recovery: float) -> float:
+    """Per-day edge probability matching R0 via geometric competing risks.
 
-    FRED's network transmission draws, once a day, an expected `contact_rate *
-    degree` successful contacts per infectious neighbour (see
-    Network_Transmission::transmission); `contact_rate_for_BENCH` below is set
-    to exactly cancel the daily time block, so the condition's
-    `transmissibility` property is this function's per-day probability
-    directly. Over infectious_days days that compounds to the same per-edge
-    lifetime transmission probability the other engines target.
+    The same mapping as the synchronous Python runners. It applies because
+    FRED here reaches each neighbour with probability `transmissibility` per
+    day (see write_model) and the infectious period is geometric on 1, 2, ...
+    days, as in those engines.
     """
-    lifetime_probability = min(0.999, target_r0 / max(1.0, degree - 1.0))
-    return 1.0 - (1.0 - lifetime_probability) ** (1.0 / infectious_days)
+    transmissibility = min(0.999, target_r0 / max(1.0, degree - 1.0))
+    return transmissibility * recovery / (1.0 - transmissibility * (1.0 - recovery))
 
 
 def write_population(pop_dir: Path, n: int) -> None:
@@ -81,12 +78,19 @@ def write_model(
         # hour of every day keeps the network open continuously.
         "Contact.starts_at_hour_0_on_weekdays = 24",
         "Contact.starts_at_hour_0_on_weekends = 24",
-        # See daily_edge_probability: this rate cancels the 24-hour block so
-        # the condition's transmissibility below is a direct daily probability.
+        # Network transmission runs once a day with a 24-hour time block and
+        # draws about contact_rate * 24 * transmissibility * degree contacts
+        # without replacement (Network_Transmission::transmission), so this
+        # rate makes transmissibility a per-day, per-neighbour probability.
         "Contact.contact_rate_for_BENCH = 0.0416666666666667",
         "Contact.deterministic_contacts_for_BENCH = 1",
     ]
     lines.extend(f"Contact.add_edge = {a} {b} 1.0" for a, b in zip(source.tolist(), target.tolist()))
+    # FRED's geometric(x) is std::geometric_distribution(1/x): failures
+    # before the first success, so it starts at 0 and has mean x - 1. One is
+    # added so that every stay lasts whole days with mean x, like the
+    # synchronous daily engines. Waits are in hours, and every transition
+    # lands at hour 0, before that day's transmission.
     lines.append(f"""
 condition BENCH {{
   states = S E I H R Import
@@ -104,18 +108,18 @@ state BENCH.S {{
 }}
 state BENCH.E {{
   set_sus(BENCH,0)
-  wait(24*geometric({args.latent_days!r}))
+  wait(24*(1+geometric({args.latent_days!r})))
   next(I)
 }}
 state BENCH.I {{
   set_trans(BENCH,1)
-  wait(24*geometric({args.infectious_days!r}))
+  wait(24*(1+geometric({args.infectious_days!r})))
   next(H) with prob({args.hospitalization_probability!r})
   default(R)
 }}
 state BENCH.H {{
   set_trans(BENCH,0)
-  wait(24*geometric({args.hospital_days!r}))
+  wait(24*(1+geometric({args.hospital_days!r})))
   next(R)
 }}
 state BENCH.R {{
@@ -139,6 +143,27 @@ state BENCH.Import {{
     return model_path
 
 
+def fred_timings(stdout: str) -> tuple[float, float]:
+    """Split one FRED run into reading its input files and everything after.
+
+    FRED prints a lap time for each setup step, measured from process start.
+    Up to and including "reading populations", it is parsing the model file
+    (with every edge) and the population files: the counterpart of the other
+    runners reading the edge list, which is not simulation time. The rest of
+    initialization builds the places, population, and network, and FRED must
+    redo it for every replicate, so, as for ixa and Starsim, it counts as
+    simulation time along with the days themselves.
+    """
+    laps = re.findall(r"^(.+?) took ([0-9.]+) seconds$", stdout, flags=re.MULTILINE)
+    labels = [label for label, _ in laps]
+    if "reading populations" not in labels:
+        raise RuntimeError("FRED output has no 'reading populations' lap time")
+    read = sum(float(seconds) for _, seconds in laps[: labels.index("reading populations") + 1])
+    initialization = float(re.search(r"^FRED initialization took ([0-9.]+) seconds$", stdout, re.MULTILINE)[1])
+    days = float(re.search(r"Excluding initialization, \d+ days took ([0-9.]+) seconds", stdout)[1])
+    return read, initialization - read + days
+
+
 def run_fred(args: argparse.Namespace, source: np.ndarray, target: np.ndarray) -> dict:
     fred_home = os.environ.get("FRED_HOME")
     if not fred_home:
@@ -151,21 +176,20 @@ def run_fred(args: argparse.Namespace, source: np.ndarray, target: np.ndarray) -
         locations_file = work_dir / "locations.txt"
         locations_file.write_text("00000\n")
         write_population(pop_dir, args.n)
-        edge_probability = daily_edge_probability(
-            args.target_r0, args.mean_degree, args.infectious_days
+        edge_probability = discrete_transmission_probability(
+            args.target_r0, args.mean_degree, 1.0 / args.infectious_days
         ) * args.transmission_multiplier
         model_path = write_model(work_dir, pop_dir, locations_file, args, source, target, edge_probability)
 
         out_dir = work_dir / "out"
-        started = perf_counter()
         completed = subprocess.run(
             [str(fred_binary), "-p", str(model_path), "-r", str(args.replicate), "-d", str(out_dir)],
             env=os.environ | {"FRED_HOME": fred_home},
             text=True, capture_output=True,
         )
-        elapsed = perf_counter() - started
         if completed.returncode != 0:
             raise RuntimeError(f"FRED exited {completed.returncode}: {completed.stderr[-4000:]}")
+        read_seconds, simulate_seconds = fred_timings(completed.stdout)
 
         report = out_dir / f"RUN{args.replicate}" / "BENCH.csv"
         peak_hospitalized = 0
@@ -178,7 +202,8 @@ def run_fred(args: argparse.Namespace, source: np.ndarray, target: np.ndarray) -
             raise RuntimeError("FRED produced an empty BENCH.csv")
 
     return {
-        "simulate_seconds": elapsed,
+        "engine_read_seconds": read_seconds,
+        "simulate_seconds": simulate_seconds,
         "final_susceptible": int(final["BENCH.S"]),
         "final_exposed": int(final["BENCH.E"]),
         "final_infected": int(final["BENCH.I"]),

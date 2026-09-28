@@ -146,13 +146,16 @@ def ensure_geopops_network(cache_dir: Path, n: int, config: dict) -> tuple[Path,
 
     GeoPops exports separate upper-triangular MatrixMarket adjacency matrices
     for household, workplace, school, and group-quarters contacts. This keeps
-    the first `n` matrix rows, takes each layer's induced subgraph, unions the
-    edges, removes duplicates and self edges, and writes the common edge-list
-    format used by every benchmark runner. Demographics, layer identity,
-    weights, and all contacts to excluded rows are deliberately discarded.
+    the first `rows` matrix rows, takes each layer's induced subgraph, unions
+    the edges, and removes duplicates and self edges. It then drops the people
+    left with no contacts, renumbers the rest 0, 1, ... in row order, and keeps
+    the first `n` of them; at the full size, n is exactly the number left, so
+    nothing more is dropped. Demographics, layer identity, weights, and all
+    contacts to excluded rows are deliberately discarded.
     """
-    if config.get("selection") != "first_n_matrix_rows_induced_subgraph":
+    if config.get("selection") != "first_rows_induced_subgraph_without_isolates":
         raise ValueError("unsupported GeoPops population selection")
+    rows = int(config["rows"])
     if config.get("collapse") != "undirected_unweighted_union":
         raise ValueError("unsupported GeoPops collapse rule")
     commit = str(config["source_commit"])
@@ -172,13 +175,14 @@ def ensure_geopops_network(cache_dir: Path, n: int, config: dict) -> tuple[Path,
         sources[layer] = source
 
     network_dir = cache_dir / "networks"
-    stem = f"geopops-collapsed_spartanburg_n{n}_{commit[:12]}"
+    stem = f"geopops-collapsed_spartanburg_rows{rows}_n{n}_{commit[:12]}"
     edge_path = network_dir / f"{stem}.tsv.gz"
     metadata_path = network_dir / f"{stem}.json"
     expected = {
-        "format_version": 1,
+        "format_version": 2,
         "network_type": "geopops_collapsed",
         "n": n,
+        "rows": rows,
         "source_repository": config["source_repository"],
         "source_commit": commit,
         "source_population": config["source_population"],
@@ -189,6 +193,7 @@ def ensure_geopops_network(cache_dir: Path, n: int, config: dict) -> tuple[Path,
         "discarded_features": [
             "contact-layer identity", "demographic attributes", "edge weights",
             "contacts incident to matrix rows outside the selected population",
+            "people with no contacts among the selected rows",
         ],
     }
     if edge_path.exists() and metadata_path.exists():
@@ -200,12 +205,24 @@ def ensure_geopops_network(cache_dir: Path, n: int, config: dict) -> tuple[Path,
         except (OSError, ValueError):
             pass
 
-    edges: set[tuple[int, int]] = set()
+    row_edges: set[tuple[int, int]] = set()
     layer_edges: dict[str, int] = {}
     for layer, source in sources.items():
-        selected = set(_matrix_market_edges(source, n))
+        selected = set(_matrix_market_edges(source, rows))
         layer_edges[layer] = len(selected)
-        edges.update(selected)
+        row_edges.update(selected)
+
+    connected = sorted({person for edge in row_edges for person in edge})
+    if n > len(connected):
+        raise ValueError(
+            f"the first {rows} GeoPops rows have {len(connected)} people with contacts; "
+            f"cannot select {n}"
+        )
+    renumber = {person: index for index, person in enumerate(connected[:n])}
+    edges = {
+        (renumber[source], renumber[target]) for source, target in row_edges
+        if source in renumber and target in renumber
+    }
 
     network_dir.mkdir(parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(dir=network_dir, prefix=f".{edge_path.name}.")
@@ -225,8 +242,10 @@ def ensure_geopops_network(cache_dir: Path, n: int, config: dict) -> tuple[Path,
     edge_count = len(edges)
     metadata = expected | {
         "edges": edge_count,
+        "people_with_contacts_in_rows": len(connected),
+        "isolates_removed": rows - len(connected),
         "layer_edges_before_union": layer_edges,
-        "duplicates_removed_by_union": sum(layer_edges.values()) - edge_count,
+        "duplicates_removed_by_union": sum(layer_edges.values()) - len(row_edges),
         "mean_degree_observed": 2.0 * edge_count / n,
         "density": 2.0 * edge_count / (n * (n - 1)),
         "sha256": sha256_file(edge_path),

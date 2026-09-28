@@ -88,6 +88,18 @@ function model_step!(model)
     p.peak_hospitalized = max(p.peak_hospitalized, hospitalized)
 end
 
+# Compile the model's methods on a throwaway two-agent model, so that JIT
+# compilation, like the Python runners' imports, stays outside every timer.
+let warmup = StandardABM(
+        Person; model_step!, rng = Xoshiro(0), container = Vector,
+        properties = Parameters([[2], [1]], 0.5, 0.5, 0.5, 0.5, 0.5, 0),
+    )
+    add_agent!(warmup, I)
+    add_agent!(warmup, S)
+    randperm(abmrng(warmup), 2)
+    step!(warmup, 2)
+end
+
 n = integer("n")
 total_started = time_ns()
 adjacency, edge_count = read_edges(arg["network"], n)

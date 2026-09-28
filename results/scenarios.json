@@ -19,7 +19,24 @@
         "replicates": 100
       }
     ],
+    "engines": [
+      "epiworldR",
+      "epiworldpy",
+      "epiworld",
+      "covasim",
+      "starsim",
+      "EoN",
+      "epydemic",
+      "ixa",
+      "individual"
+    ],
     "name": "SEIRH baseline",
+    "network": {
+      "mean_degree": 10,
+      "rewire_probability": 0.05,
+      "seed": 20260907,
+      "type": "watts_strogatz"
+    },
     "parameters": {
       "hospital_days": 7.0,
       "hospitalization_probability": 0.05,
@@ -50,7 +67,24 @@
         "replicates": 100
       }
     ],
+    "engines": [
+      "epiworldR",
+      "epiworldpy",
+      "epiworld",
+      "covasim",
+      "starsim",
+      "EoN",
+      "epydemic",
+      "ixa",
+      "individual"
+    ],
     "name": "SEIRH + vaccination",
+    "network": {
+      "mean_degree": 10,
+      "rewire_probability": 0.05,
+      "seed": 20260907,
+      "type": "watts_strogatz"
+    },
     "parameters": {
       "hospital_days": 7.0,
       "hospitalization_probability": 0.05,
@@ -83,7 +117,24 @@
         "replicates": 100
       }
     ],
+    "engines": [
+      "epiworldR",
+      "epiworldpy",
+      "epiworld",
+      "covasim",
+      "starsim",
+      "EoN",
+      "epydemic",
+      "ixa",
+      "individual"
+    ],
     "name": "SEIRH + vaccination + outputs",
+    "network": {
+      "mean_degree": 10,
+      "rewire_probability": 0.05,
+      "seed": 20260907,
+      "type": "watts_strogatz"
+    },
     "parameters": {
       "hospital_days": 7.0,
       "hospitalization_probability": 0.05,
@@ -109,7 +160,78 @@
         "replicates": 20
       }
     ],
+    "engines": [
+      "epiworldR",
+      "epiworldpy",
+      "epiworld",
+      "covasim",
+      "starsim",
+      "EoN",
+      "epydemic",
+      "ixa",
+      "individual"
+    ],
     "name": "SEIRH baseline at 1,000,000 agents",
+    "network": {
+      "mean_degree": 10,
+      "rewire_probability": 0.05,
+      "seed": 20260907,
+      "type": "watts_strogatz"
+    },
+    "parameters": {
+      "hospital_days": 7.0,
+      "hospitalization_probability": 0.05,
+      "infectious_days": 7.0,
+      "initial_infected": 100,
+      "latent_days": 4.0,
+      "target_r0": 2.0
+    },
+    "workers": 1
+  },
+  "scenario_04": {
+    "calibration": {},
+    "description": "SEIRH baseline on the 165,865 people with contacts among the first 200,000 GeoPops rows, with household, school, workplace, and group-quarters layers collapsed into one graph.",
+    "design": [
+      {
+        "n": 165865,
+        "replicates": 20
+      }
+    ],
+    "engines": [
+      "epiworldR",
+      "epiworldpy",
+      "epiworld",
+      "covasim",
+      "starsim",
+      "EoN",
+      "epydemic",
+      "ixa",
+      "individual",
+      "FRED",
+      "Agents.jl"
+    ],
+    "name": "SEIRH on a collapsed GeoPops network",
+    "network": {
+      "collapse": "undirected_unweighted_union",
+      "layers": [
+        "hh",
+        "wp",
+        "sch",
+        "gq"
+      ],
+      "rows": 200000,
+      "selection": "first_rows_induced_subgraph_without_isolates",
+      "source_commit": "fe2c288cdda0410a49b101c54d882bdcb5057397",
+      "source_population": "Spartanburg County, South Carolina synthetic population",
+      "source_repository": "https://github.com/GeoPopsHub/sc_spartanburg_measles",
+      "source_sha256": {
+        "gq": "d000a69f2da620e95fcf727a48979bb7b7cfba5b4cffe2cc34267f0c29374cc5",
+        "hh": "b2363301e92174bde2080d9c6041a7c010a66c7af1d9bf03f5ae3f370552c330",
+        "sch": "b2242e1a2ffe991f1bd2ae02446216eeb15ade30a5e4d3f3e65f1bdd910a7a8b",
+        "wp": "b56d1be08a5c0d3160c6a191def96ba7978ee9132f7e009d0a168c69c0f8235a"
+      },
+      "type": "geopops_collapsed"
+    },
     "parameters": {
       "hospital_days": 7.0,
       "hospitalization_probability": 0.05,

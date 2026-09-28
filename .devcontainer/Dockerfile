@@ -115,12 +115,16 @@ RUN mkdir -p /opt/epiworld \
 # data/config.fred at startup for its place-type defaults, even though this
 # runner supplies its own synthetic population and never touches FRED's
 # bundled census data (data/country, the rest of data/'s size); that alone is
-# dropped.
+# dropped. Date::setup_dates() writes one entry past its date array on every
+# run; glibc aborts on the corrupted heap at 200,000 agents, so the array gets
+# one more entry. Keep this patch in step with the Makefile's.
 ARG FRED_SHA=bd25f048f8e390ff697bdfa83a0bd3c2e19d6046
 ENV FRED_HOME=/opt/fred
 RUN mkdir -p /opt/fred \
     && curl -fsSL "https://github.com/PublicHealthDynamicsLab/FRED/archive/${FRED_SHA}.tar.gz" \
         | tar -xz -C /opt/fred --strip-components=1 \
+    && sed -i 's/new date_t \[ Date::max_days \];/new date_t [ Date::max_days + 1 ];/' /opt/fred/src/Date.cc \
+    && grep -q 'new date_t \[ Date::max_days + 1 \];' /opt/fred/src/Date.cc \
     && make -C /opt/fred/src FRED M64= \
     && echo "${FRED_SHA}" > /opt/fred/COMMIT \
     && rm -rf /opt/fred/tests /opt/fred/docs /opt/fred/pybin /opt/fred/data/country

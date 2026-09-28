@@ -74,6 +74,9 @@ $(FRED_BINARY):
 	curl -fsSL https://github.com/PublicHealthDynamicsLab/FRED/archive/$(FRED_REF).tar.gz \
 		| tar -xz -C $(FRED_HOME) --strip-components=1
 	echo $(FRED_REF) > $(FRED_HOME)/COMMIT
+	# Upstream off-by-one: Date::setup_dates() writes past its date array.
+	sed -i.orig 's/new date_t \[ Date::max_days \];/new date_t [ Date::max_days + 1 ];/' $(FRED_HOME)/src/Date.cc
+	grep -q 'new date_t \[ Date::max_days + 1 \];' $(FRED_HOME)/src/Date.cc
 	$(MAKE) -C $(FRED_HOME)/src FRED M64=
 
 fred-runner: $(FRED_BINARY)

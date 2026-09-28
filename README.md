@@ -46,9 +46,23 @@ results, and interpretation.
 | 01 | Scenario 00 plus a day-0 all-or-nothing vaccine (30% coverage, 80% efficacy) | [scenario_01/README.md](scenario_01/README.md) |
 | 02 | Scenario 01 plus four outputs: transmission tree, daily incidence, reproductive number, and transition matrix | [scenario_02/README.md](scenario_02/README.md) |
 | 03 | Scenario 00 at 1,000,000 agents | [scenario_03/README.md](scenario_03/README.md) |
+| 04 | Scenario 00 on a real contact network collapsed from <a href="https://github.com/GeoPopsHub" target="_blank">GeoPops</a>, adding FRED and Agents.jl | [scenario_04/README.md](scenario_04/README.md) |
 
 [analysis.md](analysis.md) explains why ixa is faster than the epiworld
 family, with measurements that apply to every scenario.
+
+**MEmilio was evaluated and excluded for now.** Its ABM has no edge-list
+network primitive comparable to the other engines’ graphs — agents
+interact only through shared Locations (household, work, school, …), so
+matching scenario 04’s network would need on the order of 376,000
+synthetic two-person Locations, of unproven performance, and its disease
+model is an 8-compartment, viral-load-driven simulation with no simple
+mapping onto the common SEIRH model used everywhere else in this
+benchmark. Comparing it directly right now would need substantially more
+runner code than any other engine here and would be hard to calibrate
+fairly against the rest. See [issue
+\#11](https://github.com/UofUEpiBio/epiworld-benchmark/issues/11) for
+the design problem and a possible follow-up.
 
 [scenarios.md](scenarios.md) explains how to add a scenario.
 

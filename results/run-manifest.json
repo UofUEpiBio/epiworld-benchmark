@@ -1,7 +1,9 @@
 {
-  "cached_before_run": 0,
+  "cached_before_run": 5580,
   "engine_versions": {
+    "Agents.jl": "7.0.4",
     "EoN": "1.92",
+    "FRED": "PUB.5.7.0+gbd25f04",
     "covasim": "3.1.8",
     "epiworld": "0.17.0",
     "epiworldR": "0.17.0.0",
@@ -11,7 +13,7 @@
     "ixa": "3.1.0",
     "starsim": "3.6.1"
   },
-  "executed": 5400,
+  "executed": 220,
   "failures": 0,
   "platform": "Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39",
   "profile": "full",
@@ -25,13 +27,17 @@
     "EoN",
     "epydemic",
     "ixa",
-    "individual"
+    "individual",
+    "FRED",
+    "Agents.jl"
   ],
   "requested_scenarios": [
     "scenario_00",
     "scenario_01",
-    "scenario_02"
+    "scenario_02",
+    "scenario_03",
+    "scenario_04"
   ],
-  "result_rows_available": 5616,
+  "result_rows_available": 5847,
   "workers": 1
 }

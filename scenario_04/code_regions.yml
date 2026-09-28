@@ -86,7 +86,7 @@ FRED:
   language: Python
   files: [runners/run_FRED.py]
   regions:
-    - {from: '^def daily_edge_probability', to: '^    return 1\.0 - '}
+    - {from: '^def discrete_transmission_probability', to: '^    return'}
     - {from: '^def write_population', to: '^        \(county / name\)\.write_text\(header\)'}
     - {from: '^def write_model', to: '^    return model_path'}
 Agents.jl:
