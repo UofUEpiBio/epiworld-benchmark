@@ -33,13 +33,15 @@ commit have to be cleared from the cache by hand when the pins change.
 
 Each scenario lives in its own `scenario_NN/` folder with its report
 (`README.qmd`, rendered to `README.md`), its parameters (`scenario.toml`), and
-one runner per engine (`runners/`). Scenario 00 is the SEIRH baseline and scenario 01 adds an
-all-or-nothing vaccine. [scenarios.md](scenarios.md) explains how to add
-another.
+one runner per engine (`runners/`). Scenario 00 is the SEIRH baseline,
+scenario 01 adds an all-or-nothing vaccine, scenario 02 adds epidemiological
+outputs, and scenario 03 runs scenario 00 at 1,000,000 agents.
+[scenarios.md](scenarios.md) explains how to add another.
 
 The full design runs 100 replicates for 100 days at 10,000 and 100,000 agents
-for every scenario, and 20 replicates at 1,000,000 agents for scenario 00
-(`[large]` in `config.toml`).
+(`[study]` in `config.toml`). A scenario can replace those sizes and the
+replicate count in the `[design]` table of its `scenario.toml`: scenario 03
+runs 20 replicates at 1,000,000 agents.
 Every engine receives the exact same cached Watts--Strogatz edge list at a
 given population size. The graph has mean degree 10 and rewiring probability
 0.05. Here “average density” is interpreted as the usual sparse-network
@@ -91,8 +93,8 @@ directly in a pull request.
 
 The smoke profile is deliberately tiny (1,000 agents, 10 days, one replicate)
 and tests all nine integrations in every scenario. `make benchmark` launches
-the full design: 1,800 runs per scenario, plus 180 at 1,000,000 agents for
-scenario 00. It is safe to stop and restart: each successful replicate is written
+the full design: 1,800 runs for each of scenarios 00 to 02, and 180 for
+scenario 03. It is safe to stop and restart: each successful replicate is written
 atomically beneath `cache/results/`, and a later invocation only schedules
 missing or stale results.
 
@@ -102,7 +104,7 @@ Useful targeted runs include:
 # Preview work without launching a model
 .venv/bin/python run.py --profile full --dry-run
 
-# Run just one scenario or engine, or preflight one replicate at both full sizes
+# Run just one scenario or engine, or preflight one replicate at every full size
 .venv/bin/python run.py --profile full --scenarios scenario_01
 .venv/bin/python run.py --profile full --engines epiworldR
 .venv/bin/python run.py --profile full --replicates 1
@@ -118,9 +120,9 @@ version, and the shared-network checksum. Changing one scenario's runners
 invalidates only that scenario. `results/results.csv` (with a `scenario`
 column), `results/scenarios.json`, and, for scenarios that report daily
 series, `results/daily.csv` (medians across replicates) are rebuilt from all
-successful cached records after each invocation. The report filters them to the full
-10,000/100,000/1,000,000-agent, 100-day design; `results/scenarios.json` records
-each scenario's sizes and replicate counts.
+successful cached records after each invocation. The report filters them to the full-profile
+sizes and 100 days; `results/scenarios.json` records each scenario's sizes and
+replicate counts.
 
 ## Resource policy
 
@@ -172,7 +174,7 @@ at 100,000 agents about 2.8x relative to a sequential run of the same model,
 and ixa only 1.2-1.4x, roughly doubling the apparent ixa/epiworldR speed
 ratio. The published results are collected with four workers
 (`N_THREADS=4 make container-benchmark`), which keeps the full design,
-including the 1,000,000-agent runs, to a manageable run time. Every record in
+including scenario 03's 1,000,000-agent runs, to a manageable run time. Every record in
 them was collected at that concurrency, so they are comparable with each
 other, but not with a sequential run.
 
@@ -182,14 +184,20 @@ Epidemiological outputs are unaffected by concurrency; only the timings are.
 
 Each runner records:
 
-- `setup_seconds`: reading the shared edge list and building engine objects;
-- `simulate_seconds`: the engine's simulation call, including engine-native
-  initialization that occurs inside that call; and
+- `read_seconds`: reading and parsing the shared edge list;
+- `setup_seconds`: reading the edge list plus building what the engine can
+  reuse across replicates on that network;
+- `simulate_seconds`: everything the engine has to redo for each replicate,
+  which is its simulation call plus, for ixa and Starsim, building a new
+  context or `Sim` (neither can be run twice); and
 - `total_seconds`: setup plus simulation inside the runner process.
 
 Interpreter/package startup and shared graph generation are excluded. The
-Quarto report treats `simulate_seconds` as the primary outcome and presents
-setup separately. Each replicate runs in a fresh process, avoiding state
+reports treat `simulate_seconds` as the primary outcome. They also show
+build time (`setup_seconds - read_seconds`) and build + simulate, the time to
+a first result once the edge list is in memory. Reading the file is left out
+of both, because its cost depends on each language's file parsing rather than
+on the engine. Each replicate runs in a fresh process, avoiding state
 leakage and making failures independently resumable.
 
 

@@ -13,7 +13,7 @@ The list of scenarios, with links to their reports, is in the
 scenario_NN/
   README.qmd            # the report: spec, results, interpretation
   README.md             # README.qmd rendered by `make report`
-  scenario.toml         # [scenario] [disease] [intervention] [calibration]
+  scenario.toml         # [scenario] [design] [disease] [intervention] [calibration]
   code_regions.yml      # line-count anchors for the report
   runners/
     epiworld.R          # epiworldR
@@ -39,13 +39,13 @@ complete model. The report leaves that shared plumbing out of the line counts.
 
 ## Checklist
 
-1. **Copy the latest scenario.**
-   `cp -R scenario_02 scenario_03`, then delete `runners/ixa/target`,
+1. **Copy the scenario closest to the new one.**
+   For example, `cp -R scenario_02 scenario_04`, then delete `runners/ixa/target`,
    `runners/epiworld/build`,
    `README.md`, and `README_files/` if you copied them.
 
 2. **Rename the ixa crate.** In `runners/ixa/Cargo.toml`, set the package and
-   `[[bin]]` names to `ixa-scenario-03`. Change the root package name in
+   `[[bin]]` names to `ixa-scenario-04`. Change the root package name in
    `Cargo.lock` to match, so that `cargo build --locked` still works. `run.py`
    expects the binary to be named `ixa-` plus the folder name, with `_`
    replaced by `-`.
@@ -83,13 +83,17 @@ complete model. The report leaves that shared plumbing out of the line counts.
      list-valued fields (such as scenario 02's daily series) out of
      `results.csv`; `write_daily_series()` in `run.py` shows how to publish a
      summary of them instead.
-   - Time everything that differs from run to run. The simulation timer
-     covers each run's initial conditions (seeding, vaccination, and the
-     like), because epiworld sets them up inside `run()`. ixa does this in
-     plans at time 0; the Python runners and `individual.R` start their timer
-     before building the initial state. Starsim is the exception for seeding,
-     which happens in `sim.init()`; interventions such as scenario 01's
-     vaccine run inside `sim.run()`.
+   - Time everything an engine has to redo for another replicate on the same
+     network. The simulation timer covers each run's initial conditions
+     (seeding, vaccination, and the like), because epiworld sets them up
+     inside `run()`. ixa does this in plans at time 0; the Python runners and
+     `individual.R` start their timer before building the initial state. An
+     engine object that can run only once is rebuilt for every replicate, so
+     it is timed too: ixa's context (population, network, and index) and
+     Starsim's `Sim`, including `sim.init()`.
+   - Record `read_seconds`, the time to read the edge list, right after the
+     edge count is checked. The reports subtract it from setup to show build
+     time.
    - Keep randomness seeded from `--seed`. Seeds do not depend on the
      scenario, so the report can compare scenarios replicate by replicate.
    - Add Rust unit tests for the new behaviour to `main.rs`.
@@ -104,7 +108,7 @@ complete model. The report leaves that shared plumbing out of the line counts.
    report. It should describe the model change, include a parameter table,
    state the output convention, and have one bullet per engine describing how
    it is implemented. The tables and figures come from `report/common.R`:
-   call `load_benchmark("scenario_03")`, then the `table_*` and `plot_*`
+   call `load_benchmark("scenario_04")`, then the `table_*` and `plot_*`
    helpers. To compare with an earlier scenario, pass it to
    `table_time_versus()` and `table_code_effort()`. Write the interpretation
    specific to the scenario, and add a row for it to the scenario table in
@@ -113,14 +117,14 @@ complete model. The report leaves that shared plumbing out of the line counts.
 7. **Check correctness before timing anything.**
    ```sh
    make container-check
-   SCENARIOS=scenario_03 make container-smoke
+   SCENARIOS=scenario_04 make container-smoke
    ```
    Then try an extreme setting where the answer is known. For scenario 01,
    coverage and efficacy of 1 must leave only the seed cases infected. Then
    run a small full-size sample and check that the engines' attack rates
    agree:
    ```sh
-   .venv/bin/python run.py --profile full --scenarios scenario_03 --replicates 5
+   .venv/bin/python run.py --profile full --scenarios scenario_04 --replicates 5
    ```
    If one engine is far slower than expected, profile it before accepting
    the number. Scenario 01 found a quadratic cost in epiworldR's
@@ -128,13 +132,15 @@ complete model. The report leaves that shared plumbing out of the line counts.
 
 8. **Run and report.**
    ```sh
-   SCENARIOS=scenario_03 make container-benchmark
+   SCENARIOS=scenario_04 make container-benchmark
    make container-report
    ```
-   Only the scenarios listed in `[large]` in `config.toml` also run at
-   1,000,000 agents. Adding one there reruns every scenario, as any edit to
-   `config.toml` does, and needs transmission multipliers for that size in
-   its `[calibration]`.
+   A scenario runs at the sizes and replicate count in `[study]` in
+   `config.toml`, unless its `scenario.toml` has a `[design]` table with its
+   own `population_sizes` and `replicates`, as scenario 03 does. A new size
+   needs transmission multipliers for that size in `[calibration]`, and a
+   size index: its network and seeds follow its position after the
+   `[study]` sizes, in scenario order.
    Use `N_THREADS=4`, as the published results do, so the new scenario's
    timings match the others' concurrency. `make report`
    renders the overview and every `scenario_*/README.qmd`. Check that the

@@ -1,0 +1,84 @@
+# Anchors for the report's "Code required to define the model" table.
+#
+# Each region runs from the first line matching `from` to the next line
+# matching `to` (both inclusive; `to` defaults to `from`). Regex anchors use R
+# syntax. Paths are relative to this scenario folder, and the first file is the
+# one the regions are searched in; any other files only add to the file count.
+#
+# This file is not part of the cache fingerprint, so editing it never
+# invalidates results. Count only code that builds the population and network,
+# defines the disease, and runs the simulation: argument parsing, edge-file
+# reading, timing, and result writing are shared by every runner and excluded.
+epiworldR:
+  language: R
+  files: [runners/epiworld.R]
+  regions:
+    - {from: '^recovery <- 1', to: '^  \(1 - hospital_probability'}
+    - {from: '^model <- Model\(\)', to: '^verbose_off\(model\)'}
+    - {from: '^run\(model'}
+epiworldpy:
+  language: Python
+  files: [runners/run_epiworldpy.py]
+  regions:
+    - {from: '^def discrete_transmission_probability', to: '^    return'}
+    - {from: '^def hospitalization_daily_probability', to: '^    \)$'}
+    - {from: '^def run_epiworldpy', to: '^    model.run\(args'}
+epiworld:
+  language: C++
+  files: [runners/epiworld/main.cpp]
+  regions:
+    - {from: '^    double recovery = 1.0', to: '^        \(1.0 - hospital_probability'}
+    - {from: '^    Model<> model;', to: '^    model.verbose_off\(\);'}
+    - {from: '^    model.run\(days'}
+covasim:
+  language: Python
+  files: [runners/run_covasim.py]
+  regions:
+    - {from: '^def discrete_transmission_probability', to: '^    return'}
+    - {from: '^def run_covasim', to: '^    sim.run\(\)'}
+starsim:
+  language: Python
+  files: [runners/run_starsim.py]
+  regions:
+    - {from: '^def discrete_transmission_probability', to: '^    return'}
+    - {from: '^def seirh_classes', to: '^    return EdgeListNet, SEIRH'}
+    - {from: '^def run_starsim', to: '^    sim.run\(\)'}
+EoN:
+  language: Python
+  files: [runners/run_eon.py]
+  regions:
+    - {from: '^def make_graph', to: '^    return graph'}
+    - {from: '^def run_eon', to: '^    \)$'}
+epydemic:
+  language: Python
+  files: [runners/run_epydemic.py]
+  regions:
+    - {from: '^def discrete_transmission_probability', to: '^    return'}
+    - {from: '^def hospitalization_daily_probability', to: '^    \)$'}
+    - {from: '^def make_graph', to: '^    return graph'}
+    - {from: '^def run_epydemic', to: '^    result = dynamics'}
+ixa:
+  language: Rust
+  files: [runners/ixa/src/main.rs, runners/ixa/Cargo.toml, runners/ixa/rust-toolchain.toml]
+  regions:
+    - {from: '^define_entity!', to: '^define_rng!\(ProgressionRng'}
+    - {from: '^struct Rates', to: '^}'}
+    - {from: '^impl Rates', to: '^}'}
+    - {from: '^fn build_context', to: '^}'}
+    - {from: '^fn schedule_seeding', to: '^}'}
+    - {from: '^fn with_status', to: '^}'}
+    - {from: '^fn roulette', to: '^}'}
+    - {from: '^fn step', to: '^}'}
+    - {from: '^fn schedule_days', to: '^}'}
+    - {from: 'let rates = Rates::from_args'}
+    - {from: 'let mut context = build_context'}
+    - {from: 'schedule_seeding\(&mut context, args'}
+    - {from: 'let peak = schedule_days'}
+    - {from: 'context.execute\(\)'}
+individual:
+  language: R
+  files: [runners/individual.R]
+  regions:
+    - {from: '^recovery <- 1', to: '^beta <- beta \*'}
+    - {from: '^from <- c\(edges', to: '^neighbours_of <- function'}
+    - {from: '^set\.seed', to: '^simulation_loop\('}

@@ -96,7 +96,9 @@ table_environment <- function(bench) {
   if (is.null(m)) return(NULL)
   knitr::kable(data.frame(
     Field = c("Platform", "Python", "Workers", "Latest run failures"),
-    Value = c(m$platform, m$python, m$workers, m$failures)
+    Value = c(m$platform, m$python,
+              if (is.null(bench$info$workers)) m$workers else bench$info$workers,
+              m$failures)
   ), row.names = FALSE)
 }
 
@@ -144,6 +146,30 @@ plot_simulation_time <- function(bench) {
       legend.position = "none",
       axis.text.x = ggplot2::element_text(angle = 30, hjust = 1)
     )
+}
+
+#' Median time of each phase of a run. Reading the edge list is benchmark
+#' plumbing whose cost depends on the language, not the engine, so it is shown
+#' but left out of "build + simulate", the time to a first result once the
+#' network is in memory.
+table_phases <- function(bench) {
+  full <- bench$full
+  if (!nrow(full) || all(is.na(full$read_seconds))) return(NULL)
+  full$build_seconds <- full$setup_seconds - full$read_seconds
+  rows <- do.call(rbind, lapply(split(full, list(full$engine, full$n), drop = TRUE),
+    function(d) data.frame(
+      engine = d$engine[[1]],
+      agents = d$n[[1]],
+      read = median(d$read_seconds),
+      build = median(d$build_seconds),
+      simulate = median(d$simulate_seconds),
+      result = median(d$build_seconds + d$simulate_seconds)
+    )))
+  rows <- rows[order(rows$agents, rows$result), ]
+  knitr::kable(rows, digits = 3,
+    col.names = c("Engine", "Agents", "Read edges (s)", "Build (s)", "Simulate (s)",
+                  "Build + simulate (s)"),
+    row.names = FALSE)
 }
 
 #' Paired simulate-time ratio of each engine against `reference`, matched by
@@ -239,6 +265,34 @@ table_time_versus <- function(bench, baseline) {
     col.names = c("Engine", "Agents", paste("Median", label, "(s)"),
                   paste("Median", this, "(s)"), paste("Median time /", label), "Q1", "Q3"),
     row.names = FALSE)
+}
+
+#' Median simulation time at every size of this scenario and `baseline`, which
+#' runs the same model at other sizes, with the growth from the baseline's
+#' largest size to this scenario's smallest, and this scenario's build time
+#' (setup without reading the edge list).
+table_scaling <- function(bench, baseline) {
+  if (!nrow(bench$full)) return(NULL)
+  every <- bench$every[bench$every$scenario %in% c(baseline, bench$scenario), ]
+  medians <- tapply(every$simulate_seconds, list(every$engine, every$n), median)
+  sizes <- as.numeric(colnames(medians))
+  before <- max(sizes[sizes < min(bench$full$n)])
+  after <- min(bench$full$n)
+  setup <- tapply(bench$full$setup_seconds - bench$full$read_seconds, bench$full$engine, median)
+  rows <- data.frame(
+    engine = rownames(medians),
+    medians,
+    growth = medians[, as.character(after)] / medians[, as.character(before)],
+    setup = setup[rownames(medians)],
+    check.names = FALSE
+  )
+  rows <- rows[order(rows[[as.character(after)]]), ]
+  size_label <- function(n) format(n, big.mark = ",", scientific = FALSE, trim = TRUE)
+  knitr::kable(rows, digits = c(0, rep(3, length(sizes)), 1, 3), row.names = FALSE, col.names = c(
+    "Engine", paste(size_label(sizes), "agents (s)"),
+    paste0("Time at ", size_label(after), " / at ", size_label(before)),
+    paste0("Median build at ", size_label(after), " (s)")
+  ))
 }
 
 #' Count the model lines of one engine's runner. Each region runs from the

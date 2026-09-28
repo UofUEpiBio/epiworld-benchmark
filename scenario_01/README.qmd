@@ -154,14 +154,36 @@ mean that epiworldR completed the simulation call faster.
 table_speedup(bench)
 ```
 
+### Time to a first result
+
+The simulation time above covers what an engine has to redo for every
+replicate on the same network (see
+[what is measured](../README.md#run-time)). *Build* is the rest of the
+setup: turning the edge list into the engine's population and network, which
+a user does once per network. *Build + simulate* is the time to a first
+result once the edge list is in memory. Reading the edge file is shown but
+left out of it, because its cost depends on each language's file parsing
+rather than on the engine.
+
+```{r}
+#| label: phases
+table_phases(bench)
+```
+
 ### The epiworld family
 
 The wrappers compared with the C++ runner. Here the three draw the number of
 protected agents with different random numbers, so they are matched by seed
-but do not run identical epidemics. As in
-[scenario 00](../scenario_00/README.md#the-language-layer-costs-nothing-measurable-in-the-simulation),
-the C++ runner's slower simulation at 100,000 agents comes from where its
-arrays land in memory, not from the language layer.
+but do not run identical epidemics. Here the C++ runner is slower than the
+wrappers at 100,000 agents, although it runs the same library. This comes
+from memory allocation, not from the language layer. Placing the vaccine
+allocates about 24,000 tool objects inside `run()`. The C++ runner starts
+with a small heap, which grows during those allocations; R and Python have
+already grown a large heap while starting up. Run alone, the C++ runner
+takes a median 10.9 ms here, and about 9 ms when glibc is told to keep a large
+heap in reserve (`MALLOC_TOP_PAD_`) or to serve large blocks from the heap
+rather than with `mmap` (`MALLOC_MMAP_THRESHOLD_`). The runner is timed as a
+C++ user would write it, so the published numbers keep this effect.
 
 ```{r}
 #| label: epiworld-family
@@ -250,6 +272,18 @@ the runner uses: draw the number of protected agents, and let epiworld place
 the tool at random. Both give the same vaccine statistically. epiworldR
 0.16.1 fixed the quadratic cost, so either approach is now fast; the runner
 keeps the second.
+
+### What the vaccine costs epiworld and ixa
+
+Both place the vaccine inside the timed call, before the first day. epiworld
+clones the tool onto the heap for each of the roughly 24,000 protected agents
+at 100,000 agents, which takes about 3.2 ms per run; ixa sets a property on
+each of the 30,000 vaccinees in a plan at time 0, about 1.7 ms. Because the
+vaccine also shrinks the outbreak, this fixed cost is a larger share of
+epiworld's time here than in scenario 00. ixa's time per replicate is still
+mostly rebuilding its context. [analysis.md](../analysis.md) has the
+measurements, and explains the rest of the difference between the two
+engines.
 
 ### Calibration
 

@@ -9,16 +9,8 @@ engines = [
   "individual",
 ]
 # Scenario-specific settings (disease, interventions, calibration) live in
-# scenario_*/scenario.toml; see scenarios.md.
-
-[large]
-# Population sizes too slow to run for every scenario at the full replicate
-# count. They run in the full profile only, with their own replicate count, and
-# only for these scenarios. The network and seeds for a size follow its
-# position in population_sizes above, then here.
-population_sizes = [1000000]
-replicates = 20
-scenarios = ["scenario_00"]
+# scenario_*/scenario.toml; see scenarios.md. A scenario's [design] table can
+# replace population_sizes and replicates above, as scenario_03 does.
 
 [network]
 type = "watts_strogatz"

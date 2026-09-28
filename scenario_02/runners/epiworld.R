@@ -36,6 +36,7 @@ hospital_rate <- hospital_probability * recovery /
 total_started <- proc.time()[["elapsed"]]
 edges <- utils::read.delim(gzfile(args$network), colClasses = "integer")
 if (nrow(edges) != integer("network_edges")) stop("Network edge count mismatch")
+read_seconds <- proc.time()[["elapsed"]] - total_started
 
 model <- Model() |>
   add_param("Transmission rate", beta) |>
@@ -160,6 +161,7 @@ record <- list(
   mean_degree = mean_degree,
   target_r0 = target_r0,
   transmission_multiplier = number("transmission_multiplier"),
+  read_seconds = read_seconds,
   setup_seconds = total_seconds - simulate_seconds - extract_seconds,
   simulate_seconds = simulate_seconds,
   total_seconds = total_seconds,

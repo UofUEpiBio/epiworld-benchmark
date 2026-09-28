@@ -93,6 +93,7 @@ int main(int argc, char ** argv) {
     read_edges(args.at("network"), source, target);
     if (static_cast<int>(source.size()) != integer("network_edges"))
         throw std::runtime_error("Network edge count mismatch");
+    double read_seconds = seconds_since(total_started);
 
     Model<> model;
     model.add_param(beta, "Transmission rate");
@@ -241,6 +242,7 @@ int main(int argc, char ** argv) {
         "  \"mean_degree\": %.17g,\n"
         "  \"target_r0\": %.17g,\n"
         "  \"transmission_multiplier\": %.17g,\n"
+        "  \"read_seconds\": %.17g,\n"
         "  \"setup_seconds\": %.17g,\n"
         "  \"simulate_seconds\": %.17g,\n"
         "  \"total_seconds\": %.17g,\n"
@@ -266,7 +268,7 @@ int main(int argc, char ** argv) {
         "}\n",
         args.at("engine_version").c_str(), n, days, integer("replicate"), integer("seed"),
         args.at("network_sha256").c_str(), integer("network_edges"), mean_degree, target_r0,
-        number("transmission_multiplier"), total_seconds - simulate_seconds - extract_seconds, simulate_seconds,
+        number("transmission_multiplier"), read_seconds, total_seconds - simulate_seconds - extract_seconds, simulate_seconds,
         total_seconds, today.at("Susceptible"), today.at("Exposed"), today.at("Infected"),
         today.at("Hospitalized"), today.at("Recovered"), peak_hospitalized,
         vaccinated, protected_,

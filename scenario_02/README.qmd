@@ -201,6 +201,22 @@ mean that epiworldR finished faster.
 table_speedup(bench)
 ```
 
+### Time to a first result
+
+The simulation time above covers what an engine has to redo for every
+replicate on the same network (see
+[what is measured](../README.md#run-time)). *Build* is the rest of the
+setup: turning the edge list into the engine's population and network, which
+a user does once per network. *Build + simulate* is the time to a first
+result once the edge list is in memory. Reading the edge file is shown but
+left out of it, because its cost depends on each language's file parsing
+rather than on the engine.
+
+```{r}
+#| label: phases
+table_phases(bench)
+```
+
 ### Extracting the outputs
 
 The time taken to read the four outputs out of each engine after the run.
@@ -291,41 +307,18 @@ agents it takes `r extract_ms("epiworldR", 100000)` ms there, against
 `r extract_ms("EoN", 100000)` ms for EoN and under a millisecond for the
 others. Almost all of epiworldR's is one call (see below).
 
-### Is bookkeeping why epiworld is slower than ixa?
+### Is bookkeeping what separates epiworld and ixa?
 
 No. What epiworld records per event is small: each infection appends one row
 to the transmission log, and the daily database update costs time in
-proportion to the number of states and tools, not agents. ixa does the same
-bookkeeping here at almost no cost. epiworld's queue also works as intended:
-with no infected agents, its 100 days take about 0.2 ms at 100,000 agents.
-
-Side measurements with the C++ runner, outside the benchmark, at 100,000
-agents, found where its time goes instead:
-
-- **About 11 ms is a memory-allocator effect.** `agents_from_edgelist()`
-  builds a temporary adjacency list with one `std::map` per agent, roughly a
-  million small allocations. When it is freed, glibc keeps those chunks on its
-  fast free lists, and the next large allocation walks them all to
-  consolidate them (`malloc_consolidate`). That allocation happens inside
-  `run()`, when the state index is built, so the timed call pays for tearing
-  down the network builder. Disabling glibc's fast bins
-  (`GLIBC_TUNABLES=glibc.malloc.mxfast=0`) cuts the C++ runner from about
-  21 ms to about 9.5 ms, in line with epiworldR, whose setup triggers the
-  consolidation before the timer starts. Reported upstream as
-  [UofUEpiBio/epiworld#274](https://github.com/UofUEpiBio/epiworld/issues/274),
-  with a fix that builds the network about ten times faster and removes the
-  charge.
-- **About 2.7 ms is placing the vaccine** on about 24,000 agents. Every runner
-  now times its vaccine distribution, so this is a like-for-like cost.
-- **About 1.5 ms is looking up the transmission probability.** Push
-  transmission costs about 45 ns per neighbour it checks. For every one, the
-  virus reads `"Transmission rate"` through `Model::get_param()`, which takes
-  the name by value (17 characters, so a heap allocation) and searches a
-  `std::map` twice, although the value depends only on the infector. With a
-  constant probability the same check costs about 23 ns.
-- **The rest, about 2 ms,** is the other work in `reset()`, the E, I, and H
-  transitions, and the vaccine check on each neighbour, which goes through the
-  agent's tools and their `std::function`s.
+proportion to the number of states and tools, not agents. ixa adds the same
+bookkeeping here at little cost, and the two engines compare as they do in
+scenario 01. What separates them has other causes, the same in every
+scenario: ixa rebuilds its context for every replicate, while epiworld looks
+up the transmission probability by name for every contact it tries,
+re-initializes the whole population at the start of every run, and, with the
+vaccine, clones the tool for every agent it protects.
+[analysis.md](../analysis.md) measures each.
 
 ### An implementation choice that mattered: epiworldR's reproductive-number summary
 

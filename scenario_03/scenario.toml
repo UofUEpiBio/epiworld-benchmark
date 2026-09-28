@@ -1,0 +1,35 @@
+[scenario]
+name = "SEIRH baseline at 1,000,000 agents"
+description = "Scenario 00 at 1,000,000 agents, for 20 replicates per engine."
+
+[design]
+# Replaces [study] population_sizes and replicates in config.toml. The
+# network and seeds follow the size's position after the [study] sizes, so
+# this size always gets the same network and seeds.
+population_sizes = [1000000]
+replicates = 20
+# Run one replicate at a time, whatever $N_THREADS says. With four workers,
+# four copies of the same engine ran at once and competed for memory: each
+# million-agent process holds a large network, and epydemic took twice as long
+# (about 60 s instead of 30 s per replicate). Scenarios 00 to 02 keep the
+# $N_THREADS concurrency.
+workers = 1
+
+# Every key in [disease] (and [intervention], when present) is passed to each
+# runner as a --kebab-case flag, so runners must accept exactly these keys.
+# The model is scenario_00's.
+[disease]
+target_r0 = 2.0
+initial_infected = 100
+latent_days = 4.0
+infectious_days = 7.0
+hospitalization_probability = 0.05
+hospital_days = 7.0
+
+[calibration]
+# Not recalibrated: each engine reuses its 100,000-agent factor from
+# scenario_00, which barely moved from 10,000 agents. epiworldR, epiworld,
+# epiworldpy, EoN, epydemic, and Starsim need none; see scenario_00.
+covasim_transmission_multiplier_1000000 = 0.710
+ixa_transmission_multiplier_1000000 = 0.988
+individual_transmission_multiplier_1000000 = 0.951

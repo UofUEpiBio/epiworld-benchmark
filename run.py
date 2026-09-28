@@ -303,7 +303,7 @@ def collect_results() -> int:
         "scenario", "engine", "engine_version", "n", "days", "replicate", "seed",
         "network_sha256", "network_edges", "mean_degree", "target_r0",
         "transmission_multiplier",
-        "setup_seconds", "simulate_seconds", "total_seconds",
+        "read_seconds", "setup_seconds", "simulate_seconds", "total_seconds",
         "final_susceptible", "final_exposed", "final_infected",
         "final_hospitalized", "final_recovered", "peak_hospitalized",
         # Scenario-specific outcomes; blank for scenarios that do not report them.
@@ -320,56 +320,80 @@ def collect_results() -> int:
     # The report reads scenario names and parameters from here, so R needs no
     # TOML parser.
     config = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    designs = scenario_designs()
     scenarios = {}
     for scenario in discover_scenarios():
         scenario_config = load_scenario(scenario)
         scenarios[scenario] = scenario_config["scenario"] | {
             "parameters": scenario_parameters(scenario_config),
             "calibration": scenario_config.get("calibration", {}),
+            # Concurrency cap from [design], if any (see main()).
+            "workers": designs[scenario].get("workers"),
             # The full design: replicates per engine at each population size.
             "design": [
                 {"n": n, "replicates": replicates}
-                for n, _, _, replicates in size_plan(config, "full", [scenario])
+                for n, _, _, replicates in size_plan(config, "full", [scenario], designs)
             ],
         }
     atomic_json(RESULTS_DIR / "scenarios.json", scenarios)
     return len(records)
 
 
+def scenario_designs() -> dict[str, dict[str, Any]]:
+    """Each scenario's [design] table, which overrides [study] sizes and replicates."""
+    return {scenario: load_scenario(scenario).get("design", {}) for scenario in discover_scenarios()}
+
+
 def size_plan(
     config: dict[str, Any],
     profile: str,
     scenarios: list[str],
+    designs: dict[str, dict[str, Any]],
     sizes: list[int] | None = None,
     replicates: int | None = None,
 ) -> list[tuple[int, int, list[str], int]]:
     """(n, size index, scenarios, replicates) for each population size to run.
 
-    The sizes in [large] run only in the full profile (or when requested with
-    --sizes), for their own replicate count and only in the scenarios they
-    list. A size's index, which picks its network and seeds, is its position
-    in [study] then [large] population_sizes, however the size is requested.
+    In the full profile, a scenario runs at the population sizes and replicate
+    count in its scenario.toml [design] table, or else at those in [study].
+    The smoke profile ignores [design]. --sizes replaces the sizes of a
+    scenario without a [design] and restricts the sizes of one with it;
+    --replicates replaces every count. A size's index, which picks its network
+    and seeds, is its position in [study] population_sizes, then in the
+    [design] tables of `designs`, however the size is requested.
     """
-    study, large = config["study"], config["large"]
+    study = config["study"]
     profile_config = study if profile == "full" else (study | config["smoke"])
-    large_sizes = [int(n) for n in large["population_sizes"]]
-    design_sizes = [int(n) for n in study["population_sizes"]] + large_sizes
-    requested = sizes or (
-        [int(n) for n in profile_config["population_sizes"]]
-        + (large_sizes if profile == "full" else [])
-    )
-    plan = []
-    for fallback_index, n in enumerate(requested):
-        size_index = design_sizes.index(n) if n in design_sizes else fallback_index
-        if n in large_sizes:
-            size_scenarios = [scenario for scenario in scenarios if scenario in large["scenarios"]]
-            count = replicates or int(large["replicates"])
-        else:
-            size_scenarios = list(scenarios)
-            count = replicates or int(profile_config["replicates"])
-        if size_scenarios:
-            plan.append((n, size_index, size_scenarios, count))
-    return plan
+    design_sizes = [int(n) for n in study["population_sizes"]]
+    for design in designs.values():
+        design_sizes += [
+            int(n) for n in design.get("population_sizes", []) if int(n) not in design_sizes
+        ]
+    requested = [int(n) for n in sizes] if sizes else None
+    cells: dict[tuple[int, int], list[str]] = {}
+    for scenario in scenarios:
+        design = designs.get(scenario, {}) if profile == "full" else {}
+        scenario_sizes = [
+            int(n) for n in design.get("population_sizes", profile_config["population_sizes"])
+        ]
+        if requested is not None:
+            scenario_sizes = (
+                [n for n in requested if n in scenario_sizes]
+                if "population_sizes" in design else requested
+            )
+        count = replicates or int(design.get("replicates", profile_config["replicates"]))
+        for n in scenario_sizes:
+            cells.setdefault((n, count), []).append(scenario)
+    order = requested or [int(n) for n in profile_config["population_sizes"]]
+    return [
+        (
+            n,
+            design_sizes.index(n) if n in design_sizes else (order.index(n) if n in order else 0),
+            size_scenarios,
+            count,
+        )
+        for (n, count), size_scenarios in sorted(cells.items())
+    ]
 
 
 def parse_args() -> argparse.Namespace:
@@ -421,7 +445,8 @@ def main() -> int:
     profile = study if args.profile == "full" else (study | config["smoke"])
     if args.replicates is not None and args.replicates < 1:
         raise SystemExit("--replicates must be at least one")
-    plan = size_plan(config, args.profile, scenarios, args.sizes, args.replicates)
+    designs = scenario_designs()
+    plan = size_plan(config, args.profile, scenarios, designs, args.sizes, args.replicates)
     workers = resolve_workers(args.workers, resources)
 
     if shutil.which("Rscript") is None and set(R_RUNNERS) & set(engines):
@@ -527,14 +552,24 @@ def main() -> int:
         # Starsim otherwise rebuilds matplotlib's font cache on import.
         "STARSIM_INSTALL_FONTS": "0",
     })
+    # A scenario's [design] can cap concurrency for its own runs in the full
+    # profile: scenario_03's million-agent runs compete for memory when
+    # several run at once, so they run one at a time.
+    groups: dict[int, list[dict[str, Any]]] = {}
+    for task in tasks:
+        design = designs.get(task["scenario"], {}) if args.profile == "full" else {}
+        groups.setdefault(min(workers, int(design.get("workers", workers))), []).append(task)
     failures: list[tuple[str, str]] = []
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(run_task, task, env): task for task in tasks}
-        for index, future in enumerate(as_completed(futures), start=1):
-            label, ok, message = future.result()
-            print(f"[{index}/{len(tasks)}] {'ok' if ok else 'FAILED'} {label}", flush=True)
-            if not ok:
-                failures.append((label, message))
+    index = 0
+    for group_workers, group in groups.items():
+        with ThreadPoolExecutor(max_workers=group_workers) as pool:
+            futures = {pool.submit(run_task, task, env): task for task in group}
+            for future in as_completed(futures):
+                index += 1
+                label, ok, message = future.result()
+                print(f"[{index}/{len(tasks)}] {'ok' if ok else 'FAILED'} {label}", flush=True)
+                if not ok:
+                    failures.append((label, message))
 
     count = collect_results()
     manifest = {

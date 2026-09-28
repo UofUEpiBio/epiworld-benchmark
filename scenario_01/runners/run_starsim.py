@@ -86,6 +86,10 @@ def run_starsim(args: argparse.Namespace, source: np.ndarray, target: np.ndarray
     recovery = 1.0 / args.infectious_days
     beta = discrete_transmission_probability(args.target_r0, args.mean_degree, recovery)
     beta *= args.transmission_multiplier
+    # A Sim runs once, so every replicate builds a new one: everything from
+    # here to the end of the run is timed as simulation, as epiworld's run()
+    # re-initializes its model.
+    started = perf_counter()
     # Exactly initial_infected seed cases. Starsim's SEIR seeds them Exposed,
     # as the epiworld family does.
     seeds = np.random.default_rng(args.seed).choice(
@@ -134,7 +138,6 @@ def run_starsim(args: argparse.Namespace, source: np.ndarray, target: np.ndarray
     sim.init()
     # simple_vx draws who is protected from NumPy's global generator.
     np.random.seed(args.seed)
-    started = perf_counter()
     sim.run()
     elapsed = perf_counter() - started
     disease = sim.diseases.seirh

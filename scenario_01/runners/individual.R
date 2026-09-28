@@ -34,6 +34,7 @@ beta <- beta * number("transmission_multiplier")
 total_started <- proc.time()[["elapsed"]]
 edges <- utils::read.delim(gzfile(args$network), colClasses = "integer")
 if (nrow(edges) != integer("network_edges")) stop("Network edge count mismatch")
+read_seconds <- proc.time()[["elapsed"]] - total_started
 
 # individual has no contact networks, so the network is an adjacency list:
 # agent i's neighbours are neighbours[first[i] + 0:(degree[i] - 1)].
@@ -103,6 +104,7 @@ record <- list(
   mean_degree = mean_degree,
   target_r0 = target_r0,
   transmission_multiplier = number("transmission_multiplier"),
+  read_seconds = read_seconds,
   setup_seconds = total_seconds - simulate_seconds,
   simulate_seconds = simulate_seconds,
   total_seconds = total_seconds,

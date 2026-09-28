@@ -119,31 +119,58 @@ def test_runners_accept_exactly_their_scenario_parameters() -> None:
             assert f"{key}:" in sources["ixa"], (scenario, key)
 
 
+def test_every_runner_records_the_edge_reading_time() -> None:
+    for scenario in discover_scenarios():
+        runners = ROOT / scenario / "runners"
+        for path in (
+            runners / "runner_common.py", runners / "epiworld.R", runners / "individual.R",
+            runners / "epiworld" / "main.cpp", runners / "ixa" / "src" / "main.rs",
+        ):
+            assert "read_seconds" in path.read_text(), path
+
+
 def test_r_engines_run_their_own_script() -> None:
     for engine, script in (("epiworldR", "epiworld.R"), ("individual", "individual.R")):
         command = task_command(base_task(engine=engine))
         assert command[:3] == ["Rscript", "--vanilla", str(ROOT / "scenario_00" / "runners" / script)]
 
 
-def test_large_sizes_run_fewer_replicates_in_their_scenarios_only() -> None:
+def test_scenario_designs_replace_the_study_sizes_and_replicates() -> None:
     config = {
         "study": {"population_sizes": [10, 100], "replicates": 5},
         "smoke": {"population_sizes": [3], "replicates": 1},
-        "large": {"population_sizes": [1000], "replicates": 2, "scenarios": ["scenario_00"]},
     }
-    scenarios = ["scenario_00", "scenario_01"]
-    assert size_plan(config, "full", scenarios) == [
-        (10, 0, scenarios, 5),
-        (100, 1, scenarios, 5),
-        (1000, 2, ["scenario_00"], 2),
+    designs = {"scenario_00": {}, "scenario_03": {"population_sizes": [1000], "replicates": 2}}
+    scenarios = ["scenario_00", "scenario_03"]
+    assert size_plan(config, "full", scenarios, designs) == [
+        (10, 0, ["scenario_00"], 5),
+        (100, 1, ["scenario_00"], 5),
+        (1000, 2, ["scenario_03"], 2),
     ]
-    assert size_plan(config, "smoke", scenarios) == [(3, 0, scenarios, 1)]
-    # A requested large size keeps its index (network and seeds) and design.
-    assert size_plan(config, "full", scenarios, sizes=[1000]) == [(1000, 2, ["scenario_00"], 2)]
-    assert size_plan(config, "full", scenarios, sizes=[1000], replicates=1) == [
-        (1000, 2, ["scenario_00"], 1)
+    # The smoke profile ignores [design].
+    assert size_plan(config, "smoke", scenarios, designs) == [(3, 0, scenarios, 1)]
+    # A size keeps its index (network and seeds) however it is requested, and
+    # --sizes only restricts a scenario with a [design].
+    assert size_plan(config, "full", ["scenario_03"], designs) == [(1000, 2, ["scenario_03"], 2)]
+    assert size_plan(config, "full", scenarios, designs, sizes=[1000], replicates=1) == [
+        (1000, 2, scenarios, 1)
     ]
-    assert size_plan(config, "full", ["scenario_01"], sizes=[1000]) == []
+    assert size_plan(config, "full", ["scenario_03"], designs, sizes=[100]) == []
+
+
+def test_scenario_03_is_scenario_00_at_one_million_agents() -> None:
+    designs = run.scenario_designs()
+    assert designs["scenario_00"] == {}
+    assert designs["scenario_03"] == {
+        "population_sizes": [1000000], "replicates": 20, "workers": 1
+    }
+    assert scenario_parameters(load_scenario("scenario_03")) == scenario_parameters(
+        load_scenario("scenario_00")
+    )
+    for runner in ("epiworld.R", "individual.R", "runner_common.py", "epiworld/main.cpp"):
+        assert (ROOT / "scenario_03" / "runners" / runner).read_text() == (
+            ROOT / "scenario_00" / "runners" / runner
+        ).read_text(), runner
 
 
 def test_scenarios_are_discovered() -> None:

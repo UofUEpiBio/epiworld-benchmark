@@ -9,6 +9,7 @@
 - [Results](#results)
   - [Simulation time](#simulation-time)
   - [Speed relative to epiworldR](#speed-relative-to-epiworldr)
+  - [Time to a first result](#time-to-a-first-result)
   - [The epiworld family](#the-epiworld-family)
   - [Epidemiological sanity checks](#epidemiological-sanity-checks)
 - [Cost of the added complexity](#cost-of-the-added-complexity)
@@ -19,6 +20,8 @@
 - [Interpretation](#interpretation)
   - [An implementation choice that mattered: epiworldR’s
     `distribute_tool_to_set()`](#an-implementation-choice-that-mattered-epiworldrs-distribute_tool_to_set)
+  - [What the vaccine costs epiworld and
+    ixa](#what-the-vaccine-costs-epiworld-and-ixa)
   - [Calibration](#calibration)
 - [Recorded versions](#recorded-versions)
 
@@ -132,24 +135,24 @@ model-lines comparison reflects what a user of that engine would write.
 
 | Engine     | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:-----------|-------:|-----:|----------------------:|-------:|-------:|
-| ixa        |  10000 |  100 |                 0.002 |  0.002 |  0.002 |
-| epiworldpy |  10000 |  100 |                 0.005 |  0.004 |  0.005 |
-| epiworld   |  10000 |  100 |                 0.005 |  0.004 |  0.005 |
-| epiworldR  |  10000 |  100 |                 0.005 |  0.005 |  0.006 |
-| individual |  10000 |  100 |                 0.025 |  0.025 |  0.026 |
-| EoN        |  10000 |  100 |                 0.043 |  0.040 |  0.049 |
-| covasim    |  10000 |  100 |                 0.074 |  0.069 |  0.082 |
-| starsim    |  10000 |  100 |                 0.226 |  0.200 |  0.246 |
-| epydemic   |  10000 |  100 |                 0.296 |  0.267 |  0.317 |
-| ixa        | 100000 |  100 |                 0.004 |  0.004 |  0.005 |
-| epiworldpy | 100000 |  100 |                 0.010 |  0.010 |  0.011 |
-| epiworldR  | 100000 |  100 |                 0.011 |  0.010 |  0.011 |
-| epiworld   | 100000 |  100 |                 0.012 |  0.012 |  0.013 |
-| individual | 100000 |  100 |                 0.058 |  0.057 |  0.059 |
-| EoN        | 100000 |  100 |                 0.237 |  0.233 |  0.243 |
-| covasim    | 100000 |  100 |                 0.369 |  0.365 |  0.376 |
-| starsim    | 100000 |  100 |                 1.120 |  1.016 |  1.136 |
-| epydemic   | 100000 |  100 |                 1.173 |  1.161 |  1.197 |
+| epiworldpy |  10000 |  100 |                 0.004 |  0.004 |  0.005 |
+| ixa        |  10000 |  100 |                 0.005 |  0.005 |  0.006 |
+| epiworldR  |  10000 |  100 |                 0.005 |  0.005 |  0.007 |
+| epiworld   |  10000 |  100 |                 0.006 |  0.005 |  0.008 |
+| individual |  10000 |  100 |                 0.033 |  0.029 |  0.041 |
+| EoN        |  10000 |  100 |                 0.044 |  0.039 |  0.061 |
+| covasim    |  10000 |  100 |                 0.085 |  0.073 |  0.120 |
+| starsim    |  10000 |  100 |                 0.240 |  0.202 |  0.272 |
+| epydemic   |  10000 |  100 |                 0.305 |  0.250 |  0.339 |
+| epiworldpy | 100000 |  100 |                 0.012 |  0.011 |  0.014 |
+| epiworldR  | 100000 |  100 |                 0.012 |  0.010 |  0.013 |
+| epiworld   | 100000 |  100 |                 0.015 |  0.014 |  0.019 |
+| ixa        | 100000 |  100 |                 0.057 |  0.050 |  0.069 |
+| individual | 100000 |  100 |                 0.080 |  0.071 |  0.099 |
+| EoN        | 100000 |  100 |                 0.309 |  0.284 |  0.343 |
+| covasim    | 100000 |  100 |                 0.417 |  0.387 |  0.470 |
+| epydemic   | 100000 |  100 |                 1.465 |  1.366 |  1.596 |
+| starsim    | 100000 |  100 |                 1.495 |  1.346 |  1.791 |
 
 ### Simulation time
 
@@ -166,38 +169,77 @@ one mean that epiworldR completed the simulation call faster.
 
 | Engine     | Agents | Median time / epiworldR |     Q1 |     Q3 |
 |:-----------|-------:|------------------------:|-------:|-------:|
-| epiworld   |  10000 |                    0.95 |   0.78 |   1.13 |
-| epiworldpy |  10000 |                    0.94 |   0.78 |   1.20 |
-| covasim    |  10000 |                   14.85 |  13.28 |  17.56 |
-| starsim    |  10000 |                   41.51 |  38.37 |  51.28 |
-| EoN        |  10000 |                    8.65 |   7.53 |  10.92 |
-| epydemic   |  10000 |                   59.08 |  50.20 |  67.29 |
-| ixa        |  10000 |                    0.43 |   0.36 |   0.53 |
-| individual |  10000 |                    5.00 |   4.33 |   6.00 |
-| epiworld   | 100000 |                    1.17 |   1.06 |   1.29 |
-| epiworldpy | 100000 |                    0.98 |   0.92 |   1.11 |
-| covasim    | 100000 |                   35.12 |  33.20 |  37.31 |
-| starsim    | 100000 |                  102.16 |  93.69 | 111.68 |
-| EoN        | 100000 |                   22.74 |  20.90 |  23.91 |
-| epydemic   | 100000 |                  112.35 | 104.28 | 118.38 |
-| ixa        | 100000 |                    0.42 |   0.39 |   0.48 |
-| individual | 100000 |                    5.50 |   5.09 |   5.90 |
+| epiworld   |  10000 |                    1.13 |   0.86 |   1.46 |
+| epiworldpy |  10000 |                    0.85 |   0.64 |   1.08 |
+| covasim    |  10000 |                   16.53 |  12.15 |  19.63 |
+| starsim    |  10000 |                   41.48 |  32.77 |  50.48 |
+| EoN        |  10000 |                    8.90 |   6.58 |  10.71 |
+| epydemic   |  10000 |                   52.01 |  39.54 |  65.00 |
+| ixa        |  10000 |                    0.97 |   0.74 |   1.19 |
+| individual |  10000 |                    6.00 |   4.32 |   8.25 |
+| epiworld   | 100000 |                    1.39 |   1.19 |   1.64 |
+| epiworldpy | 100000 |                    1.02 |   0.89 |   1.22 |
+| covasim    | 100000 |                   36.38 |  32.72 |  41.44 |
+| starsim    | 100000 |                  133.61 | 110.98 | 155.74 |
+| EoN        | 100000 |                   27.38 |  23.97 |  32.67 |
+| epydemic   | 100000 |                  132.68 | 113.24 | 151.10 |
+| ixa        | 100000 |                    4.87 |   4.08 |   6.16 |
+| individual | 100000 |                    6.96 |   6.00 |   9.09 |
+
+### Time to a first result
+
+The simulation time above covers what an engine has to redo for every
+replicate on the same network (see [what is
+measured](../README.md#run-time)). *Build* is the rest of the setup:
+turning the edge list into the engine’s population and network, which a
+user does once per network. *Build + simulate* is the time to a first
+result once the edge list is in memory. Reading the edge file is shown
+but left out of it, because its cost depends on each language’s file
+parsing rather than on the engine.
+
+| Engine     | Agents | Read edges (s) | Build (s) | Simulate (s) | Build + simulate (s) |
+|:-----------|-------:|---------------:|----------:|-------------:|---------------------:|
+| ixa        |  10000 |          0.008 |     0.000 |        0.005 |                0.005 |
+| epiworld   |  10000 |          0.011 |     0.002 |        0.006 |                0.008 |
+| epiworldpy |  10000 |          0.019 |     0.009 |        0.004 |                0.013 |
+| epiworldR  |  10000 |          0.010 |     0.022 |        0.005 |                0.028 |
+| individual |  10000 |          0.009 |     0.024 |        0.033 |                0.061 |
+| EoN        |  10000 |          0.019 |     0.048 |        0.044 |                0.096 |
+| covasim    |  10000 |          0.020 |     0.062 |        0.085 |                0.145 |
+| starsim    |  10000 |          0.019 |     0.000 |        0.240 |                0.240 |
+| epydemic   |  10000 |          0.018 |     0.025 |        0.305 |                0.333 |
+| epiworld   | 100000 |          0.062 |     0.016 |        0.015 |                0.033 |
+| epiworldR  | 100000 |          0.080 |     0.038 |        0.012 |                0.049 |
+| ixa        | 100000 |          0.045 |     0.000 |        0.057 |                0.058 |
+| epiworldpy | 100000 |          0.201 |     0.069 |        0.012 |                0.081 |
+| individual | 100000 |          0.088 |     0.046 |        0.080 |                0.126 |
+| covasim    | 100000 |          0.171 |     0.057 |        0.417 |                0.471 |
+| EoN        | 100000 |          0.199 |     0.404 |        0.309 |                0.699 |
+| starsim    | 100000 |          0.213 |     0.000 |        1.495 |                1.496 |
+| epydemic   | 100000 |          0.182 |     0.415 |        1.465 |                1.889 |
 
 ### The epiworld family
 
 The wrappers compared with the C++ runner. Here the three draw the
 number of protected agents with different random numbers, so they are
-matched by seed but do not run identical epidemics. As in [scenario
-00](../scenario_00/README.md#the-language-layer-costs-nothing-measurable-in-the-simulation),
-the C++ runner’s slower simulation at 100,000 agents comes from where
-its arrays land in memory, not from the language layer.
+matched by seed but do not run identical epidemics. Here the C++ runner
+is slower than the wrappers at 100,000 agents, although it runs the same
+library. This comes from memory allocation, not from the language layer.
+Placing the vaccine allocates about 24,000 tool objects inside `run()`.
+The C++ runner starts with a small heap, which grows during those
+allocations; R and Python have already grown a large heap while starting
+up. Run alone, the C++ runner takes a median 10.9 ms here, and about 9
+ms when glibc is told to keep a large heap in reserve
+(`MALLOC_TOP_PAD_`) or to serve large blocks from the heap rather than
+with `mmap` (`MALLOC_MMAP_THRESHOLD_`). The runner is timed as a C++
+user would write it, so the published numbers keep this effect.
 
 | Engine     | Agents | Median time / epiworld |   Q1 |   Q3 |
 |:-----------|-------:|-----------------------:|-----:|-----:|
-| epiworldR  |  10000 |                   1.05 | 0.88 | 1.28 |
-| epiworldpy |  10000 |                   1.00 | 0.85 | 1.16 |
-| epiworldR  | 100000 |                   0.85 | 0.78 | 0.94 |
-| epiworldpy | 100000 |                   0.85 | 0.79 | 0.92 |
+| epiworldR  |  10000 |                   0.89 | 0.69 | 1.17 |
+| epiworldpy |  10000 |                   0.74 | 0.54 | 0.99 |
+| epiworldR  | 100000 |                   0.72 | 0.61 | 0.84 |
+| epiworldpy | 100000 |                   0.79 | 0.63 | 0.95 |
 
 ### Epidemiological sanity checks
 
@@ -238,24 +280,24 @@ scenario took longer.
 
 | Engine | Agents | Median scenario 00 (s) | Median scenario 01 (s) | Median time / scenario 00 | Q1 | Q3 |
 |:---|---:|---:|---:|---:|---:|---:|
-| ixa | 10000 | 0.005 | 0.002 | 0.44 | 0.39 | 0.49 |
-| epiworldpy | 10000 | 0.010 | 0.005 | 0.46 | 0.39 | 0.54 |
-| epiworld | 10000 | 0.010 | 0.005 | 0.47 | 0.42 | 0.54 |
-| epydemic | 10000 | 0.587 | 0.296 | 0.49 | 0.44 | 0.54 |
-| epiworldR | 10000 | 0.010 | 0.005 | 0.50 | 0.44 | 0.56 |
-| EoN | 10000 | 0.087 | 0.043 | 0.50 | 0.44 | 0.58 |
-| covasim | 10000 | 0.097 | 0.074 | 0.77 | 0.67 | 0.86 |
-| individual | 10000 | 0.033 | 0.025 | 0.78 | 0.70 | 0.84 |
-| starsim | 10000 | 0.178 | 0.226 | 1.24 | 1.12 | 1.38 |
-| ixa | 100000 | 0.009 | 0.004 | 0.48 | 0.44 | 0.54 |
-| epydemic | 100000 | 1.876 | 1.173 | 0.63 | 0.60 | 0.66 |
-| epiworldR | 100000 | 0.016 | 0.011 | 0.65 | 0.59 | 0.71 |
-| epiworldpy | 100000 | 0.016 | 0.010 | 0.67 | 0.59 | 0.74 |
-| EoN | 100000 | 0.333 | 0.237 | 0.71 | 0.67 | 0.76 |
-| epiworld | 100000 | 0.016 | 0.012 | 0.75 | 0.68 | 0.86 |
-| individual | 100000 | 0.058 | 0.058 | 0.98 | 0.95 | 1.00 |
-| starsim | 100000 | 1.111 | 1.120 | 1.01 | 0.92 | 1.03 |
-| covasim | 100000 | 0.361 | 0.369 | 1.02 | 1.01 | 1.04 |
+| epydemic | 10000 | 0.845 | 0.305 | 0.37 | 0.28 | 0.45 |
+| EoN | 10000 | 0.089 | 0.044 | 0.49 | 0.44 | 0.68 |
+| epiworldpy | 10000 | 0.009 | 0.004 | 0.49 | 0.42 | 0.58 |
+| ixa | 10000 | 0.010 | 0.005 | 0.51 | 0.39 | 0.65 |
+| epiworldR | 10000 | 0.010 | 0.005 | 0.56 | 0.49 | 0.75 |
+| epiworld | 10000 | 0.010 | 0.006 | 0.63 | 0.53 | 0.84 |
+| individual | 10000 | 0.044 | 0.033 | 0.78 | 0.62 | 1.01 |
+| starsim | 10000 | 0.196 | 0.240 | 1.10 | 0.99 | 1.36 |
+| covasim | 10000 | 0.074 | 0.085 | 1.14 | 1.02 | 1.40 |
+| epiworldR | 100000 | 0.022 | 0.012 | 0.51 | 0.37 | 0.67 |
+| epiworldpy | 100000 | 0.021 | 0.012 | 0.58 | 0.45 | 0.71 |
+| epydemic | 100000 | 2.441 | 1.465 | 0.61 | 0.54 | 0.71 |
+| EoN | 100000 | 0.411 | 0.309 | 0.76 | 0.65 | 0.93 |
+| epiworld | 100000 | 0.020 | 0.015 | 0.78 | 0.63 | 0.94 |
+| individual | 100000 | 0.081 | 0.080 | 1.08 | 0.85 | 1.24 |
+| covasim | 100000 | 0.384 | 0.417 | 1.09 | 1.03 | 1.20 |
+| ixa | 100000 | 0.054 | 0.057 | 1.10 | 0.89 | 1.28 |
+| starsim | 100000 | 1.244 | 1.495 | 1.19 | 1.05 | 1.44 |
 
 Run time does not isolate the cost of the vaccine machinery. The vaccine
 cuts the median attack rate from about 0.39 to 0.12 at 10,000 agents and
@@ -314,6 +356,18 @@ seconds with the approach the runner uses: draw the number of protected
 agents, and let epiworld place the tool at random. Both give the same
 vaccine statistically. epiworldR 0.16.1 fixed the quadratic cost, so
 either approach is now fast; the runner keeps the second.
+
+### What the vaccine costs epiworld and ixa
+
+Both place the vaccine inside the timed call, before the first day.
+epiworld clones the tool onto the heap for each of the roughly 24,000
+protected agents at 100,000 agents, which takes about 3.2 ms per run;
+ixa sets a property on each of the 30,000 vaccinees in a plan at time 0,
+about 1.7 ms. Because the vaccine also shrinks the outbreak, this fixed
+cost is a larger share of epiworld’s time here than in scenario 00.
+ixa’s time per replicate is still mostly rebuilding its context.
+[analysis.md](../analysis.md) has the measurements, and explains the
+rest of the difference between the two engines.
 
 ### Calibration
 

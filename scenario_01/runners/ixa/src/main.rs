@@ -325,15 +325,19 @@ fn main() {
     );
     let rates = Rates::from_args(&args);
     let vaccine = Vaccine { coverage: args.vaccine_coverage, efficacy: args.vaccine_efficacy };
+    let read_seconds = total_started.elapsed().as_secs_f64();
+    // execute() runs a context's plans once, so every replicate needs a new
+    // context: building the population and network is timed with the
+    // simulation, as epiworld's run() re-initializes its model.
+    let simulate_started = Instant::now();
     let mut context = build_context(args.n, &edges, args.seed);
     schedule_seeding(&mut context, args.n, args.initial_infected);
     schedule_vaccination(&mut context, args.n, vaccine);
-    drop(edges);
     let peak = schedule_days(&mut context, args.days, rates);
 
-    let simulate_started = Instant::now();
     context.execute();
     let simulate_seconds = simulate_started.elapsed().as_secs_f64();
+    drop(edges);
     let total_seconds = total_started.elapsed().as_secs_f64();
 
     let result = outcome(&context, peak.get());
@@ -354,6 +358,7 @@ fn main() {
         "mean_degree": args.mean_degree,
         "target_r0": args.target_r0,
         "transmission_multiplier": args.transmission_multiplier,
+        "read_seconds": read_seconds,
         "setup_seconds": total_seconds - simulate_seconds,
         "simulate_seconds": simulate_seconds,
         "total_seconds": total_seconds,

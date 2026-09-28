@@ -98,6 +98,7 @@ def main(engine: str, run: Callable[[argparse.Namespace, np.ndarray, np.ndarray]
     source, target = read_edges(args.network)
     if len(source) != args.network_edges:
         raise ValueError(f"edge count mismatch: expected {args.network_edges}, read {len(source)}")
+    read_elapsed = perf_counter() - total_started
     result = run(args, source, target)
     total_elapsed = perf_counter() - total_started
     setup_elapsed = total_elapsed - result["simulate_seconds"] - result["extract_seconds"]
@@ -114,6 +115,7 @@ def main(engine: str, run: Callable[[argparse.Namespace, np.ndarray, np.ndarray]
         "mean_degree": args.mean_degree,
         "target_r0": args.target_r0,
         "transmission_multiplier": args.transmission_multiplier,
+        "read_seconds": read_elapsed,
         "setup_seconds": setup_elapsed,
         "total_seconds": total_elapsed,
         "fingerprint": args.fingerprint,
