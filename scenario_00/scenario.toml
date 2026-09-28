@@ -2,6 +2,9 @@
 name = "SEIRH baseline"
 description = "SEIRH epidemic with a hospitalization branch and no interventions."
 
+[cache]
+accept_published_results = true
+
 # Every key in [disease] (and [intervention], when present) is passed to each
 # runner as a --kebab-case flag, so runners must accept exactly these keys.
 [disease]

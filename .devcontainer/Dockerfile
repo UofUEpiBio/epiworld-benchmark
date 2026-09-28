@@ -32,6 +32,19 @@ RUN curl -fsSL https://sh.rustup.rs \
         | sh -s -- -y --no-modify-path --profile minimal --default-toolchain "${RUST_VERSION}" \
     && rustc --version
 
+# Julia and the Agents.jl environment used only by scenarios that opt in.
+ARG JULIA_VERSION=1.13.1
+RUN architecture="$(dpkg --print-architecture)" \
+    && case "${architecture}" in \
+        amd64) julia_arch=x86_64; julia_path=x64 ;; \
+        arm64) julia_arch=aarch64; julia_path=aarch64 ;; \
+        *) echo "Unsupported Julia architecture: ${architecture}" >&2; exit 1 ;; \
+       esac \
+    && curl -fsSL "https://julialang-s3.julialang.org/bin/linux/${julia_path}/1.13/julia-${JULIA_VERSION}-linux-${julia_arch}.tar.gz" \
+        | tar -xz -C /opt \
+    && ln -s "/opt/julia-${JULIA_VERSION}/bin/julia" /usr/local/bin/julia \
+    && julia --version
+
 # Python via uv. The environment and the Cargo target directory live outside
 # the bind-mounted checkout so they never collide with a host .venv/target.
 COPY --from=ghcr.io/astral-sh/uv:0.8.14 /uv /uvx /usr/local/bin/
@@ -46,6 +59,11 @@ RUN uv python install "${PYTHON_VERSION}"
 WORKDIR /opt/benchmark-deps
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen && rm -rf /root/.cache/uv
+
+COPY julia/Project.toml julia/Manifest.toml ./julia/
+RUN julia --project=/opt/benchmark-deps/julia --startup-file=no \
+        -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()' \
+    && rm -rf /root/.julia/logs /root/.julia/registries/.cache
 
 # Pre-fetch and pre-build the ixa runners' dependencies so `make setup` only
 # compiles the runners themselves. Every scenario's crate pins the same
@@ -87,6 +105,25 @@ RUN mkdir -p /opt/epiworld \
     && curl -fsSL "https://github.com/UofUEpiBio/epiworld/archive/${EPIWORLD_SHA}.tar.gz" \
         | tar -xz -C /opt/epiworld --strip-components=1 \
     && grep -q 'EPIWORLD_VERSION_MINOR 17' /opt/epiworld/include/epiworld/epiworld.hpp
+
+# FRED, for the scenario_04 network-transmission runner. Unlike epiworld, it
+# takes no bind-mounted scenario inputs (the runner drives it entirely via a
+# generated model file), so it is fully built into the image rather than by
+# `make setup`. Keep the commit in step with FRED_REF in the Makefile. FRED's
+# Makefile hardcodes -m64 for every Linux target, which gcc rejects on arm64;
+# M64= clears it (redundant, not wrong, on x86_64). FRED always reads
+# data/config.fred at startup for its place-type defaults, even though this
+# runner supplies its own synthetic population and never touches FRED's
+# bundled census data (data/country, the rest of data/'s size); that alone is
+# dropped.
+ARG FRED_SHA=bd25f048f8e390ff697bdfa83a0bd3c2e19d6046
+ENV FRED_HOME=/opt/fred
+RUN mkdir -p /opt/fred \
+    && curl -fsSL "https://github.com/PublicHealthDynamicsLab/FRED/archive/${FRED_SHA}.tar.gz" \
+        | tar -xz -C /opt/fred --strip-components=1 \
+    && make -C /opt/fred/src FRED M64= \
+    && echo "${FRED_SHA}" > /opt/fred/COMMIT \
+    && rm -rf /opt/fred/tests /opt/fred/docs /opt/fred/pybin /opt/fred/data/country
 
 WORKDIR /workspace
 CMD ["bash"]

@@ -2,6 +2,9 @@
 name = "SEIRH baseline at 1,000,000 agents"
 description = "Scenario 00 at 1,000,000 agents, for 20 replicates per engine."
 
+[cache]
+accept_published_results = true
+
 [design]
 # Replaces [study] population_sizes and replicates in config.toml. The
 # network and seeds follow the size's position after the [study] sizes, so

@@ -2,6 +2,9 @@
 name = "SEIRH + vaccination + outputs"
 description = "Scenario 01 plus four outputs: the transmission tree, daily incidence, the reproductive number, and the daily transition matrix."
 
+[cache]
+accept_published_results = true
+
 # Every key in [disease] (and [intervention], when present) is passed to each
 # runner as a --kebab-case flag, so runners must accept exactly these keys.
 [disease]

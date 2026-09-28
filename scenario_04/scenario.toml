@@ -1,0 +1,58 @@
+[scenario]
+name = "SEIRH on a collapsed GeoPops network"
+description = "SEIRH baseline on a 200,000-person graph formed by collapsing GeoPops household, school, workplace, and group-quarters layers."
+
+[design]
+population_sizes = [200000]
+replicates = 20
+workers = 1
+engines = [
+  "epiworldR", "epiworldpy", "epiworld", "covasim", "starsim", "EoN", "epydemic", "ixa",
+  "individual", "FRED", "Agents.jl",
+]
+# MEmilio is deliberately excluded: its ABM has no edge-list network
+# primitive (contacts are mediated by shared Locations, not a graph), so
+# matching this scenario's network would need ~376,000 synthetic two-person
+# Locations of unproven performance, on top of an 8-compartment,
+# viral-load-driven disease model that has no simple SEIRH mapping. See
+# https://github.com/UofUEpiBio/epiworld-benchmark/issues/11 for a proper
+# follow-up design.
+
+[network]
+type = "geopops_collapsed"
+source_repository = "https://github.com/GeoPopsHub/sc_spartanburg_measles"
+source_commit = "fe2c288cdda0410a49b101c54d882bdcb5057397"
+source_population = "Spartanburg County, South Carolina synthetic population"
+layers = ["hh", "wp", "sch", "gq"]
+# GeoPops' matrix row order is deterministic and geographically grouped. The
+# benchmark retains rows 0..199999 and takes the induced subgraph, then unions
+# the four layers, removes duplicate/self edges, and renumbers nothing.
+selection = "first_n_matrix_rows_induced_subgraph"
+collapse = "undirected_unweighted_union"
+
+[network.source_sha256]
+hh = "b2363301e92174bde2080d9c6041a7c010a66c7af1d9bf03f5ae3f370552c330"
+wp = "b56d1be08a5c0d3160c6a191def96ba7978ee9132f7e009d0a168c69c0f8235a"
+sch = "b2242e1a2ffe991f1bd2ae02446216eeb15ade30a5e4d3f3e65f1bdd910a7a8b"
+gq = "d000a69f2da620e95fcf727a48979bb7b7cfba5b4cffe2cc34267f0c29374cc5"
+
+# Every key in [disease] (and [intervention], when present) is passed to each
+# runner as a --kebab-case flag, so runners must accept exactly these keys.
+[disease]
+target_r0 = 2.0
+initial_infected = 100
+latent_days = 4.0
+infectious_days = 7.0
+# Hospitalization is retained as a common outcome parameter. Engines whose
+# native SEIR supports an H state use it directly; Covasim reports its native
+# severe/hospital load. The primary timing comparison is the common SEIR core.
+hospitalization_probability = 0.05
+hospital_days = 7.0
+
+# No [calibration] table yet: scenario_00's per-engine multipliers were
+# derived empirically from full runs at n=10,000 and n=100,000 on a
+# Watts-Strogatz network, and do not transfer to this scenario's single
+# n=200,000 GeoPops network (a different, degree-heterogeneous topology).
+# Every engine therefore runs uncalibrated here (transmission_multiplier
+# defaults to 1.0) until a full run's median attack rates give real factors
+# to calibrate against.

@@ -1,4 +1,4 @@
-.PHONY: help setup check smoke benchmark profile report clean-cache container-image epiworld-runners
+.PHONY: help setup check smoke benchmark profile report clean-cache container-image epiworld-runners fred-runner
 
 # Inside the container, PYTHON and CARGO_TARGET_DIR come from the image.
 PYTHON ?= .venv/bin/python
@@ -16,6 +16,15 @@ EPIWORLD_REF := 092bad189b137e76f32ea19f1d6ed61f834389d0
 EPIWORLD_INCLUDE ?= .deps/$(EPIWORLD_REF)/include
 EPIWORLD_SOURCES := $(sort $(wildcard scenario_*/runners/epiworld/main.cpp))
 EPIWORLD_CXXFLAGS := -std=c++17 -O2 -DNDEBUG -Depiworld_double=double
+
+# FRED (scenario_04's network-transmission runner). It is a single shared
+# binary, not compiled per scenario like epiworld/ixa above. The container
+# bakes a prebuilt binary into the image at $FRED_HOME; natively, the pinned
+# commit is downloaded into .deps/fred and built there. Keep FRED_REF in step
+# with FRED_SHA in the Dockerfile.
+FRED_REF := bd25f048f8e390ff697bdfa83a0bd3c2e19d6046
+FRED_HOME ?= .deps/fred
+FRED_BINARY := $(FRED_HOME)/bin/FRED
 
 # Restrict smoke/benchmark to some scenarios, e.g. SCENARIOS="scenario_01".
 SCENARIOS ?=
@@ -40,7 +49,7 @@ help:
 	@echo "  container-image - Build the $(IMAGE) image with $(CONTAINER)"
 	@echo "  container-TARGET - Run 'make setup TARGET' in the container, e.g. container-benchmark"
 
-setup: epiworld-runners
+setup: epiworld-runners fred-runner
 	uv sync --frozen
 	for manifest in $(IXA_MANIFESTS); do \
 		$(CARGO) build --release --locked --manifest-path $$manifest || exit 1; \
@@ -59,6 +68,15 @@ epiworld-runners: | $(EPIWORLD_INCLUDE)
 		$(CXX) $(EPIWORLD_CXXFLAGS) -I$(EPIWORLD_INCLUDE) $$source -lz \
 			-o "$$out/epiworld-$$(echo $$scenario | tr _ -)" || exit 1; \
 	done
+
+$(FRED_BINARY):
+	mkdir -p $(FRED_HOME)
+	curl -fsSL https://github.com/PublicHealthDynamicsLab/FRED/archive/$(FRED_REF).tar.gz \
+		| tar -xz -C $(FRED_HOME) --strip-components=1
+	echo $(FRED_REF) > $(FRED_HOME)/COMMIT
+	$(MAKE) -C $(FRED_HOME)/src FRED M64=
+
+fred-runner: $(FRED_BINARY)
 
 check:
 	$(PYTHON) -m pytest
