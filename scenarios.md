@@ -135,7 +135,8 @@ complete model. The report leaves that shared plumbing out of the line counts.
    1,000,000 agents. Adding one there reruns every scenario, as any edit to
    `config.toml` does, and needs transmission multipliers for that size in
    its `[calibration]`.
-   Keep `N_THREADS` at 1 (the default) for published timings. `make report`
+   Use `N_THREADS=4`, as the published results do, so the new scenario's
+   timings match the others' concurrency. `make report`
    renders the overview and every `scenario_*/README.qmd`. Check that the
    prose in the new report still matches its numbers.
 

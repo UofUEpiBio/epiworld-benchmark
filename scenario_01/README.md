@@ -54,10 +54,12 @@ replicate by replicate.
   The draw differs in every run, and epiworld places its tools inside
   `run()`, so the other runners time their draw too. EoN’s timer covers
   building its initial status dictionary. Covasim’s covers the draw, and
-  Covasim gives the doses on day 0 inside `sim.run()`. epydemic draws
-  inside its simulation call, and ixa in a plan at time 0, inside
-  `execute()`. The epiworld runners draw only the number of protected
-  agents (one binomial draw) before `run()`.
+  Covasim gives the doses on day 0 inside `sim.run()`. Starsim draws the
+  vaccinees when its day-0 campaign runs, inside `sim.run()`. epydemic
+  draws inside its simulation call, and ixa in a plan at time 0, inside
+  `execute()`. individual’s timer covers its draw. The epiworld runners
+  draw only the number of protected agents (one binomial draw) before
+  `run()`.
 
 About 24% of agents end up protected, so the effective reproduction
 number falls from about 2 to about 1.5. The disease parameters are those
@@ -96,6 +98,13 @@ model-lines comparison reflects what a user of that engine would write.
   `subtarget`. One gives the protected agents `rel_sus = 0`, the other
   leaves the remaining vaccinees unchanged. A single `simple_vaccine`
   would be leaky. Covasim tracks `people.vaccinated` itself.
+- **Starsim**: its own all-or-nothing vaccine,
+  `ss.simple_vx(leaky=False)`, delivered by a day-0 `ss.campaign_vx` to
+  the drawn agents (the campaign’s eligibility function returns them).
+  The vaccine sets `rel_sus = 0` for the protected vaccinees; Starsim
+  applies interventions before transmission within a step. `simple_vx`
+  draws who is protected from NumPy’s global generator, so the runner
+  seeds it.
 - **EoN**: protected agents start in a status `"V"` that has no
   transitions, so no induced transmission rate ever reaches them.
 - **epydemic**: a `V` compartment with no events. It sits outside the
@@ -104,12 +113,15 @@ model-lines comparison reflects what a user of that engine would write.
 - **ixa**: a `VaccineStatus` property (`Unvaccinated`, `Protected`,
   `Unprotected`) on `Person`, set by a plan at time 0. The daily step
   skips protected neighbours when it looks for susceptible contacts.
+- **individual**: no intervention objects, so the protected agents are a
+  `Bitset`, and the infection process intersects the susceptible agents
+  with its complement.
 
 ## Results
 
 > [!TIP]
 >
-> The complete 1,400-run design for this scenario is available.
+> The complete 1,800-run design for this scenario is available.
 
 | Field               | Value                                                 |
 |:--------------------|:------------------------------------------------------|
@@ -120,20 +132,24 @@ model-lines comparison reflects what a user of that engine would write.
 
 | Engine     | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:-----------|-------:|-----:|----------------------:|-------:|-------:|
-| ixa        |  10000 |  100 |                 0.002 |  0.002 |  0.003 |
+| ixa        |  10000 |  100 |                 0.002 |  0.002 |  0.002 |
+| epiworldpy |  10000 |  100 |                 0.005 |  0.004 |  0.005 |
 | epiworld   |  10000 |  100 |                 0.005 |  0.004 |  0.005 |
-| epiworldpy |  10000 |  100 |                 0.005 |  0.004 |  0.006 |
 | epiworldR  |  10000 |  100 |                 0.005 |  0.005 |  0.006 |
-| EoN        |  10000 |  100 |                 0.039 |  0.037 |  0.043 |
-| covasim    |  10000 |  100 |                 0.070 |  0.067 |  0.075 |
-| epydemic   |  10000 |  100 |                 0.259 |  0.242 |  0.277 |
-| ixa        | 100000 |  100 |                 0.005 |  0.004 |  0.005 |
-| epiworldpy | 100000 |  100 |                 0.012 |  0.011 |  0.014 |
-| epiworld   | 100000 |  100 |                 0.014 |  0.013 |  0.015 |
-| epiworldR  | 100000 |  100 |                 0.015 |  0.012 |  0.020 |
-| EoN        | 100000 |  100 |                 0.273 |  0.260 |  0.290 |
-| covasim    | 100000 |  100 |                 0.420 |  0.406 |  0.447 |
-| epydemic   | 100000 |  100 |                 1.518 |  1.419 |  1.643 |
+| individual |  10000 |  100 |                 0.025 |  0.025 |  0.026 |
+| EoN        |  10000 |  100 |                 0.043 |  0.040 |  0.049 |
+| covasim    |  10000 |  100 |                 0.074 |  0.069 |  0.082 |
+| starsim    |  10000 |  100 |                 0.226 |  0.200 |  0.246 |
+| epydemic   |  10000 |  100 |                 0.296 |  0.267 |  0.317 |
+| ixa        | 100000 |  100 |                 0.004 |  0.004 |  0.005 |
+| epiworldpy | 100000 |  100 |                 0.010 |  0.010 |  0.011 |
+| epiworldR  | 100000 |  100 |                 0.011 |  0.010 |  0.011 |
+| epiworld   | 100000 |  100 |                 0.012 |  0.012 |  0.013 |
+| individual | 100000 |  100 |                 0.058 |  0.057 |  0.059 |
+| EoN        | 100000 |  100 |                 0.237 |  0.233 |  0.243 |
+| covasim    | 100000 |  100 |                 0.369 |  0.365 |  0.376 |
+| starsim    | 100000 |  100 |                 1.120 |  1.016 |  1.136 |
+| epydemic   | 100000 |  100 |                 1.173 |  1.161 |  1.197 |
 
 ### Simulation time
 
@@ -148,20 +164,24 @@ panel.
 Ratios are matched by population size and replicate seed. Values above
 one mean that epiworldR completed the simulation call faster.
 
-| Engine     | Agents | Median time / epiworldR |    Q1 |     Q3 |
-|:-----------|-------:|------------------------:|------:|-------:|
-| epiworld   |  10000 |                    0.90 |  0.75 |   1.07 |
-| epiworldpy |  10000 |                    0.92 |  0.72 |   1.19 |
-| covasim    |  10000 |                   13.25 | 11.07 |  15.96 |
-| EoN        |  10000 |                    7.47 |  5.79 |   8.91 |
-| epydemic   |  10000 |                   48.39 | 40.76 |  59.43 |
-| ixa        |  10000 |                    0.44 |  0.33 |   0.52 |
-| epiworld   | 100000 |                    0.96 |  0.71 |   1.14 |
-| epiworldpy | 100000 |                    0.84 |  0.60 |   0.99 |
-| covasim    | 100000 |                   29.54 | 21.58 |  34.22 |
-| EoN        | 100000 |                   18.78 | 14.16 |  22.30 |
-| epydemic   | 100000 |                  103.06 | 75.62 | 123.08 |
-| ixa        | 100000 |                    0.32 |  0.24 |   0.41 |
+| Engine     | Agents | Median time / epiworldR |     Q1 |     Q3 |
+|:-----------|-------:|------------------------:|-------:|-------:|
+| epiworld   |  10000 |                    0.95 |   0.78 |   1.13 |
+| epiworldpy |  10000 |                    0.94 |   0.78 |   1.20 |
+| covasim    |  10000 |                   14.85 |  13.28 |  17.56 |
+| starsim    |  10000 |                   41.51 |  38.37 |  51.28 |
+| EoN        |  10000 |                    8.65 |   7.53 |  10.92 |
+| epydemic   |  10000 |                   59.08 |  50.20 |  67.29 |
+| ixa        |  10000 |                    0.43 |   0.36 |   0.53 |
+| individual |  10000 |                    5.00 |   4.33 |   6.00 |
+| epiworld   | 100000 |                    1.17 |   1.06 |   1.29 |
+| epiworldpy | 100000 |                    0.98 |   0.92 |   1.11 |
+| covasim    | 100000 |                   35.12 |  33.20 |  37.31 |
+| starsim    | 100000 |                  102.16 |  93.69 | 111.68 |
+| EoN        | 100000 |                   22.74 |  20.90 |  23.91 |
+| epydemic   | 100000 |                  112.35 | 104.28 | 118.38 |
+| ixa        | 100000 |                    0.42 |   0.39 |   0.48 |
+| individual | 100000 |                    5.50 |   5.09 |   5.90 |
 
 ### The epiworld family
 
@@ -174,10 +194,10 @@ its arrays land in memory, not from the language layer.
 
 | Engine     | Agents | Median time / epiworld |   Q1 |   Q3 |
 |:-----------|-------:|-----------------------:|-----:|-----:|
-| epiworldR  |  10000 |                   1.11 | 0.93 | 1.33 |
-| epiworldpy |  10000 |                   1.03 | 0.86 | 1.21 |
-| epiworldR  | 100000 |                   1.05 | 0.88 | 1.42 |
-| epiworldpy | 100000 |                   0.85 | 0.76 | 1.07 |
+| epiworldR  |  10000 |                   1.05 | 0.88 | 1.28 |
+| epiworldpy |  10000 |                   1.00 | 0.85 | 1.16 |
+| epiworldR  | 100000 |                   0.85 | 0.78 | 0.94 |
+| epiworldpy | 100000 |                   0.85 | 0.79 | 0.92 |
 
 ### Epidemiological sanity checks
 
@@ -193,14 +213,18 @@ load, and the share of agents the vaccine protected.
 | epiworldpy | 10000 | 0.117 | 8 | 0.24 |
 | epiworldR | 10000 | 0.115 | 9 | 0.24 |
 | epydemic | 10000 | 0.121 | 11 | 0.24 |
+| individual | 10000 | 0.117 | 9 | 0.24 |
 | ixa | 10000 | 0.119 | 8 | 0.24 |
+| starsim | 10000 | 0.119 | 9 | 0.24 |
 | covasim | 100000 | 0.012 | 11 | 0.24 |
 | EoN | 100000 | 0.013 | 10 | 0.24 |
 | epiworld | 100000 | 0.014 | 9 | 0.24 |
 | epiworldpy | 100000 | 0.014 | 9 | 0.24 |
 | epiworldR | 100000 | 0.014 | 9 | 0.24 |
 | epydemic | 100000 | 0.014 | 11 | 0.24 |
+| individual | 100000 | 0.013 | 10 | 0.24 |
 | ixa | 100000 | 0.014 | 9 | 0.24 |
+| starsim | 100000 | 0.014 | 10 | 0.24 |
 
 ![](README_files/figure-commonmark/outcomes-plot-1.png)
 
@@ -214,32 +238,39 @@ scenario took longer.
 
 | Engine | Agents | Median scenario 00 (s) | Median scenario 01 (s) | Median time / scenario 00 | Q1 | Q3 |
 |:---|---:|---:|---:|---:|---:|---:|
-| epiworld | 10000 | 0.016 | 0.005 | 0.32 | 0.25 | 0.45 |
-| epiworldR | 10000 | 0.011 | 0.005 | 0.46 | 0.37 | 0.60 |
-| epiworldpy | 10000 | 0.011 | 0.005 | 0.46 | 0.34 | 0.54 |
-| EoN | 10000 | 0.083 | 0.039 | 0.47 | 0.42 | 0.52 |
-| epydemic | 10000 | 0.537 | 0.259 | 0.48 | 0.44 | 0.53 |
-| ixa | 10000 | 0.004 | 0.002 | 0.50 | 0.44 | 0.59 |
-| covasim | 10000 | 0.073 | 0.070 | 0.97 | 0.91 | 1.03 |
-| EoN | 100000 | 0.657 | 0.273 | 0.42 | 0.35 | 0.53 |
-| ixa | 100000 | 0.011 | 0.005 | 0.42 | 0.36 | 0.49 |
-| epydemic | 100000 | 3.260 | 1.518 | 0.47 | 0.40 | 0.55 |
-| epiworldpy | 100000 | 0.021 | 0.012 | 0.57 | 0.47 | 0.72 |
-| epiworld | 100000 | 0.020 | 0.014 | 0.68 | 0.52 | 0.81 |
-| epiworldR | 100000 | 0.022 | 0.015 | 0.71 | 0.59 | 0.96 |
-| covasim | 100000 | 0.435 | 0.420 | 1.01 | 0.91 | 1.07 |
+| ixa | 10000 | 0.005 | 0.002 | 0.44 | 0.39 | 0.49 |
+| epiworldpy | 10000 | 0.010 | 0.005 | 0.46 | 0.39 | 0.54 |
+| epiworld | 10000 | 0.010 | 0.005 | 0.47 | 0.42 | 0.54 |
+| epydemic | 10000 | 0.587 | 0.296 | 0.49 | 0.44 | 0.54 |
+| epiworldR | 10000 | 0.010 | 0.005 | 0.50 | 0.44 | 0.56 |
+| EoN | 10000 | 0.087 | 0.043 | 0.50 | 0.44 | 0.58 |
+| covasim | 10000 | 0.097 | 0.074 | 0.77 | 0.67 | 0.86 |
+| individual | 10000 | 0.033 | 0.025 | 0.78 | 0.70 | 0.84 |
+| starsim | 10000 | 0.178 | 0.226 | 1.24 | 1.12 | 1.38 |
+| ixa | 100000 | 0.009 | 0.004 | 0.48 | 0.44 | 0.54 |
+| epydemic | 100000 | 1.876 | 1.173 | 0.63 | 0.60 | 0.66 |
+| epiworldR | 100000 | 0.016 | 0.011 | 0.65 | 0.59 | 0.71 |
+| epiworldpy | 100000 | 0.016 | 0.010 | 0.67 | 0.59 | 0.74 |
+| EoN | 100000 | 0.333 | 0.237 | 0.71 | 0.67 | 0.76 |
+| epiworld | 100000 | 0.016 | 0.012 | 0.75 | 0.68 | 0.86 |
+| individual | 100000 | 0.058 | 0.058 | 0.98 | 0.95 | 1.00 |
+| starsim | 100000 | 1.111 | 1.120 | 1.01 | 0.92 | 1.03 |
+| covasim | 100000 | 0.361 | 0.369 | 1.02 | 1.01 | 1.04 |
 
 Run time does not isolate the cost of the vaccine machinery. The vaccine
 cuts the median attack rate from about 0.39 to 0.12 at 10,000 agents and
 from 0.061 to 0.013 at 100,000. Engines whose work tracks the number of
 active infections (EoN, epydemic, the epiworld family, and ixa) get
 faster for that reason alone. Covasim’s vectorized daily update touches
-every agent regardless of the outbreak’s size, so its time barely moves.
-A ratio below one therefore does not mean the vaccine is free. It means
-that the engine’s handling of the vaccine costs less than the smaller
-outbreak saves. A ratio above one would mean the feature itself is
-expensive, as epiworldR’s `distribute_tool_to_set()` was before version
-0.16.1 (see below).
+every agent regardless of the outbreak’s size, and Starsim’s draws
+transmission on every edge every day, so their times barely move.
+individual’s infection process scans the infectious agents’ neighbours
+but also works on full-population bitsets every day, so it sits in
+between. A ratio below one therefore does not mean the vaccine is free.
+It means that the engine’s handling of the vaccine costs less than the
+smaller outbreak saves. A ratio above one would mean the feature itself
+is expensive, as epiworldR’s `distribute_tool_to_set()` was before
+version 0.16.1 (see below).
 
 ### Code required to define the model
 
@@ -252,18 +283,22 @@ regions are listed in [`code_regions.yml`](code_regions.yml).
 | Engine | Language | Files | Lines, scenario 00 | Lines, scenario 01 | Added since scenario 00 |
 |:---|:---|---:|---:|---:|---:|
 | epiworld | C++ | 1 | 26 | 34 | 8 |
+| individual | R | 1 | 32 | 37 | 5 |
 | epiworldpy | Python | 1 | 34 | 38 | 4 |
 | EoN | Python | 1 | 37 | 44 | 7 |
 | epiworldR | R | 1 | 47 | 62 | 15 |
 | covasim | Python | 1 | 64 | 75 | 11 |
 | epydemic | Python | 1 | 70 | 88 | 18 |
+| starsim | Python | 1 | 83 | 94 | 11 |
 | ixa | Rust | 3 | 138 | 168 | 30 |
 
 EoN and epydemic only need a compartment with no transitions. Covasim
 has a vaccine intervention, but it is leaky, so an all-or-nothing
-vaccine takes two targeted doses. epiworldR has a tool that removes
-susceptibility. ixa adds an agent property that its hand-written
-transmission step has to consult.
+vaccine takes two targeted doses. Starsim’s own vaccine product supports
+all-or-nothing protection directly, and needs only a campaign to deliver
+it. epiworldR has a tool that removes susceptibility. ixa adds an agent
+property that its hand-written transmission step has to consult, and
+individual a set that its infection process leaves out.
 
 ## Interpretation
 
@@ -297,4 +332,6 @@ the engines’ attack rates stay aligned with the vaccine in place.
 | epiworldpy | 0.17.0-0+g4a1ee0b |
 | epiworldR  | 0.17.0.0          |
 | epydemic   | 1.14.1            |
+| individual | 0.1.19            |
 | ixa        | 3.1.0             |
+| starsim    | 3.6.1             |

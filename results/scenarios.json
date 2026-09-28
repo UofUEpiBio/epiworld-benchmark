@@ -3,10 +3,29 @@
     "calibration": {
       "covasim_transmission_multiplier_10000": 0.715,
       "covasim_transmission_multiplier_100000": 0.71,
+      "covasim_transmission_multiplier_1000000": 0.71,
+      "individual_transmission_multiplier_10000": 0.951,
+      "individual_transmission_multiplier_100000": 0.951,
+      "individual_transmission_multiplier_1000000": 0.951,
       "ixa_transmission_multiplier_10000": 0.983,
-      "ixa_transmission_multiplier_100000": 0.988
+      "ixa_transmission_multiplier_100000": 0.988,
+      "ixa_transmission_multiplier_1000000": 0.988
     },
     "description": "SEIRH epidemic with a hospitalization branch and no interventions.",
+    "design": [
+      {
+        "n": 10000,
+        "replicates": 100
+      },
+      {
+        "n": 100000,
+        "replicates": 100
+      },
+      {
+        "n": 1000000,
+        "replicates": 20
+      }
+    ],
     "name": "SEIRH baseline",
     "parameters": {
       "hospital_days": 7.0,
@@ -21,10 +40,22 @@
     "calibration": {
       "covasim_transmission_multiplier_10000": 0.715,
       "covasim_transmission_multiplier_100000": 0.71,
+      "individual_transmission_multiplier_10000": 0.951,
+      "individual_transmission_multiplier_100000": 0.951,
       "ixa_transmission_multiplier_10000": 0.983,
       "ixa_transmission_multiplier_100000": 0.988
     },
     "description": "Scenario 00 plus a day-0 all-or-nothing vaccine: 30% coverage, 80% efficacy.",
+    "design": [
+      {
+        "n": 10000,
+        "replicates": 100
+      },
+      {
+        "n": 100000,
+        "replicates": 100
+      }
+    ],
     "name": "SEIRH + vaccination",
     "parameters": {
       "hospital_days": 7.0,
@@ -41,10 +72,22 @@
     "calibration": {
       "covasim_transmission_multiplier_10000": 0.715,
       "covasim_transmission_multiplier_100000": 0.71,
+      "individual_transmission_multiplier_10000": 0.951,
+      "individual_transmission_multiplier_100000": 0.951,
       "ixa_transmission_multiplier_10000": 0.983,
       "ixa_transmission_multiplier_100000": 0.988
     },
     "description": "Scenario 01 plus four outputs: the transmission tree, daily incidence, the reproductive number, and the daily transition matrix.",
+    "design": [
+      {
+        "n": 10000,
+        "replicates": 100
+      },
+      {
+        "n": 100000,
+        "replicates": 100
+      }
+    ],
     "name": "SEIRH + vaccination + outputs",
     "parameters": {
       "hospital_days": 7.0,

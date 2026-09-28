@@ -1,5 +1,5 @@
 {
-  "cached_before_run": 2400,
+  "cached_before_run": 409,
   "engine_versions": {
     "EoN": "1.92",
     "covasim": "3.1.8",
@@ -7,9 +7,11 @@
     "epiworldR": "0.17.0.0",
     "epiworldpy": "0.17.0-0+g4a1ee0b",
     "epydemic": "1.14.1",
-    "ixa": "3.1.0"
+    "individual": "0.1.19",
+    "ixa": "3.1.0",
+    "starsim": "3.6.1"
   },
-  "executed": 1800,
+  "executed": 5171,
   "failures": 0,
   "platform": "Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39",
   "profile": "full",
@@ -19,15 +21,17 @@
     "epiworldpy",
     "epiworld",
     "covasim",
+    "starsim",
     "EoN",
     "epydemic",
-    "ixa"
+    "ixa",
+    "individual"
   ],
   "requested_scenarios": [
     "scenario_00",
     "scenario_01",
     "scenario_02"
   ],
-  "result_rows_available": 4221,
+  "result_rows_available": 5607,
   "workers": 4
 }
