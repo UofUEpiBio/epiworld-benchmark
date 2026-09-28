@@ -10,7 +10,7 @@
 - [Repository layout](#repository-layout)
 - [References](#references)
 
-This project compares how fast seven epidemic simulation engines run the
+This project compares how fast nine epidemic simulation engines run the
 same agent-based model on the same contact network, and how much code
 each engine needs to express that model. Three of them are the epiworld
 family: the header-only C++ library
@@ -20,15 +20,17 @@ target="_blank">epiworld</a> (Vega Yon 2026) and its two wrappers,
 target="_blank">epiworldR</a> (Meyer and Vega Yon 2023) for R and
 <a href="https://github.com/UofUEpiBio/epiworldpy"
 target="_blank">epiworldpy</a> (Vega Yon and Banks 2026) for Python. The
-other four are
-<a href="https://covasim.org/" target="_blank">Covasim</a> (Kerr et al.
-2021),
+other six are <a href="https://covasim.org/" target="_blank">Covasim</a>
+(Kerr et al. 2021) and its successor
+<a href="https://starsim.org/" target="_blank">Starsim</a> (Kerr et al.
+2025),
 <a href="https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html"
 target="_blank">EoN</a> (Miller and Ting 2019),
 <a href="https://github.com/simoninireland/epydemic"
-target="_blank">epydemic</a> (Dobson 2022), and
+target="_blank">epydemic</a> (Dobson 2022),
 <a href="https://ixa.rs/" target="_blank">ixa</a> (The Ixa Developers
-2026).
+2026), and the R package <a href="https://mrc-ide.github.io/individual/"
+target="_blank">individual</a> (Charles and Wu 2021).
 
 The benchmark is organized as **scenarios** of increasing complexity.
 Each scenario adds a feature to an earlier one, so together they show
@@ -43,6 +45,10 @@ results, and interpretation.
 | 00 | SEIRH epidemic with a hospitalization branch, no interventions | [scenario_00/README.md](scenario_00/README.md) |
 | 01 | Scenario 00 plus a day-0 all-or-nothing vaccine (30% coverage, 80% efficacy) | [scenario_01/README.md](scenario_01/README.md) |
 | 02 | Scenario 01 plus four outputs: transmission tree, daily incidence, reproductive number, and transition matrix | [scenario_02/README.md](scenario_02/README.md) |
+| 03 | Scenario 00 at 1,000,000 agents | [scenario_03/README.md](scenario_03/README.md) |
+
+[analysis.md](analysis.md) explains why ixa is faster than the epiworld
+family, with measurements that apply to every scenario.
 
 [scenarios.md](scenarios.md) explains how to add a scenario.
 
@@ -50,16 +56,17 @@ results, and interpretation.
 
 Every scenario shares the following design, set in `config.toml`.
 
-- **Population and network.** 10,000 and 100,000 agents on a
-  Watts–Strogatz contact network with mean degree 10 and rewiring
-  probability 0.05. At each size, every engine reads the exact same
-  cached edge list and treats it as an undirected graph. The network
-  fixes mean degree rather than literal graph density, which keeps the
-  edge count, run time, and memory from growing quadratically with
-  population size.
+- **Population and network.** 10,000 and 100,000 agents, or 1,000,000 in
+  scenario 03, on a Watts–Strogatz contact network with mean degree 10
+  and rewiring probability 0.05. At each size, every engine reads the
+  exact same cached edge list and treats it as an undirected graph. The
+  network fixes mean degree rather than literal graph density, which
+  keeps the edge count, run time, and memory from growing quadratically
+  with population size.
 - **Replicates.** 100 independent replicates of 100 days per engine,
-  size, and scenario. Replicate seeds do not depend on the scenario, so
-  two scenarios can be compared replicate by replicate.
+  size, and scenario, and 20 in scenario 03, where the slowest engines
+  take tens of seconds per replicate. Replicate seeds do not depend on
+  the scenario, so two scenarios can be compared replicate by replicate.
 - **Transmission.** Each engine targets an early-outbreak $R_0 = 2$
   through a shared analytic mapping from $R_0$, mean degree, and
   infectious period to a per-contact transmission rate. The engines have
@@ -68,15 +75,17 @@ Every scenario shares the following design, set in `config.toml`.
   size-specific transmission multipliers that align the engines’
   realized attack rates. Each scenario’s report states and justifies its
   factors.
-- **Engines.** The epiworld family, epydemic, and ixa use synchronous
-  daily transitions. The three epiworld runners build the same model on
-  the same C++ core; in scenario 00 they produce identical epidemics for
-  each seed, so their run-time differences come from the language layer,
-  not the model. EoN uses continuous-time hazards simulated exactly with
-  its event-driven `fast_simple_contagion` algorithm. Covasim runs its
-  native model, restricted as far as its public API allows. The reports
-  therefore measure representative framework throughput under aligned
-  network and disease targets, not bit-for-bit epidemiological
+- **Engines.** The epiworld family, epydemic, ixa, and individual use
+  synchronous daily transitions. The three epiworld runners build the
+  same model on the same C++ core; in scenario 00 they produce identical
+  epidemics for each seed, so their run-time differences come from the
+  language layer, not the model. EoN uses continuous-time hazards
+  simulated exactly with its event-driven `fast_simple_contagion`
+  algorithm. Covasim runs its native model, restricted as far as its
+  public API allows. Starsim runs its native SEIR model with a hospital
+  state added, stepping daily with sampled (exponential) durations. The
+  reports therefore measure representative framework throughput under
+  aligned network and disease targets, not bit-for-bit epidemiological
   equivalence.
 
 ## What is measured
@@ -85,24 +94,39 @@ Every scenario shares the following design, set in `config.toml`.
 
 Each replicate runs in a fresh process and records:
 
-- `simulate_seconds`, the primary measure: wall-clock time inside the
-  engine’s simulation call, including engine-native initialization that
-  happens inside that call. Any bookkeeping an engine does while it
-  simulates is included; reading results out of the engine afterwards is
-  not (scenario 02 records that separately as `extract_seconds`).
-  Setting up each run’s initial conditions, which differ from run to run
-  (seeding the initial infections and, where there is one, distributing
-  a vaccine), is timed as simulation in every runner, since epiworld
-  does it inside `run()`;
-- `setup_seconds`: reading the shared edge list and building engine
-  objects;
+- `simulate_seconds`, the primary measure: the wall-clock time of
+  everything an engine has to redo to produce another replicate on the
+  same network. That is the engine’s simulation call, including any
+  initialization it does inside that call, and anything else that cannot
+  be reused between runs:
+  - setting up each run’s initial conditions, which differ from run to
+    run (seeding the initial infections and, where there is one,
+    distributing a vaccine), since epiworld does it inside `run()`;
+  - for ixa, building the context (population, network, and index),
+    because `execute()` runs a context once;
+  - for Starsim, building and initializing the `Sim`, which can also run
+    only once.
+
+  epiworld’s `run()` re-initializes its population every time for the
+  same reason, so every engine pays for starting a fresh run. Any
+  bookkeeping an engine does while it simulates is included; reading
+  results out of the engine afterwards is not (scenario 02 records that
+  separately as `extract_seconds`);
+- `read_seconds`: reading and parsing the shared edge list, which
+  depends on each language’s file handling rather than on the engine;
+- `setup_seconds`: reading the edge list plus building what the engine
+  can reuse across replicates, such as epiworld’s model or EoN’s graph.
+  The reports show the building part (`setup_seconds - read_seconds`) as
+  *build*, and build + simulate as the time to a first result once the
+  edge list is in memory;
 - `total_seconds`: setup plus simulation inside the runner process.
 
 Interpreter and package startup and network generation are excluded.
 Published results are collected one replicate at a time, with native
 math libraries pinned to one thread, inside the container defined in
-`.devcontainer/`. Concurrent replicates distort timings unevenly across
-engines; see [setup.md](setup.md#resource-policy).
+`.devcontainer/`. Running replicates concurrently, even two at a time,
+slowed some engines by up to 30% and others not at all; see
+[setup.md](setup.md#resource-policy).
 
 ### Measuring implementation effort
 
@@ -149,10 +173,20 @@ running natively, targeted runs, the cache, and the resource policy.
       code_regions.yml   regions counted as model code
       runners/           one runner per engine
     results/             collected results for every scenario
+    analysis.md          why ixa is faster than epiworld, across scenarios
+    analysis/            the side measurements behind analysis.md
 
 ## References
 
 <div id="refs" class="references csl-bib-body hanging-indent">
+
+<div id="ref-charlesIndividual2021" class="csl-entry">
+
+Charles, Giovanni D., and Sean L. Wu. 2021. “Individual: An R Package
+for Individual-Based Epidemiological Models.” *Journal of Open Source
+Software* 6 (66): 3539. <https://doi.org/10.21105/joss.03539>.
+
+</div>
 
 <div id="ref-dobson2022epydemic" class="csl-entry">
 
@@ -169,6 +203,13 @@ Kerr, Cliff C., Robyn M. Stuart, Dina Mistry, et al. 2021. “Covasim: An
 Agent-Based Model of COVID-19 Dynamics and Interventions.” *PLOS
 Computational Biology* 17 (7): e1009149.
 <https://doi.org/10.1371/journal.pcbi.1009149>.
+
+</div>
+
+<div id="ref-kerrStarsim2025" class="csl-entry">
+
+Kerr, Cliff, Robyn Stuart, Romesh Abeysuriya, et al. 2025. *Starsim*. V.
+3.0.0. Released July. <https://github.com/starsimhub/starsim>.
 
 </div>
 

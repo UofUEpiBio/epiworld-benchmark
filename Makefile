@@ -1,4 +1,4 @@
-.PHONY: help setup check smoke benchmark report clean-cache container-image epiworld-runners
+.PHONY: help setup check smoke benchmark profile report clean-cache container-image epiworld-runners
 
 # Inside the container, PYTHON and CARGO_TARGET_DIR come from the image.
 PYTHON ?= .venv/bin/python
@@ -30,6 +30,7 @@ help:
 	@echo "  check           - Run tests and check R package dependencies"
 	@echo "  smoke           - Run a quick smoke test of the simulation"
 	@echo "  benchmark       - Run the full benchmark simulation"
+	@echo "  profile         - Side measurements of epiworld and ixa behind analysis.md"
 	@echo "  report          - Render the overview and every scenario report with Quarto"
 	@echo "  clean-cache     - Remove benchmark/cache manually if you really want to discard reusable runs."
 	@echo ""
@@ -64,13 +65,17 @@ check:
 	for manifest in $(IXA_MANIFESTS); do \
 		$(CARGO) test --release --locked --manifest-path $$manifest || exit 1; \
 	done
-	Rscript --vanilla -e 'stopifnot(requireNamespace("epiworldR", quietly = TRUE), requireNamespace("jsonlite", quietly = TRUE))'
+	Rscript --vanilla -e 'stopifnot(requireNamespace("epiworldR", quietly = TRUE), requireNamespace("individual", quietly = TRUE), requireNamespace("jsonlite", quietly = TRUE))'
 
 smoke:
 	$(PYTHON) run.py --profile smoke $(SCENARIO_ARGS)
 
 benchmark:
 	$(PYTHON) run.py --profile full $(SCENARIO_ARGS)
+
+# Run alone: concurrent work distorts the timings.
+profile:
+	PYTHON=$(PYTHON) bash analysis/profile.sh
 
 # Always re-render: every scenario report reads the shared results and its
 # own runner sources, which make cannot track cheaply.

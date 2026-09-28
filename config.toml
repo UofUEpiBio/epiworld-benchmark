@@ -4,9 +4,13 @@ replicates = 100
 population_sizes = [10000, 100000]
 base_seed = 8675309
 # "epiworld" is the C++ library itself; epiworldR and epiworldpy wrap it.
-engines = ["epiworldR", "epiworldpy", "epiworld", "covasim", "EoN", "epydemic", "ixa"]
+engines = [
+  "epiworldR", "epiworldpy", "epiworld", "covasim", "starsim", "EoN", "epydemic", "ixa",
+  "individual",
+]
 # Scenario-specific settings (disease, interventions, calibration) live in
-# scenario_*/scenario.toml; see scenarios.md.
+# scenario_*/scenario.toml; see scenarios.md. A scenario's [design] table can
+# replace population_sizes and replicates above, as scenario_03 does.
 
 [network]
 type = "watts_strogatz"

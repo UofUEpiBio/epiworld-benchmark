@@ -48,8 +48,13 @@ engine has to deliver the same information, so the comparison includes that
 bookkeeping for all of them.
 
 The model, network, seeds, run length, and calibration are those of
-scenario 01. For any engine, size, and replicate, the two scenarios run the
-same epidemic, and this report compares them replicate by replicate.
+scenario 01. For every engine but individual, the two scenarios run the same
+epidemic for a given size and replicate, and this report compares them
+replicate by replicate. individual's runner picks each new case's source
+with R's global random numbers, which its disease processes also use, so
+from the first such draw its epidemic differs from scenario 01's for the
+same seed. The two are still the same model, with the same distribution of
+outcomes; only the pairing by seed is lost.
 
 ## Model
 
@@ -128,6 +133,12 @@ never infected are still counted as susceptible.
   has no transition matrix, but it dates each agent's transitions
   (`date_exposed`, `date_infectious`, `date_severe`, `date_recovered`, some of
   them in the future), and the runner counts those that fall within the run.
+- **Starsim**: adding its `ss.infection_log` analyzer makes the disease log
+  the source and target of every infection, in a NetworkX graph, as it
+  happens; daily new infections are a standard result. Like Covasim, Starsim
+  has no transition matrix but keeps each agent's transition times, some of
+  them scheduled in the future, and the runner counts those that fall within
+  the run.
 - **EoN**: `return_full_data=True` makes `fast_simple_contagion` record each
   node's status history and every transmission, and return them in a
   `Simulation_Investigation`. The runner builds the matrix from the node
@@ -142,10 +153,17 @@ never infected are still counted as susceptible.
   when it applies it. A subscription to ixa's `PropertyChangeEvent` for the
   disease status counts every transition. After the run, the runner derives
   incidence and the reproductive number from the plugin.
+- **individual**: no built-in record of events or sources. The infection
+  process picks each new case's source uniformly among its infectious
+  neighbours, as epiworld does, and records it with the day. A second
+  process compares the agents in each state at the start of consecutive days
+  to count the transitions. After the run, the runner derives the
+  reproductive number from the tree.
 
-The EoN, epydemic, Covasim, and ixa runners use epiworld's definition of the
-reproductive number. Each Python runner has its own copy of a small helper that
-computes it from the tree, and that helper counts as model code.
+The EoN, epydemic, Covasim, Starsim, ixa, and individual runners use
+epiworld's definition of the reproductive number. Each Python runner has its
+own copy of a small helper that computes it from the tree, and that helper
+counts as model code.
 
 ## Results
 
@@ -188,6 +206,22 @@ mean that epiworldR finished faster.
 table_speedup(bench)
 ```
 
+### Time to a first result
+
+The simulation time above covers what an engine has to redo for every
+replicate on the same network (see
+[what is measured](../README.md#run-time)). *Build* is the rest of the
+setup: turning the edge list into the engine's population and network, which
+a user does once per network. *Build + simulate* is the time to a first
+result once the edge list is in memory. Reading the edge file is shown but
+left out of it, because its cost depends on each language's file parsing
+rather than on the engine.
+
+```{r}
+#| label: phases
+table_phases(bench)
+```
+
 ### Extracting the outputs
 
 The time taken to read the four outputs out of each engine after the run.
@@ -216,8 +250,8 @@ table_output_checks(bench)
 ```
 
 The daily series, as medians across replicates. The epiworld family seeds its
-initial cases as exposed, and so does Covasim, so their incidence starts a few
-days later than that of the engines that seed them as infected.
+initial cases as exposed, and so do Covasim and Starsim, so their incidence
+starts a few days later than that of the engines that seed them as infected.
 
 ```{r}
 #| label: daily-plot
@@ -232,8 +266,9 @@ if (!is.null(daily_plot)) print(daily_plot)
 ### Run time compared with scenario 01
 
 Each replicate is paired with the scenario 01 replicate that has the same
-engine, population size, and seed. Both scenarios run the same epidemic, so a
-ratio above one is the cost of recording the outputs during the run.
+engine, population size, and seed. Both scenarios run the same epidemic
+(for individual, one from the same distribution), so a ratio above one is
+the cost of recording the outputs during the run.
 
 ```{r}
 #| label: time-versus-baseline
@@ -268,51 +303,33 @@ transmission log leave it at `r ratio("ixa", 100000)` times its scenario 01
 time, and epydemic's handlers at `r ratio("epydemic", 100000)` times, where the
 list appends are small next to its Python event loop.
 
-The exception is **EoN**, which takes `r ratio("EoN", 10000)` times as long at
+The main exception is **EoN**, which takes `r ratio("EoN", 10000)` times as long at
 10,000 agents and `r ratio("EoN", 100000)` times at 100,000. With
 `return_full_data=True`, `fast_simple_contagion` appends to every node's
-status history, in Python, at every event.
+status history, in Python, at every event. **individual** also pays, taking
+`r ratio("individual", 10000)` times as long at 10,000 agents and
+`r ratio("individual", 100000)` times at 100,000. It has no record of
+transitions, so its runner compares the agents in each state at the start of
+consecutive days, which means working through full-population bitsets
+every day.
 
 Extraction after the run is small for every engine but epiworldR: at 100,000
 agents it takes `r extract_ms("epiworldR", 100000)` ms there, against
 `r extract_ms("EoN", 100000)` ms for EoN and under a millisecond for the
 others. Almost all of epiworldR's is one call (see below).
 
-### Is bookkeeping why epiworld is slower than ixa?
+### Is bookkeeping what separates epiworld and ixa?
 
 No. What epiworld records per event is small: each infection appends one row
 to the transmission log, and the daily database update costs time in
-proportion to the number of states and tools, not agents. ixa does the same
-bookkeeping here at almost no cost. epiworld's queue also works as intended:
-with no infected agents, its 100 days take about 0.2 ms at 100,000 agents.
-
-Side measurements with the C++ runner, outside the benchmark, at 100,000
-agents, found where its time goes instead:
-
-- **About 11 ms is a memory-allocator effect.** `agents_from_edgelist()`
-  builds a temporary adjacency list with one `std::map` per agent, roughly a
-  million small allocations. When it is freed, glibc keeps those chunks on its
-  fast free lists, and the next large allocation walks them all to
-  consolidate them (`malloc_consolidate`). That allocation happens inside
-  `run()`, when the state index is built, so the timed call pays for tearing
-  down the network builder. Disabling glibc's fast bins
-  (`GLIBC_TUNABLES=glibc.malloc.mxfast=0`) cuts the C++ runner from about
-  21 ms to about 9.5 ms, in line with epiworldR, whose setup triggers the
-  consolidation before the timer starts. Reported upstream as
-  [UofUEpiBio/epiworld#274](https://github.com/UofUEpiBio/epiworld/issues/274),
-  with a fix that builds the network about ten times faster and removes the
-  charge.
-- **About 2.7 ms is placing the vaccine** on about 24,000 agents. Every runner
-  now times its vaccine distribution, so this is a like-for-like cost.
-- **About 1.5 ms is looking up the transmission probability.** Push
-  transmission costs about 45 ns per neighbour it checks. For every one, the
-  virus reads `"Transmission rate"` through `Model::get_param()`, which takes
-  the name by value (17 characters, so a heap allocation) and searches a
-  `std::map` twice, although the value depends only on the infector. With a
-  constant probability the same check costs about 23 ns.
-- **The rest, about 2 ms,** is the other work in `reset()`, the E, I, and H
-  transitions, and the vaccine check on each neighbour, which goes through the
-  agent's tools and their `std::function`s.
+proportion to the number of states and tools, not agents. ixa adds the same
+bookkeeping here at little cost, and the two engines compare as they do in
+scenario 01. What separates them has other causes, the same in every
+scenario: ixa rebuilds its context for every replicate, while epiworld looks
+up the transmission probability by name for every contact it tries,
+re-initializes the whole population at the start of every run, and, with the
+vaccine, clones the tool for every agent it protects.
+[analysis.md](../analysis.md) measures each.
 
 ### An implementation choice that mattered: epiworldR's reproductive-number summary
 

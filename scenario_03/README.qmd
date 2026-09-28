@@ -1,0 +1,224 @@
+---
+title: "Scenario 03: SEIRH baseline at 1,000,000 agents"
+subtitle: "Network epidemic ABM speed benchmark"
+date: last-modified
+format:
+  gfm:
+    toc: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+source("../report/common.R")
+bench <- load_benchmark("scenario_03")
+baseline <- "scenario_00"
+full <- bench$full
+base <- bench$every[bench$every$scenario == baseline, ]
+median_of <- function(data, engine, n, column = "simulate_seconds") {
+  d <- data[data$engine == engine & data$n == n, ]
+  if (nrow(d)) median(d[[column]]) else NA
+}
+seconds <- function(x) if (is.na(x)) "?" else sprintf("%.2g", x)
+growth <- function(engine) {
+  sprintf("%.1f", median_of(full, engine, 1e6) / median_of(base, engine, 1e5))
+}
+build <- function(engine) {
+  d <- full[full$engine == engine, ]
+  if (nrow(d)) sprintf("%.2g", median(d$setup_seconds - d$read_seconds)) else "?"
+}
+attack <- function(data, n) {
+  if (nrow(data)) sprintf("%.2g", median(data$attack_rate[data$n == n])) else "?"
+}
+cases <- function(data, n) {
+  if (!nrow(data)) return("?")
+  d <- data[data$n == n, ]
+  format(round(median(d$n - d$final_susceptible), -2), big.mark = ",")
+}
+```
+
+[Back to the project overview](../README.md) ·
+[Scenario 00 report](../scenario_00/README.md)
+
+[Scenario 00](../scenario_00/README.md) at 1,000,000 agents. The model, the
+parameters, the network's mean degree and rewiring probability, the 100 seed
+cases, and every runner are those of scenario 00; only the population is ten
+times its largest size. Each engine runs 20 replicates rather than 100,
+because the slowest ones take several seconds per replicate here. Like
+every scenario, it runs one replicate at a time; its `[design]` table in
+[`scenario.toml`](scenario.toml) sets the size and replicate count, and
+enforces the one-at-a-time rule ([see why](#why-this-scenario-enforces-one-replicate-at-a-time)).
+
+The question this scenario asks is how each engine's time grows with the
+population when the outbreak does not. With 100 seed cases and the same
+per-contact risk, the epidemic stays about the same size in absolute terms:
+about `r cases(base, 100000)` agents are infected at 100,000 agents and
+`r cases(full, 1000000)` at 1,000,000 (median attack rates
+`r attack(base, 100000)` and `r attack(full, 1000000)`). An engine whose
+work follows the outbreak should barely slow down. An engine that touches
+every agent every day should slow down about tenfold.
+
+## Model
+
+See [scenario 00](../scenario_00/README.md#model) for the model, its
+parameters, the timing conventions, and each engine's implementation. The
+runners in [`runners/`](runners) are copies of scenario 00's.
+
+The transmission multipliers were not recalibrated at this size. Each engine
+reuses its 100,000-agent factor from scenario 00, which barely moved between
+10,000 and 100,000 agents. The attack rates below show that the engines stay
+aligned.
+
+## Results
+
+```{r}
+#| label: completion-status
+#| results: asis
+completion_status(bench)
+```
+
+```{r}
+#| label: environment
+table_environment(bench)
+```
+
+```{r}
+#| label: summary-table
+table_summary(bench)
+```
+
+### Simulation time
+
+The primary measure is wall-clock time inside each engine's simulation call.
+The logarithmic scale keeps fast and slow engines legible in one panel.
+
+```{r}
+#| label: simulation-time-plot
+#| fig-width: 12
+#| fig-height: 5
+if (bench$has_full) print(plot_simulation_time(bench))
+```
+
+### Speed relative to epiworldR
+
+Ratios are matched by replicate seed. Values above one mean that epiworldR
+completed the simulation call faster.
+
+```{r}
+#| label: speedup
+table_speedup(bench)
+```
+
+### Time to a first result
+
+The simulation time above covers what an engine has to redo for every
+replicate on the same network (see
+[what is measured](../README.md#run-time)). *Build* is the rest of the
+setup: turning the edge list into the engine's population and network, which
+a user does once per network. *Build + simulate* is the time to a first
+result once the edge list is in memory. Reading the edge file is shown but
+left out of it, because its cost depends on each language's file parsing
+rather than on the engine.
+
+```{r}
+#| label: phases
+table_phases(bench)
+```
+
+### The epiworld family
+
+```{r}
+#| label: epiworld-family
+table_speedup(bench, reference = "epiworld", engines = c("epiworldR", "epiworldpy"))
+```
+
+### Growth with the population
+
+Median simulation time at each size, the first two from scenario 00. The
+growth column divides the time at 1,000,000 agents by the time at 100,000;
+the population grew tenfold, the outbreak hardly at all. The last column is
+the time to build the model from the edge list, which is not part of the
+simulation time (see [Building once](#building-once)).
+
+```{r}
+#| label: scaling
+table_scaling(bench, baseline)
+```
+
+### Epidemiological sanity checks
+
+```{r}
+#| label: outcomes-table
+table_outcomes(bench)
+```
+
+```{r}
+#| label: outcomes-plot
+#| fig-width: 9
+#| fig-height: 5
+if (bench$has_full) {
+  print(plot_outcomes(bench, "The outcomes stay aligned at 1,000,000 agents without recalibration"))
+}
+```
+
+## Interpretation
+
+### How time grows with the population
+
+- **The epiworld runners** grow by `r growth("epiworld")` (C++),
+  `r growth("epiworldR")` (epiworldR), and `r growth("epiworldpy")`
+  (epiworldpy) times. Their daily work follows the outbreak, which barely
+  grew. What does grow is `reset()` at the start of `run()`, which
+  re-initializes every agent; at this size it is nearly half of the run.
+- **individual** grows by `r growth("individual")` times. Its infection
+  process visits the infectious agents' neighbours, but it also tabulates
+  contacts and intersects bitsets over the whole population every day.
+- **ixa** grows by `r growth("ixa")` times. Its `execute()` follows the
+  outbreak, but every replicate first rebuilds the context (a million
+  entities, five million edges, and the index), which grows with the
+  population and is now most of its time.
+- **EoN** (`r growth("EoN")` times) and **epydemic** (`r growth("epydemic")`)
+  follow the outbreak in their event handling, but set up state for every
+  node of the network, in Python, at the start of each run.
+- **Covasim** (`r growth("covasim")` times) and **Starsim**
+  (`r growth("starsim")`) update every agent's arrays every day, and Starsim
+  also draws transmission on every edge, so they grow about as fast as the
+  population.
+
+At 1,000,000 agents, epydemic takes about
+`r seconds(median_of(full, "epydemic", 1e6))` seconds per replicate and
+Starsim `r seconds(median_of(full, "starsim", 1e6))`, against
+`r seconds(median_of(full, "epiworld", 1e6))` for the C++ runner and
+`r seconds(median_of(full, "ixa", 1e6))` for ixa.
+[analysis.md](../analysis.md) measures where epiworld's and ixa's time goes.
+
+### Building once
+
+Building the model from the edge list, which a user does once per network,
+takes the epiworld runners `r build("epiworld")` (C++), `r build("epiworldR")`
+(epiworldR), and `r build("epiworldpy")` (epiworldpy) seconds: several times
+longer than a 100-day run, but paid once however many replicates follow. EoN
+spends `r build("EoN")` seconds and epydemic `r build("epydemic")` building
+their NetworkX graphs, which they also reuse. ixa and Starsim have
+almost nothing to build once, because they rebuild their whole model for
+every replicate, and that time is in their simulation time above.
+
+### Why this scenario enforces one replicate at a time
+
+In a first run with four workers, the scheduler ran four replicates of the
+same engine at once, and at this size they competed for memory: epydemic
+took 57 to 67 seconds per replicate, against about 17 run alone, and
+epiworldpy and EoN slowed too. The `workers = 1` setting in
+[`scenario.toml`](scenario.toml) makes this scenario run sequentially whatever
+`N_THREADS` says. The other scenarios also run sequentially, by default, so
+the growth factors above compare times collected the same way.
+
+## Recorded versions
+
+```{r}
+#| label: versions
+table_versions(bench)
+```

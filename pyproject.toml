@@ -13,6 +13,7 @@ dependencies = [
   "networkx==3.6.1",
   "numpy==2.2.6",
   "scipy==1.15.3",
+  "starsim==3.6.1",
 ]
 
 [dependency-groups]

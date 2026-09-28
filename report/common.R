@@ -5,10 +5,19 @@
 # ggplot object, or NULL when there is nothing to show yet.
 
 # "epiworld" is the C++ library; epiworldR and epiworldpy wrap it.
-engine_levels <- c("epiworld", "epiworldR", "epiworldpy", "covasim", "EoN", "epydemic", "ixa")
-size_levels <- c(10000, 100000)
+engine_levels <- c(
+  "epiworld", "epiworldR", "epiworldpy", "covasim", "starsim", "EoN", "epydemic", "ixa",
+  "individual"
+)
+size_levels <- c(10000, 100000, 1000000)
 full_days <- 100
-expected_per_cell <- 100L
+
+#' "10,000 agents" and so on, as a factor in size order.
+agents_factor <- function(n, suffix = " agents") {
+  sizes <- size_levels[size_levels %in% n]
+  factor(n, levels = sizes, labels = paste0(format(sizes, big.mark = ",", scientific = FALSE,
+                                                   trim = TRUE), suffix))
+}
 
 options(scipen = 999, knitr.kable.NA = "")
 
@@ -35,11 +44,18 @@ load_benchmark <- function(scenario, root = "..") {
     every$protected_share <- every$vaccine_protected / every$n
   }
   full <- if (nrow(every)) every[every$scenario == scenario, ] else every
-  complete <- nrow(full) > 0 && all(
-    table(factor(full$engine, levels = engine_levels),
-          factor(full$n, levels = size_levels)) >= expected_per_cell
-  )
   info <- if (file.exists(scenarios_path)) jsonlite::read_json(scenarios_path) else list()
+  # Replicates per engine at each size, from the design run.py publishes.
+  design <- info[[scenario]]$design
+  design <- if (length(design)) {
+    data.frame(n = vapply(design, `[[`, 0, "n"),
+               replicates = vapply(design, `[[`, 0, "replicates"))
+  } else {
+    data.frame(n = size_levels[1:2], replicates = 100)
+  }
+  counts <- table(factor(full$engine, levels = engine_levels),
+                  factor(full$n, levels = design$n))
+  complete <- nrow(full) > 0 && all(sweep(counts, 2, design$replicates, `>=`))
   list(
     scenario = scenario,
     root = root,
@@ -48,7 +64,8 @@ load_benchmark <- function(scenario, root = "..") {
     full = full,
     has_full = nrow(full) > 0,
     complete = complete,
-    design_runs = length(engine_levels) * length(size_levels) * expected_per_cell,
+    design = design,
+    design_runs = length(engine_levels) * sum(design$replicates),
     manifest = if (file.exists(manifest_path)) {
       jsonlite::read_json(manifest_path, simplifyVector = TRUE)
     } else {
@@ -79,7 +96,9 @@ table_environment <- function(bench) {
   if (is.null(m)) return(NULL)
   knitr::kable(data.frame(
     Field = c("Platform", "Python", "Workers", "Latest run failures"),
-    Value = c(m$platform, m$python, m$workers, m$failures)
+    Value = c(m$platform, m$python,
+              if (is.null(bench$info$workers)) m$workers else bench$info$workers,
+              m$failures)
   ), row.names = FALSE)
 }
 
@@ -105,8 +124,7 @@ plot_simulation_time <- function(bench) {
   full <- bench$full
   if (!nrow(full)) return(NULL)
   full$engine <- factor(full$engine, levels = engine_levels)
-  full$agents <- factor(full$n, levels = size_levels,
-                        labels = c("10,000 agents", "100,000 agents"))
+  full$agents <- agents_factor(full$n)
   ggplot2::ggplot(full, ggplot2::aes(engine, simulate_seconds, fill = engine)) +
     ggplot2::geom_boxplot(width = 0.65, outlier.alpha = 0.25) +
     ggplot2::stat_summary(
@@ -128,6 +146,30 @@ plot_simulation_time <- function(bench) {
       legend.position = "none",
       axis.text.x = ggplot2::element_text(angle = 30, hjust = 1)
     )
+}
+
+#' Median time of each phase of a run. Reading the edge list is benchmark
+#' plumbing whose cost depends on the language, not the engine, so it is shown
+#' but left out of "build + simulate", the time to a first result once the
+#' network is in memory.
+table_phases <- function(bench) {
+  full <- bench$full
+  if (!nrow(full) || all(is.na(full$read_seconds))) return(NULL)
+  full$build_seconds <- full$setup_seconds - full$read_seconds
+  rows <- do.call(rbind, lapply(split(full, list(full$engine, full$n), drop = TRUE),
+    function(d) data.frame(
+      engine = d$engine[[1]],
+      agents = d$n[[1]],
+      read = median(d$read_seconds),
+      build = median(d$build_seconds),
+      simulate = median(d$simulate_seconds),
+      result = median(d$build_seconds + d$simulate_seconds)
+    )))
+  rows <- rows[order(rows$agents, rows$result), ]
+  knitr::kable(rows, digits = 3,
+    col.names = c("Engine", "Agents", "Read edges (s)", "Build (s)", "Simulate (s)",
+                  "Build + simulate (s)"),
+    row.names = FALSE)
 }
 
 #' Paired simulate-time ratio of each engine against `reference`, matched by
@@ -187,7 +229,7 @@ plot_outcomes <- function(bench, subtitle) {
   rows <- outcome_medians(bench$full)
   if (!nrow(rows)) return(NULL)
   rows$engine <- factor(rows$engine, levels = engine_levels)
-  rows$agents <- factor(rows$n, levels = size_levels, labels = c("10,000", "100,000"))
+  rows$agents <- agents_factor(rows$n, suffix = "")
   ggplot2::ggplot(rows, ggplot2::aes(engine, attack_rate, fill = engine)) +
     ggplot2::geom_col(width = 0.65) +
     ggplot2::facet_wrap(~ agents, scales = "free_y") +
@@ -223,6 +265,34 @@ table_time_versus <- function(bench, baseline) {
     col.names = c("Engine", "Agents", paste("Median", label, "(s)"),
                   paste("Median", this, "(s)"), paste("Median time /", label), "Q1", "Q3"),
     row.names = FALSE)
+}
+
+#' Median simulation time at every size of this scenario and `baseline`, which
+#' runs the same model at other sizes, with the growth from the baseline's
+#' largest size to this scenario's smallest, and this scenario's build time
+#' (setup without reading the edge list).
+table_scaling <- function(bench, baseline) {
+  if (!nrow(bench$full)) return(NULL)
+  every <- bench$every[bench$every$scenario %in% c(baseline, bench$scenario), ]
+  medians <- tapply(every$simulate_seconds, list(every$engine, every$n), median)
+  sizes <- as.numeric(colnames(medians))
+  before <- max(sizes[sizes < min(bench$full$n)])
+  after <- min(bench$full$n)
+  setup <- tapply(bench$full$setup_seconds - bench$full$read_seconds, bench$full$engine, median)
+  rows <- data.frame(
+    engine = rownames(medians),
+    medians,
+    growth = medians[, as.character(after)] / medians[, as.character(before)],
+    setup = setup[rownames(medians)],
+    check.names = FALSE
+  )
+  rows <- rows[order(rows[[as.character(after)]]), ]
+  size_label <- function(n) format(n, big.mark = ",", scientific = FALSE, trim = TRUE)
+  knitr::kable(rows, digits = c(0, rep(3, length(sizes)), 1, 3), row.names = FALSE, col.names = c(
+    "Engine", paste(size_label(sizes), "agents (s)"),
+    paste0("Time at ", size_label(after), " / at ", size_label(before)),
+    paste0("Median build at ", size_label(after), " (s)")
+  ))
 }
 
 #' Count the model lines of one engine's runner. Each region runs from the
@@ -350,8 +420,7 @@ plot_daily <- function(bench) {
   )
   long <- long[!is.na(long$value), ]
   long$engine <- factor(long$engine, levels = engine_levels)
-  long$agents <- factor(long$n, levels = size_levels,
-                        labels = c("10,000 agents", "100,000 agents"))
+  long$agents <- agents_factor(long$n)
   ggplot2::ggplot(long, ggplot2::aes(day, value, colour = engine)) +
     ggplot2::geom_line(linewidth = 0.7) +
     ggplot2::facet_grid(measure ~ agents, scales = "free_y", switch = "y",

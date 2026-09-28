@@ -3,10 +3,22 @@
     "calibration": {
       "covasim_transmission_multiplier_10000": 0.715,
       "covasim_transmission_multiplier_100000": 0.71,
+      "individual_transmission_multiplier_10000": 0.951,
+      "individual_transmission_multiplier_100000": 0.951,
       "ixa_transmission_multiplier_10000": 0.983,
       "ixa_transmission_multiplier_100000": 0.988
     },
     "description": "SEIRH epidemic with a hospitalization branch and no interventions.",
+    "design": [
+      {
+        "n": 10000,
+        "replicates": 100
+      },
+      {
+        "n": 100000,
+        "replicates": 100
+      }
+    ],
     "name": "SEIRH baseline",
     "parameters": {
       "hospital_days": 7.0,
@@ -15,16 +27,29 @@
       "initial_infected": 100,
       "latent_days": 4.0,
       "target_r0": 2.0
-    }
+    },
+    "workers": null
   },
   "scenario_01": {
     "calibration": {
       "covasim_transmission_multiplier_10000": 0.715,
       "covasim_transmission_multiplier_100000": 0.71,
+      "individual_transmission_multiplier_10000": 0.951,
+      "individual_transmission_multiplier_100000": 0.951,
       "ixa_transmission_multiplier_10000": 0.983,
       "ixa_transmission_multiplier_100000": 0.988
     },
     "description": "Scenario 00 plus a day-0 all-or-nothing vaccine: 30% coverage, 80% efficacy.",
+    "design": [
+      {
+        "n": 10000,
+        "replicates": 100
+      },
+      {
+        "n": 100000,
+        "replicates": 100
+      }
+    ],
     "name": "SEIRH + vaccination",
     "parameters": {
       "hospital_days": 7.0,
@@ -35,16 +60,29 @@
       "target_r0": 2.0,
       "vaccine_coverage": 0.3,
       "vaccine_efficacy": 0.8
-    }
+    },
+    "workers": null
   },
   "scenario_02": {
     "calibration": {
       "covasim_transmission_multiplier_10000": 0.715,
       "covasim_transmission_multiplier_100000": 0.71,
+      "individual_transmission_multiplier_10000": 0.951,
+      "individual_transmission_multiplier_100000": 0.951,
       "ixa_transmission_multiplier_10000": 0.983,
       "ixa_transmission_multiplier_100000": 0.988
     },
     "description": "Scenario 01 plus four outputs: the transmission tree, daily incidence, the reproductive number, and the daily transition matrix.",
+    "design": [
+      {
+        "n": 10000,
+        "replicates": 100
+      },
+      {
+        "n": 100000,
+        "replicates": 100
+      }
+    ],
     "name": "SEIRH + vaccination + outputs",
     "parameters": {
       "hospital_days": 7.0,
@@ -55,6 +93,31 @@
       "target_r0": 2.0,
       "vaccine_coverage": 0.3,
       "vaccine_efficacy": 0.8
-    }
+    },
+    "workers": null
+  },
+  "scenario_03": {
+    "calibration": {
+      "covasim_transmission_multiplier_1000000": 0.71,
+      "individual_transmission_multiplier_1000000": 0.951,
+      "ixa_transmission_multiplier_1000000": 0.988
+    },
+    "description": "Scenario 00 at 1,000,000 agents, for 20 replicates per engine.",
+    "design": [
+      {
+        "n": 1000000,
+        "replicates": 20
+      }
+    ],
+    "name": "SEIRH baseline at 1,000,000 agents",
+    "parameters": {
+      "hospital_days": 7.0,
+      "hospitalization_probability": 0.05,
+      "infectious_days": 7.0,
+      "initial_infected": 100,
+      "latent_days": 4.0,
+      "target_r0": 2.0
+    },
+    "workers": 1
   }
 }

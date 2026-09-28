@@ -46,6 +46,15 @@ covasim:
     - {from: '^def transition_matrix', to: '^    return matrix'}
     - {from: '^def case_reproductive_number', to: '^        return total / count'}
     - {from: '^def run_covasim', to: '^    extract_seconds = perf_counter'}
+starsim:
+  language: Python
+  files: [runners/run_starsim.py]
+  regions:
+    - {from: '^def discrete_transmission_probability', to: '^    return'}
+    - {from: '^def transition_matrix', to: '^    return matrix'}
+    - {from: '^def case_reproductive_number', to: '^        return total / count'}
+    - {from: '^def seirh_classes', to: '^    return EdgeListNet, SEIRH'}
+    - {from: '^def run_starsim', to: '^    extract_seconds = perf_counter'}
 EoN:
   language: Python
   files: [runners/run_eon.py]
@@ -93,3 +102,12 @@ ixa:
     - {from: 'let peak = schedule_days'}
     - {from: 'context.execute\(\)'}
     - {from: 'let extracted = extract'}
+individual:
+  language: R
+  files: [runners/individual.R]
+  regions:
+    - {from: '^vaccine_coverage <- number', to: '^vaccine_efficacy <- number'}
+    - {from: '^recovery <- 1', to: '^beta <- beta \*'}
+    - {from: '^from <- c\(edges', to: '^neighbours_of <- function'}
+    - {from: '^set\.seed', to: '^count_transitions\(days'}
+    - {from: '^infected <- which', to: '^repnum <- tapply'}

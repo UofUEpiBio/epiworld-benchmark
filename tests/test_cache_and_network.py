@@ -12,6 +12,7 @@ from run import (
     ixa_binary,
     load_scenario,
     scenario_parameters,
+    size_plan,
     source_hash,
     source_paths,
     task_command,
@@ -64,7 +65,11 @@ def base_task(**overrides) -> dict:
 
 
 def test_task_command_passes_transmission_multiplier_to_each_runner() -> None:
-    for engine in ("covasim", "EoN", "epydemic", "epiworldR", "epiworldpy", "epiworld", "ixa"):
+    engines = (
+        "covasim", "starsim", "EoN", "epydemic", "epiworldR", "epiworldpy", "epiworld", "ixa",
+        "individual",
+    )
+    for engine in engines:
         command = task_command(base_task(engine=engine))
         index = command.index("--transmission-multiplier")
         assert command[index + 1] == "0.71"
@@ -102,14 +107,70 @@ def test_runners_accept_exactly_their_scenario_parameters() -> None:
             # The Python runners share their argument parser.
             "python": (runners / "runner_common.py").read_text(),
             "R": (runners / "epiworld.R").read_text(),
+            "individual": (runners / "individual.R").read_text(),
             "ixa": (runners / "ixa" / "src" / "main.rs").read_text(),
             "C++": (runners / "epiworld" / "main.cpp").read_text(),
         }
         for key in scenario_parameters(load_scenario(scenario)):
             assert f"--{key.replace('_', '-')}" in sources["python"], (scenario, key)
             assert f'"{key}"' in sources["R"], (scenario, key)
+            assert f'"{key}"' in sources["individual"], (scenario, key)
             assert f'"{key}"' in sources["C++"], (scenario, key)
             assert f"{key}:" in sources["ixa"], (scenario, key)
+
+
+def test_every_runner_records_the_edge_reading_time() -> None:
+    for scenario in discover_scenarios():
+        runners = ROOT / scenario / "runners"
+        for path in (
+            runners / "runner_common.py", runners / "epiworld.R", runners / "individual.R",
+            runners / "epiworld" / "main.cpp", runners / "ixa" / "src" / "main.rs",
+        ):
+            assert "read_seconds" in path.read_text(), path
+
+
+def test_r_engines_run_their_own_script() -> None:
+    for engine, script in (("epiworldR", "epiworld.R"), ("individual", "individual.R")):
+        command = task_command(base_task(engine=engine))
+        assert command[:3] == ["Rscript", "--vanilla", str(ROOT / "scenario_00" / "runners" / script)]
+
+
+def test_scenario_designs_replace_the_study_sizes_and_replicates() -> None:
+    config = {
+        "study": {"population_sizes": [10, 100], "replicates": 5},
+        "smoke": {"population_sizes": [3], "replicates": 1},
+    }
+    designs = {"scenario_00": {}, "scenario_03": {"population_sizes": [1000], "replicates": 2}}
+    scenarios = ["scenario_00", "scenario_03"]
+    assert size_plan(config, "full", scenarios, designs) == [
+        (10, 0, ["scenario_00"], 5),
+        (100, 1, ["scenario_00"], 5),
+        (1000, 2, ["scenario_03"], 2),
+    ]
+    # The smoke profile ignores [design].
+    assert size_plan(config, "smoke", scenarios, designs) == [(3, 0, scenarios, 1)]
+    # A size keeps its index (network and seeds) however it is requested, and
+    # --sizes only restricts a scenario with a [design].
+    assert size_plan(config, "full", ["scenario_03"], designs) == [(1000, 2, ["scenario_03"], 2)]
+    assert size_plan(config, "full", scenarios, designs, sizes=[1000], replicates=1) == [
+        (1000, 2, scenarios, 1)
+    ]
+    assert size_plan(config, "full", ["scenario_03"], designs, sizes=[100]) == []
+
+
+def test_scenario_03_is_scenario_00_at_one_million_agents() -> None:
+    designs = run.scenario_designs()
+    assert designs["scenario_00"] == {}
+    assert designs["scenario_03"] == {
+        "population_sizes": [1000000], "replicates": 20, "workers": 1
+    }
+    assert scenario_parameters(load_scenario("scenario_03")) == scenario_parameters(
+        load_scenario("scenario_00")
+    )
+    for runner in ("epiworld.R", "individual.R", "runner_common.py", "epiworld/main.cpp"):
+        assert (ROOT / "scenario_03" / "runners" / runner).read_text() == (
+            ROOT / "scenario_00" / "runners" / runner
+        ).read_text(), runner
 
 
 def test_scenarios_are_discovered() -> None:
@@ -124,6 +185,7 @@ def test_source_paths_cover_only_the_scenario_runners() -> None:
         assert f"{scenario}/runners/ixa/Cargo.toml" in paths
         assert f"{scenario}/runners/ixa/Cargo.lock" in paths
         assert f"{scenario}/runners/epiworld.R" in paths
+        assert f"{scenario}/runners/individual.R" in paths
         assert f"{scenario}/runners/epiworld/main.cpp" in paths
         assert "config.toml" in paths
         assert not any("/target/" in path or "/build/" in path for path in paths)
