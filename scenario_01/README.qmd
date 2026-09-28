@@ -47,6 +47,15 @@ replicate.
   A *leaky* vaccine would instead lower everyone's per-contact risk by 80%.
 - Vaccination is independent of the initial infections. A seed case that also
   gets vaccinated stays infected.
+- Distributing the vaccine is timed as part of the simulation in every
+  runner, as seeding is (see [scenario 00](../scenario_00/README.md)). The
+  draw differs in every run, and epiworld places its tools inside `run()`, so
+  the other runners time their draw too. EoN's timer covers building its
+  initial status dictionary. Covasim's covers the draw, and Covasim gives the
+  doses on day 0 inside `sim.run()`. epydemic draws inside its simulation
+  call, and ixa in a plan at time 0, inside `execute()`. The epiworld runners
+  draw only the number of protected agents (one binomial draw) before
+  `run()`.
 
 About 24% of agents end up protected, so the effective reproduction number
 falls from about 2 to about 1.5. The disease parameters are those of
@@ -89,11 +98,10 @@ comparison reflects what a user of that engine would write.
   so no induced transmission rate ever reaches them.
 - **epydemic**: a `V` compartment with no events. It sits outside the S–I
   edge locus that drives infection. The vaccine is drawn in
-  `initialCompartments`, which runs inside the timed simulation call; this
-  adds well under a millisecond.
+  `initialCompartments`, which runs inside the timed simulation call.
 - **ixa**: a `VaccineStatus` property (`Unvaccinated`, `Protected`,
-  `Unprotected`) on `Person`. The daily step skips protected neighbours when
-  it looks for susceptible contacts.
+  `Unprotected`) on `Person`, set by a plan at time 0. The daily step skips
+  protected neighbours when it looks for susceptible contacts.
 
 ## Results
 

@@ -7,10 +7,7 @@ simulation engines across several scenarios of increasing complexity:
   discrete-time SEIRH model built from its state update functions;
 - **epiworldR 0.17.0.0** (R wrapper of epiworld), building the same model;
 - **epiworldpy 0.17.0-0** (Python wrapper of epiworld), building the same
-  model. The runner needs the native update functions added in
-  [UofUEpiBio/epiworldpy#17](https://github.com/UofUEpiBio/epiworldpy/pull/17),
-  so `pyproject.toml` pins the epiworldpy commit on main that merged it,
-  until a release includes it;
+  model;
 - **Covasim 3.1.8** (Python), using its native disease progression and severe
   state as the hospitalization proxy;
 - **EoN 1.92** (Python), using a continuous-time SEIRH model run with the
@@ -19,6 +16,14 @@ simulation engines across several scenarios of increasing complexity:
 - **ixa 3.1.0** (Rust), using a custom synchronous SEIRH model driven by one
   plan per day on ixa's plan queue, its built-in contact network, and an
   indexed disease-status property.
+
+The three epiworld packages are pinned to commits after the counting-sort network build
+([UofUEpiBio/epiworld#274](https://github.com/UofUEpiBio/epiworld/issues/274)),
+which no release includes yet and which still report version 0.17.0: epiworld
+`092bad1` on master, epiworldR `1f5e63b` on main (in `.devcontainer/Dockerfile`),
+and epiworldpy `4a1ee0b` on main (in `pyproject.toml`). Recorded versions do
+not show the commit for epiworld and epiworldR, so results from an older
+commit have to be cleared from the cache by hand when the pins change.
 
 Each scenario lives in its own `scenario_NN/` folder with its report
 (`README.qmd`, rendered to `README.md`), its parameters (`scenario.toml`), and
@@ -38,7 +43,7 @@ to grow linearly with population size.
 
 The benchmark is meant to run inside the container defined in
 `.devcontainer/`. It pins R 4.5.1 with epiworldR 0.17.0.0, epiworld's
-`epiworld-v0.17.0` headers, Python 3.12 via uv (with epiworldpy), Rust 1.98.0,
+0.17.0 headers (both at the commits above), Python 3.12 via uv (with epiworldpy), Rust 1.98.0,
 and Quarto 1.10.18, so every engine is built and timed on the same
 toolchain. The only host prerequisite is [podman](https://podman.io/) (or
 Docker: pass `CONTAINER=docker`). From this folder:
@@ -102,8 +107,9 @@ Do not delete `cache/` between runs. Records live at
 configuration, the scenario's parameters and runner sources, the engine
 version, and the shared-network checksum. Changing one scenario's runners
 invalidates only that scenario. `results/results.csv` (with a `scenario`
-column) and `results/scenarios.json` are rebuilt from all successful cached
-records after each invocation. The report filters them to the full
+column), `results/scenarios.json`, and, for scenarios that report daily
+series, `results/daily.csv` (medians across replicates) are rebuilt from all
+successful cached records after each invocation. The report filters them to the full
 10,000/100,000-agent, 100-day design.
 
 ## Resource policy

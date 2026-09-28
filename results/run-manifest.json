@@ -5,11 +5,11 @@
     "covasim": "3.1.8",
     "epiworld": "0.17.0",
     "epiworldR": "0.17.0.0",
-    "epiworldpy": "0.17.0-0+g40a98d3",
+    "epiworldpy": "0.17.0-0+g4a1ee0b",
     "epydemic": "1.14.1",
     "ixa": "3.1.0"
   },
-  "executed": 400,
+  "executed": 1800,
   "failures": 0,
   "platform": "Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39",
   "profile": "full",
@@ -25,8 +25,9 @@
   ],
   "requested_scenarios": [
     "scenario_00",
-    "scenario_01"
+    "scenario_01",
+    "scenario_02"
   ],
-  "result_rows_available": 2814,
-  "workers": 1
+  "result_rows_available": 4221,
+  "workers": 4
 }

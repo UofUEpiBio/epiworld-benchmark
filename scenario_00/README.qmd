@@ -46,6 +46,12 @@ than the one new infections enter, so they start exposed there. The C++ and
 Python runners do the same, so that all three epiworld runners build exactly
 the same model.
 
+Seeding the initial cases is timed as part of the simulation in every runner,
+because the seeds differ in every run and epiworld places them inside `run()`.
+EoN's timer covers building its initial status dictionary, ixa seeds in a plan
+at time 0 inside `execute()`, and the other engines seed inside their
+simulation call.
+
 ### Engine implementations
 
 - **epiworld** (C++): a custom model built from `add_state()` and the

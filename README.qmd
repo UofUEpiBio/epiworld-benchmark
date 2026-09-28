@@ -34,6 +34,7 @@ interpretation.
 |:---------|:------|:-------|
 | 00 | SEIRH epidemic with a hospitalization branch, no interventions | [scenario_00/README.md](scenario_00/README.md) |
 | 01 | Scenario 00 plus a day-0 all-or-nothing vaccine (30% coverage, 80% efficacy) | [scenario_01/README.md](scenario_01/README.md) |
+| 02 | Scenario 01 plus four outputs: transmission tree, daily incidence, reproductive number, and transition matrix | [scenario_02/README.md](scenario_02/README.md) |
 
 [scenarios.md](scenarios.md) explains how to add a scenario.
 
@@ -75,7 +76,12 @@ Each replicate runs in a fresh process and records:
 
 - `simulate_seconds`, the primary measure: wall-clock time inside the engine's
   simulation call, including engine-native initialization that happens inside
-  that call;
+  that call. Any bookkeeping an engine does while it simulates is included;
+  reading results out of the engine afterwards is not (scenario 02 records
+  that separately as `extract_seconds`). Setting up each run's initial
+  conditions, which differ from run to run (seeding the initial infections
+  and, where there is one, distributing a vaccine), is timed as simulation in
+  every runner, since epiworld does it inside `run()`;
 - `setup_seconds`: reading the shared edge list and building engine objects;
 - `total_seconds`: setup plus simulation inside the runner process.
 

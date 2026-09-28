@@ -36,5 +36,25 @@
       "vaccine_coverage": 0.3,
       "vaccine_efficacy": 0.8
     }
+  },
+  "scenario_02": {
+    "calibration": {
+      "covasim_transmission_multiplier_10000": 0.715,
+      "covasim_transmission_multiplier_100000": 0.71,
+      "ixa_transmission_multiplier_10000": 0.983,
+      "ixa_transmission_multiplier_100000": 0.988
+    },
+    "description": "Scenario 01 plus four outputs: the transmission tree, daily incidence, the reproductive number, and the daily transition matrix.",
+    "name": "SEIRH + vaccination + outputs",
+    "parameters": {
+      "hospital_days": 7.0,
+      "hospitalization_probability": 0.05,
+      "infectious_days": 7.0,
+      "initial_infected": 100,
+      "latent_days": 4.0,
+      "target_r0": 2.0,
+      "vaccine_coverage": 0.3,
+      "vaccine_efficacy": 0.8
+    }
   }
 }

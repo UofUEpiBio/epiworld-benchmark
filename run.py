@@ -14,6 +14,7 @@ from pathlib import Path
 import platform
 import re
 import shutil
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -30,6 +31,12 @@ RESULTS_DIR = ROOT / "results"
 RUNNER_FORMAT_VERSION = 2
 DIST_NAMES = {
     "covasim": "covasim", "EoN": "EoN", "epydemic": "epydemic", "epiworldpy": "epiworldpy",
+}
+# One script per Python engine in each scenario's runners/ folder. They are
+# not named after the engine, which the script would then shadow on import.
+PYTHON_RUNNERS = {
+    "covasim": "run_covasim.py", "EoN": "run_eon.py", "epydemic": "run_epydemic.py",
+    "epiworldpy": "run_epiworldpy.py",
 }
 # Scenario tables whose keys are forwarded to every runner as --kebab-case flags.
 PARAMETER_TABLES = ("disease", "intervention")
@@ -224,12 +231,7 @@ def task_command(task: dict[str, Any]) -> list[str]:
         return [str(ixa_binary(task["scenario"])), *common]
     if task["engine"] == "epiworld":
         return [str(epiworld_binary(task["scenario"])), *common]
-    return [
-        sys.executable,
-        str(runner_dir / "python_engines.py"),
-        "--engine", task["engine"],
-        *common,
-    ]
+    return [sys.executable, str(runner_dir / PYTHON_RUNNERS[task["engine"]]), *common]
 
 
 def run_task(task: dict[str, Any], env: dict[str, str]) -> tuple[str, bool, str]:
@@ -241,6 +243,39 @@ def run_task(task: dict[str, Any], env: dict[str, str]) -> tuple[str, bool, str]
         return label, True, completed.stdout.strip()
     message = completed.stderr.strip() or completed.stdout.strip() or "runner produced no diagnostic"
     return label, False, message
+
+
+def write_daily_series(records: list[dict[str, Any]]) -> None:
+    """Median daily incidence and reproductive number across replicates.
+
+    Records list incidence for days 1 to `days` and the reproductive number
+    for days 0 to `days` (day 0 holds the seed cases); a day with no cases has
+    no reproductive number and is left out of its median. The per-replicate
+    series stay in the cache; only their medians are small enough to publish.
+    """
+    series: dict[tuple[str, str, int, int], dict[str, list[float]]] = {}
+    for record in records:
+        if "daily_incidence" not in record:
+            continue
+        for key, first_day in (("daily_incidence", 1), ("reproductive_number", 0)):
+            for day, value in enumerate(record[key], start=first_day):
+                cell = series.setdefault(
+                    (record["scenario"], record["engine"], record["n"], day),
+                    {"daily_incidence": [], "reproductive_number": []},
+                )
+                if value is not None:
+                    cell[key].append(value)
+    with (RESULTS_DIR / "daily.csv").open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.writer(stream)
+        writer.writerow([
+            "scenario", "engine", "n", "day", "median_incidence", "median_reproductive_number",
+        ])
+        for (scenario, engine, n, day), cell in sorted(series.items()):
+            median = lambda values: statistics.median(values) if values else ""
+            writer.writerow([
+                scenario, engine, n, day,
+                median(cell["daily_incidence"]), median(cell["reproductive_number"]),
+            ])
 
 
 def collect_results() -> int:
@@ -266,12 +301,15 @@ def collect_results() -> int:
         "final_hospitalized", "final_recovered", "peak_hospitalized",
         # Scenario-specific outcomes; blank for scenarios that do not report them.
         "vaccinated", "vaccine_protected",
+        "extract_seconds", "transmissions",
+        "transitions_se", "transitions_ei", "transitions_ih", "transitions_ir", "transitions_hr",
         "fingerprint", "timestamp_utc",
     ]
     with output.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(records)
+    write_daily_series(records)
     # The report reads scenario names and parameters from here, so R needs no
     # TOML parser.
     scenarios = {}

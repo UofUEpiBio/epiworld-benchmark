@@ -3,9 +3,12 @@
 //! The model is the benchmark's synchronous daily SEIRH: one ixa plan per day
 //! evaluates transmission along the shared contact network and the daily
 //! progression probabilities, then applies every transition at once. Scenario
-//! 01 adds an all-or-nothing vaccine given at time 0, before the first day.
+//! 01 adds an all-or-nothing vaccine given at time 0, before the first day, and scenario
+//! 02 records the transmission tree and daily transition matrix during the run
+//! and derives daily incidence and the reproductive number from them.
 
 use std::cell::Cell;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
@@ -42,6 +45,22 @@ define_property!(
 );
 
 define_edge_type!(struct Contact, Person);
+
+/// Number of disease states, the side of the transition matrix.
+const STATES: usize = 5;
+
+/// The outputs recorded during the run.
+#[derive(Default)]
+struct Outputs {
+    /// The seed cases, infected on day 0.
+    seeds: Vec<PersonId>,
+    /// (day, source, target) for every transmission.
+    tree: Vec<(usize, PersonId, PersonId)>,
+    /// Daily transition counts, indexed [day][from][to] in `DiseaseStatus` order.
+    transitions: Vec<[[usize; STATES]; STATES]>,
+}
+
+define_data_plugin!(OutputsData, Outputs, Outputs::default());
 
 define_rng!(SeedRng);
 define_rng!(TransmissionRng);
@@ -169,6 +188,16 @@ fn build_context(n: usize, edges: &[(usize, usize)], seed: u64) -> Context {
     context
 }
 
+/// Count every disease-status change in the day's transition matrix.
+fn record_transitions(context: &mut Context, days: u32) {
+    context.get_data_mut(OutputsData).transitions = vec![[[0; STATES]; STATES]; days as usize + 1];
+    context.subscribe_to_event(|context, event: PropertyChangeEvent<Person, DiseaseStatus>| {
+        let day = context.get_current_time() as usize;
+        context.get_data_mut(OutputsData).transitions[day][event.previous as usize]
+            [event.current as usize] += 1;
+    });
+}
+
 /// Seed the initial infections at time 0, before the first day. They differ in
 /// every run, so they are planned to run inside `execute()` and timed with the
 /// simulation, as epiworld seeds its infections inside `run()`.
@@ -176,6 +205,7 @@ fn schedule_seeding(context: &mut Context, n: usize, initial_infected: usize) {
     context.add_plan(0.0, move |context| {
         for person in context.sample_entities(SeedRng, Person, initial_infected.min(n)) {
             context.set_property(person, DiseaseStatus::I);
+            context.get_data_mut(OutputsData).seeds.push(person);
         }
     });
 }
@@ -228,6 +258,7 @@ fn step(context: &mut Context, rates: Rates, peak: &Cell<usize>) {
     let infected = with_status(context, DiseaseStatus::I);
     let hospitalized = with_status(context, DiseaseStatus::H);
     let mut transitions: Vec<(PersonId, DiseaseStatus)> = Vec::new();
+    let mut exposures: Vec<(PersonId, PersonId)> = Vec::new();
 
     for &person in &infected {
         let contacts = context.get_matching_edges::<Person, Contact>(person, |context, edge| {
@@ -237,7 +268,7 @@ fn step(context: &mut Context, rates: Rates, peak: &Cell<usize>) {
         });
         for edge in contacts {
             if context.sample_bool(TransmissionRng, rates.transmission) {
-                transitions.push((edge.neighbor, DiseaseStatus::E));
+                exposures.push((person, edge.neighbor));
             }
         }
     }
@@ -260,14 +291,17 @@ fn step(context: &mut Context, rates: Rates, peak: &Cell<usize>) {
         }
     }
 
-    for (person, status) in transitions {
-        // A susceptible reached by several infectious contacts is exposed once.
-        if status == DiseaseStatus::E {
-            let current: DiseaseStatus = context.get_property(person);
-            if current != DiseaseStatus::S {
-                continue;
-            }
+    let day = context.get_current_time() as usize;
+    for (source, target) in exposures {
+        // A susceptible reached by several infectious contacts is exposed
+        // once, by the first of them.
+        let current: DiseaseStatus = context.get_property(target);
+        if current == DiseaseStatus::S {
+            context.set_property(target, DiseaseStatus::E);
+            context.get_data_mut(OutputsData).tree.push((day, source, target));
         }
+    }
+    for (person, status) in transitions {
         context.set_property(person, status);
     }
     let now_hospitalized = context.query_entity_count(with!(Person, DiseaseStatus::H));
@@ -282,6 +316,45 @@ fn schedule_days(context: &mut Context, days: u32, rates: Rates) -> Rc<Cell<usiz
         context.add_plan(f64::from(day), move |context| step(context, rates, &peak));
     }
     peak
+}
+
+/// The outputs in the form the other runners report them.
+#[derive(Debug, PartialEq)]
+struct Extracted {
+    daily_incidence: Vec<usize>,
+    reproductive_number: Vec<Option<f64>>,
+}
+
+/// Daily incidence is the transition matrix's S -> E entry. The reproductive
+/// number follows epiworld: the mean number of secondary infections caused by
+/// the cases infected on each day.
+fn extract(context: &Context) -> Extracted {
+    let outputs = context.get_data(OutputsData);
+    let (s, e) = (DiseaseStatus::S as usize, DiseaseStatus::E as usize);
+    let daily_incidence = outputs.transitions.iter().map(|matrix| matrix[s][e]).collect();
+
+    let mut cases: HashMap<PersonId, (usize, usize)> = HashMap::new();
+    for &seed in &outputs.seeds {
+        cases.insert(seed, (0, 0));
+    }
+    for &(day, _, target) in &outputs.tree {
+        cases.insert(target, (day, 0));
+    }
+    for &(_, source, _) in &outputs.tree {
+        cases.get_mut(&source).expect("source was never infected").1 += 1;
+    }
+    let days = outputs.transitions.len();
+    let (mut total, mut count) = (vec![0usize; days], vec![0usize; days]);
+    for (day, secondary) in cases.into_values() {
+        total[day] += secondary;
+        count[day] += 1;
+    }
+    let reproductive_number = total
+        .iter()
+        .zip(&count)
+        .map(|(&total, &count)| (count > 0).then(|| total as f64 / count as f64))
+        .collect();
+    Extracted { daily_incidence, reproductive_number }
 }
 
 fn outcome(context: &Context, peak: usize) -> Outcome {
@@ -329,11 +402,16 @@ fn main() {
     schedule_seeding(&mut context, args.n, args.initial_infected);
     schedule_vaccination(&mut context, args.n, vaccine);
     drop(edges);
+    record_transitions(&mut context, args.days);
     let peak = schedule_days(&mut context, args.days, rates);
 
     let simulate_started = Instant::now();
     context.execute();
     let simulate_seconds = simulate_started.elapsed().as_secs_f64();
+    // Extracting the outputs comes after the simulation and is timed apart.
+    let extract_started = Instant::now();
+    let extracted = extract(&context);
+    let extract_seconds = extract_started.elapsed().as_secs_f64();
     let total_seconds = total_started.elapsed().as_secs_f64();
 
     let result = outcome(&context, peak.get());
@@ -341,6 +419,11 @@ fn main() {
         result.susceptible + result.exposed + result.infected + result.hospitalized + result.recovered;
     assert_eq!(final_total, args.n, "final compartment counts do not sum to population size");
 
+    // Transition totals over days 1 onward; day 0 holds the seed cases.
+    let outputs = context.get_data(OutputsData);
+    let transition = |from: DiseaseStatus, to: DiseaseStatus| -> usize {
+        outputs.transitions[1..].iter().map(|matrix| matrix[from as usize][to as usize]).sum()
+    };
     let record = json!({
         "status": "ok",
         "engine": "ixa",
@@ -354,7 +437,7 @@ fn main() {
         "mean_degree": args.mean_degree,
         "target_r0": args.target_r0,
         "transmission_multiplier": args.transmission_multiplier,
-        "setup_seconds": total_seconds - simulate_seconds,
+        "setup_seconds": total_seconds - simulate_seconds - extract_seconds,
         "simulate_seconds": simulate_seconds,
         "total_seconds": total_seconds,
         "final_susceptible": result.susceptible,
@@ -365,6 +448,15 @@ fn main() {
         "peak_hospitalized": result.peak_hospitalized,
         "vaccinated": result.vaccinated,
         "vaccine_protected": result.vaccine_protected,
+        "extract_seconds": extract_seconds,
+        "transmissions": outputs.tree.len(),
+        "transitions_se": transition(DiseaseStatus::S, DiseaseStatus::E),
+        "transitions_ei": transition(DiseaseStatus::E, DiseaseStatus::I),
+        "transitions_ih": transition(DiseaseStatus::I, DiseaseStatus::H),
+        "transitions_ir": transition(DiseaseStatus::I, DiseaseStatus::R),
+        "transitions_hr": transition(DiseaseStatus::H, DiseaseStatus::R),
+        "daily_incidence": extracted.daily_incidence[1..],
+        "reproductive_number": extracted.reproductive_number,
         "fingerprint": args.fingerprint,
         "timestamp_utc": humantime::format_rfc3339_micros(SystemTime::now()).to_string(),
     });
@@ -382,6 +474,10 @@ mod tests {
     }
 
     fn simulate_with(seed: u64, vaccine: Vaccine) -> Outcome {
+        simulate_context(seed, vaccine).1
+    }
+
+    fn simulate_context(seed: u64, vaccine: Vaccine) -> (Context, Outcome) {
         let rates = Rates {
             transmission: 0.2,
             incubation: 0.25,
@@ -392,9 +488,11 @@ mod tests {
         let mut context = build_context(200, &ring(200), seed);
         schedule_seeding(&mut context, 200, 5);
         schedule_vaccination(&mut context, 200, vaccine);
+        record_transitions(&mut context, 60);
         let peak = schedule_days(&mut context, 60, rates);
         context.execute();
-        outcome(&context, peak.get())
+        let result = outcome(&context, peak.get());
+        (context, result)
     }
 
     fn simulate(seed: u64) -> Outcome {
@@ -431,6 +529,24 @@ mod tests {
         let result = simulate_with(5, Vaccine { coverage: 1.0, efficacy: 1.0 });
         assert_eq!(result.susceptible, 195, "{result:?}");
         assert_eq!(result.exposed, 0);
+    }
+
+    #[test]
+    fn outputs_agree_with_the_final_counts() {
+        let (context, result) = simulate_context(11, Vaccine { coverage: 0.3, efficacy: 0.8 });
+        let outputs = context.get_data(OutputsData);
+        let extracted = extract(&context);
+        // Every agent who left S is a seed or a transmission target.
+        assert_eq!(outputs.seeds.len() + outputs.tree.len(), 200 - result.susceptible);
+        assert_eq!(extracted.daily_incidence.iter().sum::<usize>(), outputs.tree.len());
+        // Recovered agents arrived from I or H.
+        let (i, h, r) = (DiseaseStatus::I as usize, DiseaseStatus::H as usize, DiseaseStatus::R as usize);
+        let into_r: usize = outputs.transitions.iter().map(|m| m[i][r] + m[h][r]).sum();
+        assert_eq!(into_r, result.recovered);
+        // The seeds' secondary infections are all the day-0 cases cause.
+        let from_seeds = outputs.tree.iter().filter(|(_, source, _)| outputs.seeds.contains(source)).count();
+        let seed_r = extracted.reproductive_number[0].expect("seeds are day-0 cases");
+        assert!((seed_r * outputs.seeds.len() as f64 - from_seeds as f64).abs() < 1e-9);
     }
 
     #[test]

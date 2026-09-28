@@ -126,8 +126,8 @@ fn read_edges(path: &Path) -> Vec<(usize, usize)> {
         .collect()
 }
 
-/// Build the population, contact network, and initial infections.
-fn build_context(n: usize, edges: &[(usize, usize)], initial_infected: usize, seed: u64) -> Context {
+/// Build the population and contact network.
+fn build_context(n: usize, edges: &[(usize, usize)], seed: u64) -> Context {
     let mut context = Context::new();
     context.init_random(seed);
     context.index_property::<Person, DiseaseStatus>();
@@ -140,10 +140,18 @@ fn build_context(n: usize, edges: &[(usize, usize)], initial_infected: usize, se
             .add_edge_bidi::<Person, Contact>(people[source], people[target], 1.0, Contact)
             .expect("cannot add edge");
     }
-    for person in context.sample_entities(SeedRng, Person, initial_infected.min(n)) {
-        context.set_property(person, DiseaseStatus::I);
-    }
     context
+}
+
+/// Seed the initial infections at time 0, before the first day. They differ in
+/// every run, so they are planned to run inside `execute()` and timed with the
+/// simulation, as epiworld seeds its infections inside `run()`.
+fn schedule_seeding(context: &mut Context, n: usize, initial_infected: usize) {
+    context.add_plan(0.0, move |context| {
+        for person in context.sample_entities(SeedRng, Person, initial_infected.min(n)) {
+            context.set_property(person, DiseaseStatus::I);
+        }
+    });
 }
 
 fn with_status(context: &Context, status: DiseaseStatus) -> Vec<PersonId> {
@@ -268,7 +276,8 @@ fn main() {
         edges.len()
     );
     let rates = Rates::from_args(&args);
-    let mut context = build_context(args.n, &edges, args.initial_infected, args.seed);
+    let mut context = build_context(args.n, &edges, args.seed);
+    schedule_seeding(&mut context, args.n, args.initial_infected);
     drop(edges);
     let peak = schedule_days(&mut context, args.days, rates);
 
@@ -328,7 +337,8 @@ mod tests {
             recovery: 1.0 / 7.0,
             hospital_recovery: 1.0 / 7.0,
         };
-        let mut context = build_context(200, &ring(200), 5, seed);
+        let mut context = build_context(200, &ring(200), seed);
+        schedule_seeding(&mut context, 200, 5);
         let peak = schedule_days(&mut context, 60, rates);
         context.execute();
         outcome(&context, peak.get())

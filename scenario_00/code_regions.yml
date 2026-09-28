@@ -18,7 +18,7 @@ epiworldR:
     - {from: '^run\(model'}
 epiworldpy:
   language: Python
-  files: [runners/python_engines.py]
+  files: [runners/run_epiworldpy.py]
   regions:
     - {from: '^def discrete_transmission_probability', to: '^    return'}
     - {from: '^def hospitalization_daily_probability', to: '^    \)$'}
@@ -32,19 +32,19 @@ epiworld:
     - {from: '^    model.run\(days'}
 covasim:
   language: Python
-  files: [runners/python_engines.py]
+  files: [runners/run_covasim.py]
   regions:
     - {from: '^def discrete_transmission_probability', to: '^    return'}
     - {from: '^def run_covasim', to: '^    sim.run\(\)'}
 EoN:
   language: Python
-  files: [runners/python_engines.py]
+  files: [runners/run_eon.py]
   regions:
     - {from: '^def make_graph', to: '^    return graph'}
     - {from: '^def run_eon', to: '^    \)$'}
 epydemic:
   language: Python
-  files: [runners/python_engines.py]
+  files: [runners/run_epydemic.py]
   regions:
     - {from: '^def discrete_transmission_probability', to: '^    return'}
     - {from: '^def hospitalization_daily_probability', to: '^    \)$'}
@@ -58,11 +58,13 @@ ixa:
     - {from: '^struct Rates', to: '^}'}
     - {from: '^impl Rates', to: '^}'}
     - {from: '^fn build_context', to: '^}'}
+    - {from: '^fn schedule_seeding', to: '^}'}
     - {from: '^fn with_status', to: '^}'}
     - {from: '^fn roulette', to: '^}'}
     - {from: '^fn step', to: '^}'}
     - {from: '^fn schedule_days', to: '^}'}
     - {from: 'let rates = Rates::from_args'}
     - {from: 'let mut context = build_context'}
+    - {from: 'schedule_seeding\(&mut context, args'}
     - {from: 'let peak = schedule_days'}
     - {from: 'context.execute\(\)'}

@@ -281,3 +281,83 @@ table_versions <- function(bench) {
   knitr::kable(versions[order(versions$engine), ],
                col.names = c("Engine", "Recorded version"), row.names = FALSE)
 }
+
+#' Median daily incidence and reproductive number across replicates, from
+#' results/daily.csv (written by run.py for scenarios that report them).
+load_daily <- function(bench) {
+  path <- file.path(bench$root, "results", "daily.csv")
+  if (!file.exists(path)) return(data.frame())
+  daily <- read.csv(path, stringsAsFactors = FALSE)
+  daily[daily$scenario == bench$scenario & daily$n %in% size_levels, ]
+}
+
+#' Time to extract the outputs after the run, which simulate_seconds excludes.
+table_extraction <- function(bench) {
+  full <- bench$full
+  if (!nrow(full) || all(is.na(full$extract_seconds))) return(NULL)
+  rows <- do.call(rbind, lapply(split(full, list(full$engine, full$n), drop = TRUE),
+    function(d) data.frame(
+      engine = d$engine[[1]],
+      agents = d$n[[1]],
+      simulate = median(d$simulate_seconds),
+      extract = median(d$extract_seconds),
+      ratio = median(d$extract_seconds / d$simulate_seconds)
+    )))
+  rows <- rows[order(rows$agents, rows$simulate), ]
+  knitr::kable(rows, digits = c(0, 0, 3, 3, 2),
+    col.names = c("Engine", "Agents", "Median simulation (s)",
+                  "Median extraction (s)", "Median extraction / simulation"),
+    row.names = FALSE)
+}
+
+#' Checks that each engine's outputs agree with its own final counts: every
+#' agent who left S is a seed case or a transmission target, every
+#' transmission is an S -> E transition, and every recovered agent came from
+#' I or H.
+table_output_checks <- function(bench) {
+  full <- bench$full
+  if (!nrow(full) || all(is.na(full$transmissions))) return(NULL)
+  seeds <- as.integer(bench$info$parameters$initial_infected)
+  full$tree_matches <- full$transmissions + seeds == full$n - full$final_susceptible
+  full$matrix_matches <- full$transitions_se == full$transmissions &
+    full$transitions_ir + full$transitions_hr == full$final_recovered
+  rows <- do.call(rbind, lapply(split(full, list(full$engine, full$n), drop = TRUE),
+    function(d) data.frame(
+      engine = d$engine[[1]],
+      agents = d$n[[1]],
+      transmissions = median(d$transmissions),
+      tree = mean(d$tree_matches),
+      matrix = mean(d$matrix_matches)
+    )))
+  rows <- rows[order(rows$agents, factor(rows$engine, levels = engine_levels)), ]
+  knitr::kable(rows, digits = c(0, 0, 0, 2, 2),
+    col.names = c("Engine", "Agents", "Median transmissions",
+                  "Share of runs: tree matches counts",
+                  "Share of runs: matrix matches counts"),
+    row.names = FALSE)
+}
+
+#' Median daily incidence and reproductive number by engine.
+plot_daily <- function(bench) {
+  daily <- load_daily(bench)
+  if (!nrow(daily)) return(NULL)
+  long <- rbind(
+    data.frame(daily[c("engine", "n", "day")], measure = "Daily incidence",
+               value = daily$median_incidence),
+    data.frame(daily[c("engine", "n", "day")],
+               measure = "Reproductive number, by day the case was infected",
+               value = daily$median_reproductive_number)
+  )
+  long <- long[!is.na(long$value), ]
+  long$engine <- factor(long$engine, levels = engine_levels)
+  long$agents <- factor(long$n, levels = size_levels,
+                        labels = c("10,000 agents", "100,000 agents"))
+  ggplot2::ggplot(long, ggplot2::aes(day, value, colour = engine)) +
+    ggplot2::geom_line(linewidth = 0.7) +
+    ggplot2::facet_grid(measure ~ agents, scales = "free_y", switch = "y",
+                        labeller = ggplot2::label_wrap_gen(28)) +
+    ggplot2::labs(x = "Day", y = NULL, colour = NULL,
+                  subtitle = "Medians across replicates") +
+    ggplot2::theme_minimal(base_size = 12) +
+    ggplot2::theme(legend.position = "bottom", strip.placement = "outside")
+}

@@ -1,6 +1,6 @@
 # Scenario 00: SEIRH baseline
 
-2026-09-26
+2026-09-28
 
 - [Model](#model)
   - [Engine implementations](#engine-implementations)
@@ -49,6 +49,12 @@ any state other than the one new infections enter, so they start exposed
 there. The C++ and Python runners do the same, so that all three
 epiworld runners build exactly the same model.
 
+Seeding the initial cases is timed as part of the simulation in every
+runner, because the seeds differ in every run and epiworld places them
+inside `run()`. EoN’s timer covers building its initial status
+dictionary, ixa seeds in a plan at time 0 inside `execute()`, and the
+other engines seed inside their simulation call.
+
 ### Engine implementations
 
 - **epiworld** (C++): a custom model built from `add_state()` and the
@@ -87,25 +93,25 @@ epiworld runners build exactly the same model.
 |:--------------------|:------------------------------------------------------|
 | Platform            | Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39 |
 | Python              | 3.12.11                                               |
-| Workers             | 1                                                     |
+| Workers             | 4                                                     |
 | Latest run failures | 0                                                     |
 
 | Engine     | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:-----------|-------:|-----:|----------------------:|-------:|-------:|
 | ixa        |  10000 |  100 |                 0.004 |  0.004 |  0.005 |
-| epiworldpy |  10000 |  100 |                 0.008 |  0.008 |  0.009 |
-| epiworldR  |  10000 |  100 |                 0.009 |  0.008 |  0.009 |
-| epiworld   |  10000 |  100 |                 0.009 |  0.009 |  0.010 |
-| covasim    |  10000 |  100 |                 0.064 |  0.063 |  0.066 |
-| EoN        |  10000 |  100 |                 0.077 |  0.072 |  0.080 |
-| epydemic   |  10000 |  100 |                 0.489 |  0.468 |  0.520 |
-| ixa        | 100000 |  100 |                 0.008 |  0.008 |  0.009 |
-| epiworldpy | 100000 |  100 |                 0.015 |  0.014 |  0.017 |
-| epiworldR  | 100000 |  100 |                 0.016 |  0.014 |  0.017 |
-| epiworld   | 100000 |  100 |                 0.026 |  0.024 |  0.028 |
-| EoN        | 100000 |  100 |                 0.293 |  0.280 |  0.308 |
-| covasim    | 100000 |  100 |                 0.326 |  0.323 |  0.331 |
-| epydemic   | 100000 |  100 |                 1.727 |  1.659 |  1.812 |
+| epiworldpy |  10000 |  100 |                 0.011 |  0.009 |  0.015 |
+| epiworldR  |  10000 |  100 |                 0.011 |  0.010 |  0.013 |
+| epiworld   |  10000 |  100 |                 0.016 |  0.010 |  0.019 |
+| covasim    |  10000 |  100 |                 0.073 |  0.069 |  0.078 |
+| EoN        |  10000 |  100 |                 0.083 |  0.080 |  0.090 |
+| epydemic   |  10000 |  100 |                 0.537 |  0.508 |  0.572 |
+| ixa        | 100000 |  100 |                 0.011 |  0.010 |  0.013 |
+| epiworld   | 100000 |  100 |                 0.020 |  0.017 |  0.027 |
+| epiworldpy | 100000 |  100 |                 0.021 |  0.018 |  0.025 |
+| epiworldR  | 100000 |  100 |                 0.022 |  0.018 |  0.026 |
+| covasim    | 100000 |  100 |                 0.435 |  0.395 |  0.470 |
+| EoN        | 100000 |  100 |                 0.657 |  0.540 |  0.789 |
+| epydemic   | 100000 |  100 |                 3.260 |  2.713 |  4.027 |
 
 ### Simulation time
 
@@ -120,20 +126,20 @@ panel.
 Ratios are matched by population size and replicate seed. Values above
 one mean that epiworldR completed the simulation call faster.
 
-| Engine     | Agents | Median time / epiworldR |    Q1 |     Q3 |
-|:-----------|-------:|------------------------:|------:|-------:|
-| epiworld   |  10000 |                    1.08 |  1.02 |   1.14 |
-| epiworldpy |  10000 |                    0.98 |  0.94 |   1.04 |
-| covasim    |  10000 |                    7.61 |  7.07 |   8.12 |
-| EoN        |  10000 |                    8.85 |  8.08 |   9.90 |
-| epydemic   |  10000 |                   56.79 | 52.37 |  62.82 |
-| ixa        |  10000 |                    0.48 |  0.44 |   0.54 |
-| epiworld   | 100000 |                    1.66 |  1.58 |   1.77 |
-| epiworldpy | 100000 |                    0.98 |  0.91 |   1.03 |
-| covasim    | 100000 |                   21.51 | 19.10 |  23.23 |
-| EoN        | 100000 |                   19.00 | 17.37 |  21.05 |
-| epydemic   | 100000 |                  112.74 | 99.77 | 124.87 |
-| ixa        | 100000 |                    0.53 |  0.47 |   0.59 |
+| Engine     | Agents | Median time / epiworldR |     Q1 |     Q3 |
+|:-----------|-------:|------------------------:|-------:|-------:|
+| epiworld   |  10000 |                    1.27 |   0.91 |   1.72 |
+| epiworldpy |  10000 |                    1.01 |   0.85 |   1.21 |
+| covasim    |  10000 |                    6.80 |   5.62 |   7.85 |
+| EoN        |  10000 |                    7.51 |   6.41 |   8.73 |
+| epydemic   |  10000 |                   49.20 |  38.94 |  55.57 |
+| ixa        |  10000 |                    0.41 |   0.33 |   0.47 |
+| epiworld   | 100000 |                    0.98 |   0.86 |   1.14 |
+| epiworldpy | 100000 |                    1.02 |   0.83 |   1.23 |
+| covasim    | 100000 |                   20.37 |  16.46 |  24.72 |
+| EoN        | 100000 |                   29.70 |  22.17 |  39.08 |
+| epydemic   | 100000 |                  148.55 | 119.58 | 191.80 |
+| ixa        | 100000 |                    0.54 |   0.40 |   0.65 |
 
 ### The epiworld family
 
@@ -144,10 +150,10 @@ replicate.
 
 | Engine     | Agents | Median time / epiworld |   Q1 |   Q3 |
 |:-----------|-------:|-----------------------:|-----:|-----:|
-| epiworldR  |  10000 |                   0.93 | 0.88 | 0.98 |
-| epiworldpy |  10000 |                   0.91 | 0.90 | 0.94 |
-| epiworldR  | 100000 |                   0.60 | 0.56 | 0.63 |
-| epiworldpy | 100000 |                   0.59 | 0.56 | 0.62 |
+| epiworldR  |  10000 |                   0.79 | 0.58 | 1.09 |
+| epiworldpy |  10000 |                   0.87 | 0.61 | 1.06 |
+| epiworldR  | 100000 |                   1.02 | 0.88 | 1.16 |
+| epiworldpy | 100000 |                   1.04 | 0.85 | 1.33 |
 
 ### Epidemiological sanity checks
 
@@ -190,7 +196,7 @@ regions are listed in [`code_regions.yml`](code_regions.yml).
 | epiworldR  | R        |     1 |          47 |
 | covasim    | Python   |     1 |          64 |
 | epydemic   | Python   |     1 |          70 |
-| ixa        | Rust     |     3 |         133 |
+| ixa        | Rust     |     3 |         138 |
 
 Model lines vary with how much of the model an engine provides built in.
 For example, EoN describes transitions as rate graphs, Covasim needs its
@@ -283,7 +289,7 @@ epidemiological equivalence.
 | covasim    | 3.1.8             |
 | EoN        | 1.92              |
 | epiworld   | 0.17.0            |
-| epiworldpy | 0.17.0-0+g40a98d3 |
+| epiworldpy | 0.17.0-0+g4a1ee0b |
 | epiworldR  | 0.17.0.0          |
 | epydemic   | 1.14.1            |
 | ixa        | 3.1.0             |

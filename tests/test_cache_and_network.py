@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 
+import run
 from run import (
+    PYTHON_RUNNERS,
     ROOT,
     discover_scenarios,
     epiworld_binary,
@@ -62,10 +64,20 @@ def base_task(**overrides) -> dict:
 
 
 def test_task_command_passes_transmission_multiplier_to_each_runner() -> None:
-    for engine in ("covasim", "epiworldR", "epiworldpy", "epiworld", "ixa"):
+    for engine in ("covasim", "EoN", "epydemic", "epiworldR", "epiworldpy", "epiworld", "ixa"):
         command = task_command(base_task(engine=engine))
         index = command.index("--transmission-multiplier")
         assert command[index + 1] == "0.71"
+
+
+def test_each_python_engine_has_its_own_runner() -> None:
+    for scenario in discover_scenarios():
+        for engine, script in PYTHON_RUNNERS.items():
+            command = task_command(base_task(engine=engine, scenario=scenario))
+            path = ROOT / scenario / "runners" / script
+            assert command[1] == str(path)
+            assert path.is_file(), path
+            assert f'main("{engine}", ' in path.read_text()
 
 
 def test_scenario_parameters_become_runner_flags() -> None:
@@ -87,7 +99,8 @@ def test_runners_accept_exactly_their_scenario_parameters() -> None:
     for scenario in discover_scenarios():
         runners = ROOT / scenario / "runners"
         sources = {
-            "python": (runners / "python_engines.py").read_text(),
+            # The Python runners share their argument parser.
+            "python": (runners / "runner_common.py").read_text(),
             "R": (runners / "epiworld.R").read_text(),
             "ixa": (runners / "ixa" / "src" / "main.rs").read_text(),
             "C++": (runners / "epiworld" / "main.cpp").read_text(),
@@ -100,7 +113,7 @@ def test_runners_accept_exactly_their_scenario_parameters() -> None:
 
 
 def test_scenarios_are_discovered() -> None:
-    assert discover_scenarios()[:2] == ["scenario_00", "scenario_01"]
+    assert discover_scenarios()[:3] == ["scenario_00", "scenario_01", "scenario_02"]
 
 
 def test_source_paths_cover_only_the_scenario_runners() -> None:
@@ -139,3 +152,22 @@ def test_epiworld_binary_is_named_after_the_scenario(monkeypatch) -> None:
     assert binary.parent == ROOT / "scenario_01" / "runners" / "epiworld" / "build"
     monkeypatch.setenv("EPIWORLD_BUILD_DIR", "/opt/epiworld-build")
     assert str(epiworld_binary("scenario_00")) == "/opt/epiworld-build/epiworld-scenario-00"
+
+
+def test_daily_series_are_medians_across_replicates(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
+    base = {"scenario": "scenario_02", "engine": "ixa", "n": 10}
+    run.write_daily_series([
+        base | {"daily_incidence": [1, 2], "reproductive_number": [1.0, None, 0.0]},
+        base | {"daily_incidence": [3, 4], "reproductive_number": [2.0, None, 1.0]},
+        base | {"daily_incidence": [5, 9], "reproductive_number": [6.0, 2.0, None]},
+        # Records from scenarios without daily series are skipped.
+        {"scenario": "scenario_01", "engine": "ixa", "n": 10},
+    ])
+    lines = (tmp_path / "daily.csv").read_text().splitlines()
+    assert lines == [
+        "scenario,engine,n,day,median_incidence,median_reproductive_number",
+        "scenario_02,ixa,10,0,,2.0",
+        "scenario_02,ixa,10,1,3,2.0",
+        "scenario_02,ixa,10,2,4,0.5",
+    ]

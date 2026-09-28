@@ -6,13 +6,14 @@ CARGO := cargo
 IXA_MANIFESTS := $(sort $(wildcard scenario_*/runners/ixa/Cargo.toml))
 
 # epiworld (C++) runners. The container provides the headers and the build
-# directory; natively, the pinned release is downloaded into .deps/ and each
-# runner is built next to its source. Keep EPIWORLD_TAG in step with the
-# Dockerfile. The flags are the ones epiworldR is compiled with (R's -O2
+# directory; natively, the pinned commit is downloaded into .deps/ and each
+# runner is built next to its source. Keep EPIWORLD_REF in step with
+# EPIWORLD_SHA in the Dockerfile. The flags are the ones epiworldR is compiled with (R's -O2
 # -DNDEBUG, and double rather than epiworld's default float), so the C++ and R
 # runners differ only in the R layer.
-EPIWORLD_TAG := epiworld-v0.17.0
-EPIWORLD_INCLUDE ?= .deps/$(EPIWORLD_TAG)/include
+# epiworld master after the counting-sort network build (UofUEpiBio/epiworld#274).
+EPIWORLD_REF := 092bad189b137e76f32ea19f1d6ed61f834389d0
+EPIWORLD_INCLUDE ?= .deps/$(EPIWORLD_REF)/include
 EPIWORLD_SOURCES := $(sort $(wildcard scenario_*/runners/epiworld/main.cpp))
 EPIWORLD_CXXFLAGS := -std=c++17 -O2 -DNDEBUG -Depiworld_double=double
 
@@ -45,9 +46,9 @@ setup: epiworld-runners
 	done
 
 $(EPIWORLD_INCLUDE):
-	mkdir -p .deps/$(EPIWORLD_TAG)
-	curl -fsSL https://github.com/UofUEpiBio/epiworld/archive/refs/tags/$(EPIWORLD_TAG).tar.gz \
-		| tar -xz -C .deps/$(EPIWORLD_TAG) --strip-components=1
+	mkdir -p .deps/$(EPIWORLD_REF)
+	curl -fsSL https://github.com/UofUEpiBio/epiworld/archive/$(EPIWORLD_REF).tar.gz \
+		| tar -xz -C .deps/$(EPIWORLD_REF) --strip-components=1
 
 epiworld-runners: | $(EPIWORLD_INCLUDE)
 	for source in $(EPIWORLD_SOURCES); do \
