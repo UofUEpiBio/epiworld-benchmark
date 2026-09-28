@@ -8,6 +8,9 @@ engines = [
   "epiworldR", "epiworldpy", "epiworld", "covasim", "starsim", "EoN", "epydemic", "ixa",
   "individual",
 ]
+# Engines introduced only in scenarios that opt into them. Keeping these out
+# of `engines` preserves the completed design for scenarios 00--03.
+additional_engines = ["FRED", "Agents.jl"]
 # Scenario-specific settings (disease, interventions, calibration) live in
 # scenario_*/scenario.toml; see scenarios.md. A scenario's [design] table can
 # replace population_sizes and replicates above, as scenario_03 does.

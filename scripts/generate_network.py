@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import urllib.request
 
 import networkx as nx
 
@@ -95,6 +96,177 @@ def ensure_network(
     }
     _atomic_json(metadata_path, metadata)
     return edge_path, metadata
+
+
+def _download_verified(url: str, path: Path, expected_sha256: str) -> None:
+    """Download an immutable source file once and verify its content hash."""
+    if path.exists() and sha256_file(path) == expected_sha256:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
+    os.close(fd)
+    try:
+        with urllib.request.urlopen(url) as response, open(temporary, "wb") as stream:
+            while block := response.read(1024 * 1024):
+                stream.write(block)
+        observed = sha256_file(Path(temporary))
+        if observed != expected_sha256:
+            raise ValueError(
+                f"source checksum mismatch for {url}: expected {expected_sha256}, got {observed}"
+            )
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
+def _matrix_market_edges(path: Path, n: int):
+    """Yield zero-based edges in the induced subgraph on the first `n` rows."""
+    with path.open("rt", encoding="ascii") as stream:
+        header = stream.readline().strip()
+        if not header.startswith("%%MatrixMarket matrix coordinate"):
+            raise ValueError(f"unsupported MatrixMarket header in {path}: {header}")
+        line = stream.readline()
+        while line.startswith("%"):
+            line = stream.readline()
+        rows, columns, _entries = (int(value) for value in line.split())
+        if rows != columns or n > rows:
+            raise ValueError(f"{path} is {rows}x{columns}, cannot select {n} people")
+        for line in stream:
+            values = line.split()
+            if len(values) < 2:
+                continue
+            source, target = int(values[0]) - 1, int(values[1]) - 1
+            if source < n and target < n and source != target:
+                yield (source, target) if source < target else (target, source)
+
+
+def ensure_geopops_network(cache_dir: Path, n: int, config: dict) -> tuple[Path, dict]:
+    """Collapse pinned GeoPops layers into one undirected, unweighted graph.
+
+    GeoPops exports separate upper-triangular MatrixMarket adjacency matrices
+    for household, workplace, school, and group-quarters contacts. This keeps
+    the first `rows` matrix rows, takes each layer's induced subgraph, unions
+    the edges, and removes duplicates and self edges. It then drops the people
+    left with no contacts, renumbers the rest 0, 1, ... in row order, and keeps
+    the first `n` of them; at the full size, n is exactly the number left, so
+    nothing more is dropped. Demographics, layer identity, weights, and all
+    contacts to excluded rows are deliberately discarded.
+    """
+    if config.get("selection") != "first_rows_induced_subgraph_without_isolates":
+        raise ValueError("unsupported GeoPops population selection")
+    rows = int(config["rows"])
+    if config.get("collapse") != "undirected_unweighted_union":
+        raise ValueError("unsupported GeoPops collapse rule")
+    commit = str(config["source_commit"])
+    layers = [str(layer) for layer in config["layers"]]
+    hashes = config["source_sha256"]
+    source_dir = cache_dir / "geopops" / commit
+    raw_base = (
+        "https://raw.githubusercontent.com/GeoPopsHub/sc_spartanburg_measles/"
+        f"{commit}/data/pop_export"
+    )
+    sources: dict[str, Path] = {}
+    for layer in layers:
+        source = source_dir / f"adj_upper_triang_{layer}.mtx"
+        _download_verified(
+            f"{raw_base}/adj_upper_triang_{layer}.mtx", source, str(hashes[layer])
+        )
+        sources[layer] = source
+
+    network_dir = cache_dir / "networks"
+    stem = f"geopops-collapsed_spartanburg_rows{rows}_n{n}_{commit[:12]}"
+    edge_path = network_dir / f"{stem}.tsv.gz"
+    metadata_path = network_dir / f"{stem}.json"
+    expected = {
+        "format_version": 2,
+        "network_type": "geopops_collapsed",
+        "n": n,
+        "rows": rows,
+        "source_repository": config["source_repository"],
+        "source_commit": commit,
+        "source_population": config["source_population"],
+        "source_layers": layers,
+        "source_sha256": {layer: str(hashes[layer]) for layer in layers},
+        "selection": config["selection"],
+        "collapse": config["collapse"],
+        "discarded_features": [
+            "contact-layer identity", "demographic attributes", "edge weights",
+            "contacts incident to matrix rows outside the selected population",
+            "people with no contacts among the selected rows",
+        ],
+    }
+    if edge_path.exists() and metadata_path.exists():
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+            if all(metadata.get(key) == value for key, value in expected.items()):
+                if metadata.get("sha256") == sha256_file(edge_path):
+                    return edge_path, metadata
+        except (OSError, ValueError):
+            pass
+
+    row_edges: set[tuple[int, int]] = set()
+    layer_edges: dict[str, int] = {}
+    for layer, source in sources.items():
+        selected = set(_matrix_market_edges(source, rows))
+        layer_edges[layer] = len(selected)
+        row_edges.update(selected)
+
+    connected = sorted({person for edge in row_edges for person in edge})
+    if n > len(connected):
+        raise ValueError(
+            f"the first {rows} GeoPops rows have {len(connected)} people with contacts; "
+            f"cannot select {n}"
+        )
+    renumber = {person: index for index, person in enumerate(connected[:n])}
+    edges = {
+        (renumber[source], renumber[target]) for source, target in row_edges
+        if source in renumber and target in renumber
+    }
+
+    network_dir.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(dir=network_dir, prefix=f".{edge_path.name}.")
+    os.close(fd)
+    try:
+        with open(temporary, "wb") as raw:
+            with gzip.GzipFile(fileobj=raw, mode="wb", mtime=0) as compressed:
+                with io.TextIOWrapper(compressed, encoding="ascii", newline="") as stream:
+                    stream.write("source\ttarget\n")
+                    for source, target in sorted(edges):
+                        stream.write(f"{source}\t{target}\n")
+        os.replace(temporary, edge_path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+    edge_count = len(edges)
+    metadata = expected | {
+        "edges": edge_count,
+        "people_with_contacts_in_rows": len(connected),
+        "isolates_removed": rows - len(connected),
+        "layer_edges_before_union": layer_edges,
+        "duplicates_removed_by_union": sum(layer_edges.values()) - len(row_edges),
+        "mean_degree_observed": 2.0 * edge_count / n,
+        "density": 2.0 * edge_count / (n * (n - 1)),
+        "sha256": sha256_file(edge_path),
+    }
+    _atomic_json(metadata_path, metadata)
+    return edge_path, metadata
+
+
+def ensure_network_from_config(
+    cache_dir: Path, n: int, config: dict, size_index: int = 0
+) -> tuple[Path, dict]:
+    """Build the network selected by a global or scenario-level table."""
+    network_type = config.get("type")
+    if network_type == "watts_strogatz":
+        return ensure_network(
+            cache_dir, n, int(config["mean_degree"]),
+            float(config["rewire_probability"]), int(config["seed"]) + size_index,
+        )
+    if network_type == "geopops_collapsed":
+        return ensure_geopops_network(cache_dir, n, config)
+    raise ValueError(f"unsupported network type: {network_type!r}")
 
 
 def main() -> None:

@@ -2,6 +2,9 @@
 name = "SEIRH + vaccination"
 description = "Scenario 00 plus a day-0 all-or-nothing vaccine: 30% coverage, 80% efficacy."
 
+[cache]
+accept_published_results = true
+
 # Every key in [disease] (and [intervention], when present) is passed to each
 # runner as a --kebab-case flag, so runners must accept exactly these keys.
 [disease]

@@ -7,9 +7,10 @@
 # "epiworld" is the C++ library; epiworldR and epiworldpy wrap it.
 engine_levels <- c(
   "epiworld", "epiworldR", "epiworldpy", "covasim", "starsim", "EoN", "epydemic", "ixa",
-  "individual"
+  "individual", "FRED", "Agents.jl"
 )
-size_levels <- c(10000, 100000, 1000000)
+# 165,865 is scenario 04's GeoPops population once isolated people are dropped.
+size_levels <- c(10000, 100000, 165865, 1000000)
 full_days <- 100
 
 #' "10,000 agents" and so on, as a factor in size order.
@@ -53,7 +54,13 @@ load_benchmark <- function(scenario, root = "..") {
   } else {
     data.frame(n = size_levels[1:2], replicates = 100)
   }
-  counts <- table(factor(full$engine, levels = engine_levels),
+  # Each scenario runs its own engines; run.py publishes them.
+  engines <- if (length(info[[scenario]]$engines)) {
+    unlist(info[[scenario]]$engines)
+  } else {
+    engine_levels[1:9]
+  }
+  counts <- table(factor(full$engine, levels = engines),
                   factor(full$n, levels = design$n))
   complete <- nrow(full) > 0 && all(sweep(counts, 2, design$replicates, `>=`))
   list(
@@ -65,7 +72,7 @@ load_benchmark <- function(scenario, root = "..") {
     has_full = nrow(full) > 0,
     complete = complete,
     design = design,
-    design_runs = length(engine_levels) * sum(design$replicates),
+    design_runs = length(engines) * sum(design$replicates),
     manifest = if (file.exists(manifest_path)) {
       jsonlite::read_json(manifest_path, simplifyVector = TRUE)
     } else {

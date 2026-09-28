@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import lru_cache
 import hashlib
 import importlib.metadata
 import json
@@ -21,7 +22,7 @@ import tempfile
 import tomllib
 from typing import Any
 
-from scripts.generate_network import ensure_network
+from scripts.generate_network import ensure_network_from_config
 
 
 ROOT = Path(__file__).resolve().parent
@@ -37,11 +38,12 @@ DIST_NAMES = {
 # not named after the engine, which the script would then shadow on import.
 PYTHON_RUNNERS = {
     "covasim": "run_covasim.py", "EoN": "run_eon.py", "epydemic": "run_epydemic.py",
-    "epiworldpy": "run_epiworldpy.py", "starsim": "run_starsim.py",
+    "epiworldpy": "run_epiworldpy.py", "starsim": "run_starsim.py", "FRED": "run_FRED.py",
 }
 # R engines and their runner in each scenario's runners/ folder.
 R_RUNNERS = {"epiworldR": "epiworld.R", "individual": "individual.R"}
 R_PACKAGES = {"epiworldR": "epiworldR", "individual": "individual"}
+JULIA_RUNNERS = {"Agents.jl": "agents.jl"}
 # Scenario tables whose keys are forwarded to every runner as --kebab-case flags.
 PARAMETER_TABLES = ("disease", "intervention")
 
@@ -83,6 +85,15 @@ def epiworld_binary(scenario: str) -> Path:
     return build / f"epiworld-{scenario.replace('_', '-')}"
 
 
+def fred_home() -> Path:
+    """FRED is a single shared build, not compiled per scenario like epiworld/ixa."""
+    return Path(os.environ.get("FRED_HOME", ROOT / ".deps" / "fred"))
+
+
+def fred_binary() -> Path:
+    return fred_home() / "bin" / "FRED"
+
+
 def dist_version(name: str) -> str:
     """Installed version, plus the commit for packages installed from git."""
     version = importlib.metadata.version(name)
@@ -122,11 +133,11 @@ def source_paths(scenario: str) -> list[Path]:
         and not {"target", "build"} & set(path.relative_to(runner_dir).parts)
         and "__pycache__" not in path.parts
     ]
-    return (
-        [CONFIG_PATH, ROOT / "run.py", ROOT / scenario / "scenario.toml"]
-        + runners
-        + sorted((ROOT / "scripts").glob("*.py"))
-    )
+    # Only scenario-owned model inputs belong in this hash. The input network
+    # has its own SHA-256 identity; orchestrator-only changes must not discard
+    # completed simulations. Changes to result identity instead bump
+    # RUNNER_FORMAT_VERSION.
+    return [ROOT / scenario / "scenario.toml"] + runners
 
 
 def source_hash(scenario: str) -> str:
@@ -136,6 +147,49 @@ def source_hash(scenario: str) -> str:
             digest.update(path.relative_to(ROOT).as_posix().encode())
             digest.update(path.read_bytes())
     return digest.hexdigest()
+
+
+@lru_cache(maxsize=1)
+def published_fingerprint_registry() -> dict[tuple[Any, ...], str]:
+    registry = RESULTS_DIR / "results.csv"
+    if not registry.is_file():
+        return {}
+    values = {}
+    with registry.open(encoding="utf-8", newline="") as stream:
+        for row in csv.DictReader(stream):
+            key = (
+                row["scenario"], row["engine"], row["engine_version"], int(row["n"]),
+                int(row["days"]), int(row["replicate"]), int(row["seed"]),
+                row["network_sha256"], int(row["network_edges"]),
+                float(row["transmission_multiplier"]),
+            )
+            values[key] = row["fingerprint"]
+    return values
+
+
+def compatible_fingerprints(identity: dict[str, Any], scenario_config: dict[str, Any]) -> set[str]:
+    """Current hash plus the exact hash in the committed results registry.
+
+    The registry is used only by scenarios that explicitly opt in. It lets the
+    source-hash boundary be narrowed without invalidating already published
+    runs; identifying inputs must still match the task being planned.
+    """
+    expected = {fingerprint(identity)}
+    if not scenario_config.get("cache", {}).get("accept_published_results", False):
+        return expected
+    key = (
+        identity["scenario"], identity["engine"], str(identity["engine_version"]), identity["n"],
+        identity["days"], identity["replicate"], identity["seed"],
+        identity["network_sha256"], identity["network_edges"],
+        identity["transmission_multiplier"],
+    )
+    if published := published_fingerprint_registry().get(key):
+        expected.add(published)
+    return expected
+
+
+def engines_for_scenario(config: dict[str, Any], scenario_config: dict[str, Any]) -> list[str]:
+    return list(scenario_config.get("design", {}).get("engines", config["study"]["engines"]))
 
 
 def engine_versions(engines: list[str], scenarios: list[str]) -> dict[str, str]:
@@ -173,6 +227,21 @@ def engine_versions(engines: list[str], scenarios: list[str]) -> dict[str, str]:
                     f"Scenarios were built with different epiworld versions: {sorted(found)}"
                 )
             versions[engine] = found.pop()
+        elif engine == "Agents.jl":
+            versions[engine] = subprocess.run(
+                [
+                    "julia", f"--project={ROOT / 'julia'}", "--startup-file=no", "-e",
+                    "using Agents; print(Base.pkgversion(Agents))",
+                ],
+                check=True, text=True, capture_output=True,
+            ).stdout.strip()
+        elif engine == "FRED":
+            # FRED has no --version flag; the pinned commit is written to
+            # COMMIT next to the binary when it is built (see the Makefile
+            # and the container image).
+            release = (fred_home() / "VERSION").read_text(encoding="utf-8").strip()
+            commit = (fred_home() / "COMMIT").read_text(encoding="utf-8").strip()
+            versions[engine] = f"{release}+g{commit[:7]}"
     return versions
 
 
@@ -181,10 +250,13 @@ def fingerprint(payload: dict[str, Any]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def valid_cache(path: Path, expected_fingerprint: str) -> bool:
+def valid_cache(path: Path, expected_fingerprint: str | set[str]) -> bool:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
-        return value.get("status") == "ok" and value.get("fingerprint") == expected_fingerprint
+        expected = (
+            {expected_fingerprint} if isinstance(expected_fingerprint, str) else expected_fingerprint
+        )
+        return value.get("status") == "ok" and value.get("fingerprint") in expected
     except (OSError, ValueError):
         return False
 
@@ -234,6 +306,11 @@ def task_command(task: dict[str, Any]) -> list[str]:
     runner_dir = ROOT / task["scenario"] / "runners"
     if task["engine"] in R_RUNNERS:
         return ["Rscript", "--vanilla", str(runner_dir / R_RUNNERS[task["engine"]]), *common]
+    if task["engine"] in JULIA_RUNNERS:
+        return [
+            "julia", f"--project={ROOT / 'julia'}", "--startup-file=no",
+            str(runner_dir / JULIA_RUNNERS[task["engine"]]), *common,
+        ]
     if task["engine"] == "ixa":
         return [str(ixa_binary(task["scenario"])), *common]
     if task["engine"] == "epiworld":
@@ -327,6 +404,8 @@ def collect_results() -> int:
         scenarios[scenario] = scenario_config["scenario"] | {
             "parameters": scenario_parameters(scenario_config),
             "calibration": scenario_config.get("calibration", {}),
+            "engines": engines_for_scenario(config, scenario_config),
+            "network": scenario_config.get("network", config["network"]),
             # Concurrency cap from [design], if any (see main()).
             "workers": designs[scenario].get("workers"),
             # The full design: replicates per engine at each population size.
@@ -417,17 +496,28 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     config = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-    study, network, resources = config["study"], config["network"], config["resources"]
+    study, resources = config["study"], config["resources"]
     available = discover_scenarios()
     scenarios = args.scenarios or available
     unknown = sorted(set(scenarios) - set(available))
     if unknown:
         raise SystemExit(f"Unknown scenario(s): {', '.join(unknown)}")
-    engines = args.engines or list(study["engines"])
-    unknown = sorted(set(engines) - set(study["engines"]))
+    scenario_configs = {scenario: load_scenario(scenario) for scenario in scenarios}
+    available_engines = list(study["engines"]) + list(study.get("additional_engines", []))
+    requested_engines = args.engines
+    unknown = sorted(set(requested_engines or []) - set(available_engines))
     if unknown:
         raise SystemExit(f"Unknown engine(s): {', '.join(unknown)}")
-    scenario_configs = {scenario: load_scenario(scenario) for scenario in scenarios}
+    scenario_engine_map = {
+        scenario: [
+            engine for engine in engines_for_scenario(config, scenario_config)
+            if requested_engines is None or engine in requested_engines
+        ]
+        for scenario, scenario_config in scenario_configs.items()
+    }
+    engines = list(dict.fromkeys(
+        engine for scenario in scenarios for engine in scenario_engine_map[scenario]
+    ))
     for scenario, scenario_config in scenario_configs.items():
         # Calibration keys are looked up as "<engine>_transmission_multiplier_<n>".
         # A key whose prefix is not an engine name would silently fall back to a
@@ -435,7 +525,7 @@ def main() -> int:
         stray = sorted(
             key for key in scenario_config.get("calibration", {})
             if (match := re.fullmatch(r"(.+)_transmission_multiplier_\d+", key))
-            and match.group(1) not in set(study["engines"])
+            and match.group(1) not in set(available_engines)
         )
         if stray:
             raise SystemExit(
@@ -451,39 +541,44 @@ def main() -> int:
 
     if shutil.which("Rscript") is None and set(R_RUNNERS) & set(engines):
         raise SystemExit("Rscript is required for the R runners")
+    if shutil.which("julia") is None and set(JULIA_RUNNERS) & set(engines):
+        raise SystemExit("Julia is required for the Agents.jl runner; use the container")
     if "ixa" in engines:
         for scenario in scenarios:
+            if "ixa" not in scenario_engine_map[scenario]:
+                continue
             if not ixa_binary(scenario).is_file():
                 raise SystemExit(
                     f"ixa runner not built at {ixa_binary(scenario)}; run `make setup`"
                 )
     if "epiworld" in engines:
         for scenario in scenarios:
+            if "epiworld" not in scenario_engine_map[scenario]:
+                continue
             if not epiworld_binary(scenario).is_file():
                 raise SystemExit(
                     f"epiworld runner not built at {epiworld_binary(scenario)}; run `make setup`"
                 )
+    if "FRED" in engines and not fred_binary().is_file():
+        raise SystemExit(f"FRED runner not built at {fred_binary()}; run `make setup`")
     versions = engine_versions(engines, scenarios)
     host_platform = f"{platform.system()}-{platform.machine()}"
     tasks: list[dict[str, Any]] = []
     cached = 0
 
     for n, size_index, size_scenarios, replicate_count in plan:
-        edge_path, network_metadata = ensure_network(
-            CACHE_DIR,
-            int(n),
-            int(network["mean_degree"]),
-            float(network["rewire_probability"]),
-            int(network["seed"]) + size_index,
-        )
         for scenario in size_scenarios:
             scenario_config = scenario_configs[scenario]
+            network_config = scenario_config.get("network", config["network"])
+            edge_path, network_metadata = ensure_network_from_config(
+                CACHE_DIR, int(n), network_config, size_index
+            )
             code_hash = source_hash(scenario)
             calibration = scenario_config.get("calibration", {})
             parameters = scenario_parameters(scenario_config)
             if "initial_infected" in profile and "initial_infected" in parameters:
                 parameters["initial_infected"] = int(profile["initial_infected"])
-            for engine in engines:
+            for engine in scenario_engine_map[scenario]:
                 for replicate in range(1, replicate_count + 1):
                     # Seeds do not depend on the scenario, so scenarios can be
                     # compared replicate by replicate.
@@ -514,7 +609,8 @@ def main() -> int:
                         CACHE_DIR / "results" / scenario / engine / f"n{n}"
                         / f"replicate-{replicate:03d}.json"
                     )
-                    if not args.force and valid_cache(output, task_fingerprint):
+                    expected_fingerprints = compatible_fingerprints(identity, scenario_config)
+                    if not args.force and valid_cache(output, expected_fingerprints):
                         cached += 1
                         continue
                     tasks.append(identity | {

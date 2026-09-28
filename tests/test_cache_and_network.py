@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import tomllib
 
 import run
 from run import (
     PYTHON_RUNNERS,
     ROOT,
+    CONFIG_PATH,
     discover_scenarios,
+    engines_for_scenario,
     epiworld_binary,
     fingerprint,
     ixa_binary,
@@ -76,8 +79,12 @@ def test_task_command_passes_transmission_multiplier_to_each_runner() -> None:
 
 
 def test_each_python_engine_has_its_own_runner() -> None:
+    config = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     for scenario in discover_scenarios():
+        engines = engines_for_scenario(config, load_scenario(scenario))
         for engine, script in PYTHON_RUNNERS.items():
+            if engine not in engines:
+                continue
             command = task_command(base_task(engine=engine, scenario=scenario))
             path = ROOT / scenario / "runners" / script
             assert command[1] == str(path)
@@ -187,7 +194,7 @@ def test_source_paths_cover_only_the_scenario_runners() -> None:
         assert f"{scenario}/runners/epiworld.R" in paths
         assert f"{scenario}/runners/individual.R" in paths
         assert f"{scenario}/runners/epiworld/main.cpp" in paths
-        assert "config.toml" in paths
+        assert "config.toml" not in paths and "run.py" not in paths
         assert not any("/target/" in path or "/build/" in path for path in paths)
         assert not any(
             path.endswith(("README.md", "README.qmd", "code_regions.yml")) or "README_files" in path
