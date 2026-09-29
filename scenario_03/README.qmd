@@ -47,7 +47,7 @@ cases <- function(data, n) {
 parameters, the network's mean degree and rewiring probability, the 100 seed
 cases, and every runner are those of scenario 00; only the population is ten
 times its largest size. Each engine runs 20 replicates rather than 100,
-because the slowest ones take several seconds per replicate here. Like
+because the slowest ones take tens of seconds per replicate here. Like
 every scenario, it runs one replicate at a time; its `[design]` table in
 [`scenario.toml`](scenario.toml) sets the size and replicate count, and
 enforces the one-at-a-time rule ([see why](#why-this-scenario-enforces-one-replicate-at-a-time)).
@@ -187,10 +187,21 @@ if (bench$has_full) {
   (`r growth("starsim")`) update every agent's arrays every day, and Starsim
   also draws transmission on every edge, so they grow about as fast as the
   population.
+- **Agents.jl** grows by `r growth("Agents.jl")` times. Its daily step visits
+  only the infectious agents' neighbours, but it loops over every agent to
+  find them and counts the hospitalized agents over the whole population
+  every day.
+- **FRED** grows by `r growth("FRED")` times, faster than the population. Its
+  simulation time includes building its places, the million-person
+  population, and the five-million-edge network for every replicate, which
+  is most of it at this size, and it also spends
+  `r seconds(median_of(full, "FRED", 1e6, "read_seconds"))` seconds per
+  replicate parsing its model and population files.
 
-At 1,000,000 agents, epydemic takes about
-`r seconds(median_of(full, "epydemic", 1e6))` seconds per replicate and
-Starsim `r seconds(median_of(full, "starsim", 1e6))`, against
+At 1,000,000 agents, FRED takes about
+`r seconds(median_of(full, "FRED", 1e6))` seconds per replicate, epydemic
+`r seconds(median_of(full, "epydemic", 1e6))`, and Starsim
+`r seconds(median_of(full, "starsim", 1e6))`, against
 `r seconds(median_of(full, "epiworld", 1e6))` for the C++ runner and
 `r seconds(median_of(full, "ixa", 1e6))` for ixa.
 [analysis.md](../analysis.md) measures where epiworld's and ixa's time goes.
@@ -202,7 +213,10 @@ takes the epiworld runners `r build("epiworld")` (C++), `r build("epiworldR")`
 (epiworldR), and `r build("epiworldpy")` (epiworldpy) seconds: several times
 longer than a 100-day run, but paid once however many replicates follow. EoN
 spends `r build("EoN")` seconds and epydemic `r build("epydemic")` building
-their NetworkX graphs, which they also reuse. ixa and Starsim have
+their NetworkX graphs, which they also reuse, and Agents.jl
+`r build("Agents.jl")` building its agents and adjacency list. FRED's
+`r build("FRED")` seconds are its runner writing FRED's model file, with every
+edge, and its synthetic population files. ixa and Starsim have
 almost nothing to build once, because they rebuild their whole model for
 every replicate, and that time is in their simulation time above.
 

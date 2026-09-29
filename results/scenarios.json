@@ -1,6 +1,10 @@
 {
   "scenario_00": {
     "calibration": {
+      "Agents.jl_transmission_multiplier_10000": 0.981,
+      "Agents.jl_transmission_multiplier_100000": 0.982,
+      "FRED_transmission_multiplier_10000": 0.911,
+      "FRED_transmission_multiplier_100000": 0.898,
       "covasim_transmission_multiplier_10000": 0.715,
       "covasim_transmission_multiplier_100000": 0.71,
       "individual_transmission_multiplier_10000": 0.951,
@@ -28,7 +32,9 @@
       "EoN",
       "epydemic",
       "ixa",
-      "individual"
+      "individual",
+      "FRED",
+      "Agents.jl"
     ],
     "name": "SEIRH baseline",
     "network": {
@@ -49,6 +55,10 @@
   },
   "scenario_01": {
     "calibration": {
+      "Agents.jl_transmission_multiplier_10000": 0.981,
+      "Agents.jl_transmission_multiplier_100000": 0.982,
+      "FRED_transmission_multiplier_10000": 0.911,
+      "FRED_transmission_multiplier_100000": 0.898,
       "covasim_transmission_multiplier_10000": 0.715,
       "covasim_transmission_multiplier_100000": 0.71,
       "individual_transmission_multiplier_10000": 0.951,
@@ -76,7 +86,9 @@
       "EoN",
       "epydemic",
       "ixa",
-      "individual"
+      "individual",
+      "FRED",
+      "Agents.jl"
     ],
     "name": "SEIRH + vaccination",
     "network": {
@@ -99,6 +111,10 @@
   },
   "scenario_02": {
     "calibration": {
+      "Agents.jl_transmission_multiplier_10000": 0.981,
+      "Agents.jl_transmission_multiplier_100000": 0.982,
+      "FRED_transmission_multiplier_10000": 0.911,
+      "FRED_transmission_multiplier_100000": 0.898,
       "covasim_transmission_multiplier_10000": 0.715,
       "covasim_transmission_multiplier_100000": 0.71,
       "individual_transmission_multiplier_10000": 0.951,
@@ -126,7 +142,9 @@
       "EoN",
       "epydemic",
       "ixa",
-      "individual"
+      "individual",
+      "FRED",
+      "Agents.jl"
     ],
     "name": "SEIRH + vaccination + outputs",
     "network": {
@@ -149,6 +167,8 @@
   },
   "scenario_03": {
     "calibration": {
+      "Agents.jl_transmission_multiplier_1000000": 0.982,
+      "FRED_transmission_multiplier_1000000": 0.898,
       "covasim_transmission_multiplier_1000000": 0.71,
       "individual_transmission_multiplier_1000000": 0.951,
       "ixa_transmission_multiplier_1000000": 0.988
@@ -169,7 +189,9 @@
       "EoN",
       "epydemic",
       "ixa",
-      "individual"
+      "individual",
+      "FRED",
+      "Agents.jl"
     ],
     "name": "SEIRH baseline at 1,000,000 agents",
     "network": {

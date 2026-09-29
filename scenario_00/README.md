@@ -45,11 +45,12 @@ Watts–Strogatz contact network (mean degree 10, rewiring probability
 | `hospital_days` | 7.0 | Mean hospital stay |
 
 Initial cases start infectious in every engine except the epiworld
-family and Starsim. epiworldR’s API cannot seed a custom model’s initial
-cases in any state other than the one new infections enter, so they
-start exposed there. The C++ and Python runners do the same, so that all
-three epiworld runners build exactly the same model. Starsim’s SEIR puts
-its seed cases where new infections go, which is also exposed.
+family, Starsim, and FRED. epiworldR’s API cannot seed a custom model’s
+initial cases in any state other than the one new infections enter, so
+they start exposed there. The C++ and Python runners do the same, so
+that all three epiworld runners build exactly the same model. Starsim’s
+SEIR puts its seed cases where new infections go, which is also exposed,
+and so does FRED’s import.
 
 The simulation time covers everything an engine has to redo for another
 replicate on the same network (see [what is
@@ -63,7 +64,10 @@ once, so its timer also covers building the context: the population, the
 network, and the index on disease status; it then seeds in a plan at
 time 0. Starsim’s `Sim` also runs only once, so its timer covers
 building the disease, network, and `Sim` objects and `sim.init()`, which
-builds the agent and network arrays and seeds the initial cases.
+builds the agent and network arrays and seeds the initial cases. FRED
+runs one replicate per process and rebuilds everything each time; its
+timer covers building its places, population, and network as well as the
+days (see its engine description below).
 
 [Scenario 03](../scenario_03/README.md) runs this model at 1,000,000
 agents.
@@ -111,12 +115,48 @@ agents.
   the edge list: a susceptible agent with $k$ infectious neighbours is
   infected with probability $1 - (1 - \beta)^k$, as in epiworld. Updates
   queued during a day apply at its end, so the steps are synchronous.
+- **FRED** (<a href="https://github.com/PublicHealthDynamicsLab/FRED"
+  target="_blank">PublicHealthDynamicsLab/FRED</a>): a compiled
+  simulator driven by its own model language, with no edge-list network
+  primitive comparable to the other engines’ graphs. The runner
+  ([`run_FRED.py`](runners/run_FRED.py)) writes a synthetic population
+  of single-person households (so FRED’s own household mixing adds no
+  contacts beyond the network) and loads the benchmark’s edges verbatim
+  as `Contact.add_edge` properties on FRED’s `Network` group type, with
+  transmission restricted to that network. The disease is a FRED
+  condition with one state per compartment, and FRED’s `import_count()`
+  exposes the seed cases on day 0. Each day, an infectious agent draws
+  about `transmissibility` × degree contacts without replacement among
+  its neighbours, so every neighbour is reached with that daily
+  probability, and the runner uses the same per-day mapping as the
+  synchronous engines. Latent, infectious, and hospital stays are whole
+  days with the configured means. FRED’s `days` counts day 0, which here
+  only places the seed cases, so the runner asks for one more day than
+  the other engines run. The build patches an upstream off-by-one in
+  `Date::setup_dates()` that corrupts the heap at large populations (see
+  the [Dockerfile](../.devcontainer/Dockerfile)). FRED runs one
+  replicate per process and must reread and rebuild everything each
+  time. Its timings are split with FRED’s own lap timers: parsing the
+  generated model file (which holds every edge) and the population files
+  counts as reading, like the other runners’ edge-file parsing; building
+  places, the population, and the network, plus the days themselves,
+  count as simulation, as ixa’s and Starsim’s per-replicate builds do.
+- **Agents.jl** (<a href="https://github.com/JuliaDynamics/Agents.jl"
+  target="_blank">JuliaDynamics/Agents.jl</a>): a `StandardABM` with a
+  per-agent status and a per-day `model_step!` that scans each
+  infectious agent’s adjacency list, matching the synchronous daily
+  semantics of epiworldR, epydemic, and individual. The adjacency list
+  and transmission math are written for this benchmark, since Agents.jl
+  has no built-in epidemic model or contact network. Before any timer
+  starts, the runner steps a throwaway two-agent model so that Julia
+  compiles its methods; otherwise about 0.1 seconds of compilation lands
+  in the first simulation.
 
 ## Results
 
 > [!TIP]
 >
-> The complete 1,800-run design for this scenario is available.
+> The complete 2,200-run design for this scenario is available.
 
 | Field               | Value                                                 |
 |:--------------------|:------------------------------------------------------|
@@ -127,22 +167,26 @@ agents.
 
 | Engine     | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:-----------|-------:|-----:|----------------------:|-------:|-------:|
-| epiworldpy |  10000 |  100 |                 0.004 |  0.004 |  0.005 |
-| epiworld   |  10000 |  100 |                 0.005 |  0.004 |  0.005 |
-| epiworldR  |  10000 |  100 |                 0.005 |  0.004 |  0.005 |
 | ixa        |  10000 |  100 |                 0.007 |  0.007 |  0.008 |
+| epiworldpy |  10000 |  100 |                 0.008 |  0.008 |  0.009 |
+| epiworld   |  10000 |  100 |                 0.009 |  0.008 |  0.010 |
+| epiworldR  |  10000 |  100 |                 0.009 |  0.008 |  0.009 |
+| Agents.jl  |  10000 |  100 |                 0.021 |  0.020 |  0.024 |
 | individual |  10000 |  100 |                 0.026 |  0.025 |  0.027 |
 | covasim    |  10000 |  100 |                 0.065 |  0.064 |  0.067 |
+| FRED       |  10000 |  100 |                 0.072 |  0.069 |  0.077 |
 | EoN        |  10000 |  100 |                 0.079 |  0.074 |  0.085 |
 | starsim    |  10000 |  100 |                 0.174 |  0.169 |  0.182 |
 | epydemic   |  10000 |  100 |                 0.509 |  0.483 |  0.552 |
-| epiworldpy | 100000 |  100 |                 0.008 |  0.007 |  0.008 |
-| epiworldR  | 100000 |  100 |                 0.008 |  0.008 |  0.009 |
-| epiworld   | 100000 |  100 |                 0.008 |  0.008 |  0.009 |
+| epiworldpy | 100000 |  100 |                 0.014 |  0.013 |  0.016 |
+| epiworldR  | 100000 |  100 |                 0.015 |  0.013 |  0.016 |
+| epiworld   | 100000 |  100 |                 0.015 |  0.013 |  0.016 |
 | ixa        | 100000 |  100 |                 0.038 |  0.035 |  0.045 |
+| Agents.jl  | 100000 |  100 |                 0.042 |  0.039 |  0.046 |
 | individual | 100000 |  100 |                 0.060 |  0.056 |  0.070 |
 | EoN        | 100000 |  100 |                 0.306 |  0.293 |  0.329 |
 | covasim    | 100000 |  100 |                 0.329 |  0.324 |  0.348 |
+| FRED       | 100000 |  100 |                 0.544 |  0.524 |  0.589 |
 | starsim    | 100000 |  100 |                 0.938 |  0.907 |  0.998 |
 | epydemic   | 100000 |  100 |                 1.854 |  1.747 |  1.974 |
 
@@ -161,22 +205,26 @@ one mean that epiworldR completed the simulation call faster.
 
 | Engine     | Agents | Median time / epiworldR |     Q1 |     Q3 |
 |:-----------|-------:|------------------------:|-------:|-------:|
-| epiworld   |  10000 |                    1.06 |   0.98 |   1.15 |
-| epiworldpy |  10000 |                    0.94 |   0.86 |   1.01 |
-| covasim    |  10000 |                   14.14 |  13.00 |  16.14 |
-| starsim    |  10000 |                   41.32 |  34.47 |  43.54 |
-| EoN        |  10000 |                   17.47 |  15.52 |  19.77 |
-| epydemic   |  10000 |                  114.16 | 101.23 | 126.36 |
-| ixa        |  10000 |                    1.60 |   1.43 |   1.76 |
-| individual |  10000 |                    5.70 |   5.20 |   6.50 |
-| epiworld   | 100000 |                    0.98 |   0.93 |   1.04 |
-| epiworldpy | 100000 |                    0.88 |   0.84 |   0.92 |
-| covasim    | 100000 |                   40.23 |  36.09 |  42.65 |
-| starsim    | 100000 |                  113.54 | 100.25 | 125.77 |
-| EoN        | 100000 |                   36.67 |  32.41 |  41.96 |
-| epydemic   | 100000 |                  217.21 | 193.98 | 244.79 |
-| ixa        | 100000 |                    4.68 |   4.19 |   5.18 |
-| individual | 100000 |                    7.31 |   6.54 |   8.62 |
+| epiworld   |  10000 |                    1.00 |   0.97 |   1.06 |
+| epiworldpy |  10000 |                    0.94 |   0.91 |   0.98 |
+| covasim    |  10000 |                    7.35 |   7.03 |   8.10 |
+| starsim    |  10000 |                   19.52 |  18.46 |  22.14 |
+| EoN        |  10000 |                    8.93 |   8.12 |  10.15 |
+| epydemic   |  10000 |                   59.48 |  53.26 |  64.10 |
+| ixa        |  10000 |                    0.81 |   0.76 |   0.91 |
+| individual |  10000 |                    3.00 |   2.78 |   3.22 |
+| FRED       |  10000 |                    8.16 |   7.43 |   8.98 |
+| Agents.jl  |  10000 |                    2.50 |   2.25 |   2.86 |
+| epiworld   | 100000 |                    1.02 |   0.99 |   1.06 |
+| epiworldpy | 100000 |                    0.96 |   0.91 |   0.99 |
+| covasim    | 100000 |                   22.89 |  20.91 |  25.00 |
+| starsim    | 100000 |                   65.11 |  59.51 |  73.53 |
+| EoN        | 100000 |                   21.36 |  18.93 |  24.83 |
+| epydemic   | 100000 |                  124.36 | 115.90 | 144.54 |
+| ixa        | 100000 |                    2.64 |   2.39 |   3.00 |
+| individual | 100000 |                    4.19 |   3.67 |   5.23 |
+| FRED       | 100000 |                   38.32 |  33.83 |  42.39 |
+| Agents.jl  | 100000 |                    2.92 |   2.58 |   3.29 |
 
 ### Time to a first result
 
@@ -191,23 +239,27 @@ parsing rather than on the engine.
 
 | Engine     | Agents | Read edges (s) | Build (s) | Simulate (s) | Build + simulate (s) |
 |:-----------|-------:|---------------:|----------:|-------------:|---------------------:|
-| epiworld   |  10000 |          0.005 |     0.001 |        0.005 |                0.006 |
 | ixa        |  10000 |          0.003 |     0.000 |        0.007 |                0.007 |
-| epiworldpy |  10000 |          0.017 |     0.004 |        0.004 |                0.008 |
-| epiworldR  |  10000 |          0.008 |     0.013 |        0.005 |                0.017 |
+| epiworld   |  10000 |          0.005 |     0.001 |        0.009 |                0.010 |
+| epiworldpy |  10000 |          0.016 |     0.004 |        0.008 |                0.012 |
+| epiworldR  |  10000 |          0.008 |     0.015 |        0.009 |                0.024 |
+| Agents.jl  |  10000 |          0.156 |     0.019 |        0.021 |                0.041 |
 | individual |  10000 |          0.008 |     0.015 |        0.026 |                0.041 |
 | covasim    |  10000 |          0.017 |     0.041 |        0.065 |                0.106 |
 | EoN        |  10000 |          0.017 |     0.032 |        0.079 |                0.110 |
 | starsim    |  10000 |          0.017 |     0.000 |        0.174 |                0.174 |
+| FRED       |  10000 |          0.260 |     0.119 |        0.072 |                0.193 |
 | epydemic   |  10000 |          0.017 |     0.018 |        0.509 |                0.529 |
-| epiworld   | 100000 |          0.049 |     0.011 |        0.008 |                0.020 |
-| epiworldR  | 100000 |          0.070 |     0.027 |        0.008 |                0.036 |
+| epiworld   | 100000 |          0.049 |     0.012 |        0.015 |                0.027 |
 | ixa        | 100000 |          0.029 |     0.000 |        0.038 |                0.039 |
-| epiworldpy | 100000 |          0.155 |     0.036 |        0.008 |                0.044 |
+| epiworldR  | 100000 |          0.069 |     0.026 |        0.015 |                0.041 |
+| epiworldpy | 100000 |          0.153 |     0.036 |        0.014 |                0.050 |
+| Agents.jl  | 100000 |          0.318 |     0.025 |        0.042 |                0.067 |
 | individual | 100000 |          0.072 |     0.031 |        0.060 |                0.090 |
 | covasim    | 100000 |          0.153 |     0.041 |        0.329 |                0.372 |
 | EoN        | 100000 |          0.161 |     0.274 |        0.306 |                0.587 |
 | starsim    | 100000 |          0.152 |     0.000 |        0.938 |                0.938 |
+| FRED       | 100000 |          2.618 |     0.868 |        0.544 |                1.423 |
 | epydemic   | 100000 |          0.156 |     0.312 |        1.854 |                2.160 |
 
 ### The epiworld family
@@ -219,10 +271,10 @@ replicate.
 
 | Engine     | Agents | Median time / epiworld |   Q1 |   Q3 |
 |:-----------|-------:|-----------------------:|-----:|-----:|
-| epiworldR  |  10000 |                   0.94 | 0.87 | 1.02 |
-| epiworldpy |  10000 |                   0.88 | 0.84 | 0.93 |
-| epiworldR  | 100000 |                   1.02 | 0.96 | 1.08 |
-| epiworldpy | 100000 |                   0.90 | 0.87 | 0.92 |
+| epiworldR  |  10000 |                   1.00 | 0.94 | 1.03 |
+| epiworldpy |  10000 |                   0.93 | 0.91 | 0.97 |
+| epiworldR  | 100000 |                   0.98 | 0.95 | 1.01 |
+| epiworldpy | 100000 |                   0.94 | 0.88 | 0.98 |
 
 ### Epidemiological sanity checks
 
@@ -233,21 +285,25 @@ time semantics and Covasim’s native symptom/severe bookkeeping.
 
 | Engine     | Agents | Median final attack rate | Median peak hospitalized |
 |:-----------|-------:|-------------------------:|-------------------------:|
+| Agents.jl  |  10000 |                    0.387 |                     18.0 |
 | covasim    |  10000 |                    0.392 |                     23.0 |
 | EoN        |  10000 |                    0.379 |                     21.0 |
 | epiworld   |  10000 |                    0.385 |                     19.0 |
 | epiworldpy |  10000 |                    0.385 |                     19.0 |
 | epiworldR  |  10000 |                    0.385 |                     19.0 |
 | epydemic   |  10000 |                    0.396 |                     25.0 |
+| FRED       |  10000 |                    0.385 |                     21.0 |
 | individual |  10000 |                    0.381 |                     20.5 |
 | ixa        |  10000 |                    0.378 |                     18.5 |
 | starsim    |  10000 |                    0.387 |                     21.0 |
+| Agents.jl  | 100000 |                    0.062 |                     30.0 |
 | covasim    | 100000 |                    0.061 |                     35.0 |
 | EoN        | 100000 |                    0.060 |                     32.0 |
 | epiworld   | 100000 |                    0.060 |                     30.0 |
 | epiworldpy | 100000 |                    0.060 |                     30.0 |
 | epiworldR  | 100000 |                    0.060 |                     30.0 |
 | epydemic   | 100000 |                    0.064 |                     41.0 |
+| FRED       | 100000 |                    0.060 |                     33.0 |
 | individual | 100000 |                    0.060 |                     34.0 |
 | ixa        | 100000 |                    0.062 |                     31.0 |
 | starsim    | 100000 |                    0.059 |                     33.5 |
@@ -269,17 +325,21 @@ regions are listed in [`code_regions.yml`](code_regions.yml).
 | EoN        | Python   |     1 |          37 |
 | epiworldR  | R        |     1 |          47 |
 | covasim    | Python   |     1 |          64 |
+| Agents.jl  | Julia    |     1 |          66 |
 | epydemic   | Python   |     1 |          70 |
 | starsim    | Python   |     1 |          83 |
+| FRED       | Python   |     1 |          92 |
 | ixa        | Rust     |     3 |         138 |
 
 Model lines vary with how much of the model an engine provides built in.
 For example, EoN describes transitions as rate graphs, Covasim needs its
 native parameters overridden to restrict it to SEIRH, Starsim needs a
 subclass of its SEIR to add the hospital state, and the ixa runner
-writes its daily step by hand, as the individual runner writes its
-infection process. ixa needs a Cargo project that is compiled before it
-runs.
+writes its daily step by hand, as the individual and Agents.jl runners
+write their infection processes. The FRED runner writes FRED’s model
+file and synthetic population from Python, so its lines are the Python
+that generates them. ixa needs a Cargo project that is compiled before
+it runs, and FRED a compiled binary.
 
 ## Interpretation
 
@@ -288,16 +348,17 @@ runs.
 The shared analytic transmission mapping produced different realized
 attack rates across frameworks. Calibration therefore selected
 size-specific factors for restricted Covasim (0.715 at 10,000 agents and
-0.710 at 100,000), ixa (0.983 and 0.988), and individual (0.951 at
-both). epiworldR needs none: its uncalibrated median attack rates match
-EoN’s exact continuous-time results, and so do epiworld’s and
-epiworldpy’s, which run the same model. Starsim needs none either
-(uncalibrated medians 0.387 and 0.060). All 100 replicates in each
-adjusted cell were then rerun. These empirical corrections are
-intentionally population-specific; they align benchmark outcomes but
-mean that none of the calibrated engines has a strictly analytic $R_0$
-of 2. The values live in [`scenario.toml`](scenario.toml) and
-participate in the cache fingerprint.
+0.710 at 100,000), ixa (0.983 and 0.988), individual (0.951 at both),
+FRED (0.911 and 0.898), and Agents.jl (0.981 and 0.982). epiworldR needs
+none: its uncalibrated median attack rates match EoN’s exact
+continuous-time results, and so do epiworld’s and epiworldpy’s, which
+run the same model. Starsim needs none either (uncalibrated medians
+0.387 and 0.060). All 100 replicates in each adjusted cell were then
+rerun. These empirical corrections are intentionally
+population-specific; they align benchmark outcomes but mean that none of
+the calibrated engines has a strictly analytic $R_0$ of 2. The values
+live in [`scenario.toml`](scenario.toml) and participate in the cache
+fingerprint.
 
 Covasim’s factors were calibrated after restricting it to fixed
 transmission and permanent immunity. ixa shares the synchronous daily
@@ -307,7 +368,17 @@ and samples each infectious contact independently rather than with
 epiworld’s roulette. individual’s sat higher still (0.441 and 0.074). It
 too seeds the initial cases as infectious, and its infectious period
 averages the full seven days, where the epiworld family’s competing
-daily hospitalization rate shortens it slightly.
+daily hospitalization rate shortens it slightly. Agents.jl seeds the
+initial cases as infectious too, and its uncalibrated medians (0.414 and
+0.065) sat slightly above the target, like ixa’s. FRED’s sat far above
+(0.519 and 0.095). Its contact draw reaches each neighbour with the same
+daily probability as the synchronous engines, but an agent that becomes
+infectious at the start of a day transmits that same day, where a
+synchronous engine’s new case first transmits on the next step. Each
+generation is therefore about a day shorter, and within 100 days the
+outbreak grows further. FRED and Agents.jl were calibrated against
+epiworldR’s medians over 100 replicates per candidate factor, outside
+the timed runs.
 
 ### The language layer costs nothing measurable in the simulation
 
@@ -320,8 +391,8 @@ the counting-sort network build
 ([UofUEpiBio/epiworld#274](https://github.com/UofUEpiBio/epiworld/issues/274)).
 
 Outside the simulation, the wrappers cost something. At 100,000 agents,
-building the model from the edge list takes the C++ runner 0.011
-seconds, against 0.027 for epiworldR and 0.036 for epiworldpy, which
+building the model from the edge list takes the C++ runner 0.012
+seconds, against 0.026 for epiworldR and 0.036 for epiworldpy, which
 first convert the edge list into their own types. Reading the edge file
 also differs by language, but that is the benchmark’s plumbing rather
 than the engine’s, so the time-to-first-result table leaves it out.
@@ -338,7 +409,7 @@ about four times faster here than 0.15.1.0 was at 100,000 agents. Both
 engines’ daily work now follows the outbreak rather than the population.
 
 Per replicate, ixa is a little faster at 10,000 agents, and epiworld is
-faster at 100,000: ixa takes 1.5 and 4.6 times as long as the C++
+faster at 100,000: ixa takes 0.8 and 2.5 times as long as the C++
 runner. ixa’s `execute()` can run a context only once, so every
 replicate rebuilds the population, network, and index, which grows with
 the population. epiworld builds its model once and resets it at the
@@ -351,30 +422,34 @@ map onto every scenario.
 
 ### Equivalence across engines
 
-epiworldR, epydemic, ixa, and individual use synchronous daily
-transitions, while EoN uses continuous-time hazards, simulated exactly.
-Starsim also steps daily, but samples each agent’s time in a state when
-it enters it, and applies transitions before transmission within a step.
-Covasim retains its native exposed, infectious, symptomatic, and severe
-bookkeeping, with severe prevalence used as the hospitalization proxy.
-Its runner disables waning immunity and fixes individual
-transmissibility and viral load to one, making recovered people
-permanently removed and removing those sources of heterogeneity. Covasim
-does not expose a public switch to remove the remaining symptom/severity
-bookkeeping. Thus this report measures restricted, representative
-framework throughput under aligned network and disease targets; it does
-not claim bit-for-bit epidemiological equivalence.
+epiworldR, epydemic, ixa, individual, and Agents.jl use synchronous
+daily transitions, while EoN uses continuous-time hazards, simulated
+exactly. FRED steps daily too, but applies each day’s transitions before
+that day’s transmission, as described above. Starsim also steps daily,
+but samples each agent’s time in a state when it enters it, and applies
+transitions before transmission within a step. Covasim retains its
+native exposed, infectious, symptomatic, and severe bookkeeping, with
+severe prevalence used as the hospitalization proxy. Its runner disables
+waning immunity and fixes individual transmissibility and viral load to
+one, making recovered people permanently removed and removing those
+sources of heterogeneity. Covasim does not expose a public switch to
+remove the remaining symptom/severity bookkeeping. Thus this report
+measures restricted, representative framework throughput under aligned
+network and disease targets; it does not claim bit-for-bit
+epidemiological equivalence.
 
 ## Recorded versions
 
-| Engine     | Recorded version  |
-|:-----------|:------------------|
-| covasim    | 3.1.8             |
-| EoN        | 1.92              |
-| epiworld   | 0.17.0            |
-| epiworldpy | 0.17.0-1+g0733151 |
-| epiworldR  | 0.17.0.0          |
-| epydemic   | 1.14.1            |
-| individual | 0.1.19            |
-| ixa        | 3.1.0             |
-| starsim    | 3.6.1             |
+| Engine     | Recorded version   |
+|:-----------|:-------------------|
+| Agents.jl  | 7.0.4              |
+| covasim    | 3.1.8              |
+| EoN        | 1.92               |
+| epiworld   | 0.17.0             |
+| epiworldpy | 0.17.0-0+g4a1ee0b  |
+| epiworldR  | 0.17.0.0           |
+| epydemic   | 1.14.1             |
+| FRED       | PUB.5.7.0+gbd25f04 |
+| individual | 0.1.19             |
+| ixa        | 3.1.0              |
+| starsim    | 3.6.1              |

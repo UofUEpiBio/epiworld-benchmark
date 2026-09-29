@@ -159,11 +159,23 @@ never infected are still counted as susceptible.
   process compares the agents in each state at the start of consecutive days
   to count the transitions. After the run, the runner derives the
   reproductive number from the tree.
+- **FRED**: its health records, switched on for the disease condition in
+  every run (`enable_health_records`, `health_records_run = -1`), log every
+  exposure with its source and day and every state change, as FRED
+  simulates; writing them is part of the timed run. After the run, the
+  runner parses the log into the tree and the transition matrix. Daily
+  incidence is the new-exposure column of FRED's own daily report.
+- **Agents.jl**: no built-in record of events. The model's properties hold
+  two vectors, and the daily step, which already knows the infectious contact
+  behind each exposure, appends each transmission and each transition as it
+  applies them. After the run, the runner derives the matrix, incidence, and
+  reproductive number from them, in a function the warm-up model compiles
+  before any timer starts.
 
-The EoN, epydemic, Covasim, Starsim, ixa, and individual runners use
-epiworld's definition of the reproductive number. Each Python runner has its
-own copy of a small helper that computes it from the tree, and that helper
-counts as model code.
+The EoN, epydemic, Covasim, Starsim, ixa, individual, FRED, and Agents.jl
+runners use epiworld's definition of the reproductive number. Each Python
+runner has its own copy of a small helper that computes it from the tree, and
+that helper counts as model code.
 
 ## Results
 
@@ -301,7 +313,11 @@ run too (`r ratio("covasim", 100000)` times). The engines that had to add
 recording mostly absorbed it as well. ixa's event subscription and
 transmission log leave it at `r ratio("ixa", 100000)` times its scenario 01
 time, and epydemic's handlers at `r ratio("epydemic", 100000)` times, where the
-list appends are small next to its Python event loop.
+list appends are small next to its Python event loop. Agents.jl's
+vectors of transmissions and transitions leave it at
+`r ratio("Agents.jl", 100000)` times. FRED, whose health records write a
+line to a file, and flush it, for every exposure and state change, takes
+`r ratio("FRED", 100000)` times as long.
 
 The main exception is **EoN**, which takes `r ratio("EoN", 10000)` times as long at
 10,000 agents and `r ratio("EoN", 100000)` times at 100,000. With
@@ -313,10 +329,13 @@ transitions, so its runner compares the agents in each state at the start of
 consecutive days, which means working through full-population bitsets
 every day.
 
-Extraction after the run is small for every engine but epiworldR: at 100,000
-agents it takes `r extract_ms("epiworldR", 100000)` ms there, against
-`r extract_ms("EoN", 100000)` ms for EoN and under a millisecond for the
-others. Almost all of epiworldR's is one call (see below).
+Extraction after the run is small for every engine but epiworldR and FRED:
+at 100,000 agents it takes `r extract_ms("epiworldR", 100000)` ms for
+epiworldR and `r extract_ms("FRED", 100000)` ms for FRED, against
+`r extract_ms("EoN", 100000)` ms for EoN, `r extract_ms("Agents.jl", 100000)`
+ms for Agents.jl, and under a millisecond for the others. Almost all of
+epiworldR's is one call (see below); FRED's is parsing its health records,
+which also log the day-0 move of every agent into its initial state.
 
 ### Is bookkeeping what separates epiworld and ixa?
 

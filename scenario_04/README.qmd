@@ -24,10 +24,8 @@ full <- bench$full
 [Scenario 00](../scenario_00/README.md)'s model on a real contact network
 instead of the shared Watts–Strogatz graph: the model, its parameters, the
 100 seed cases, and the runners in [`runners/`](runners) are copies of
-scenario 00's. Two engines are added here rather than in scenario 00 because
-they need extra build steps and are only worth that cost once: FRED (a
-compiled, population-and-network-driven simulator) and Agents.jl (Julia).
-This scenario also asks a different question from scenario 00: does the
+scenario 00's. FRED and Agents.jl were first added in this scenario and now
+run in every scenario. This scenario also asks a different question from scenario 00: does the
 picture change on a graph with real degree heterogeneity, rather than
 Watts–Strogatz's near-constant degree?
 
@@ -91,9 +89,9 @@ against; see [`scenario.toml`](scenario.toml).
 
 ### Engine implementations
 
-The nine engines from [scenario 00](../scenario_00/README.md#engine-implementations)
+The engines from [scenario 00](../scenario_00/README.md#engine-implementations)
 run the same model unchanged, reading this scenario's edge list instead.
-Two more are added:
+FRED and Agents.jl, which scenario 00 also describes, were added here first:
 
 - **FRED** ([PublicHealthDynamicsLab/FRED](https://github.com/PublicHealthDynamicsLab/FRED){target="_blank"}):
   a compiled, DSL-driven simulator with no edge-list network primitive

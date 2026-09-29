@@ -70,7 +70,7 @@ def base_task(**overrides) -> dict:
 def test_task_command_passes_transmission_multiplier_to_each_runner() -> None:
     engines = (
         "covasim", "starsim", "EoN", "epydemic", "epiworldR", "epiworldpy", "epiworld", "ixa",
-        "individual",
+        "individual", "FRED", "Agents.jl",
     )
     for engine in engines:
         command = task_command(base_task(engine=engine))
@@ -117,12 +117,14 @@ def test_runners_accept_exactly_their_scenario_parameters() -> None:
             "individual": (runners / "individual.R").read_text(),
             "ixa": (runners / "ixa" / "src" / "main.rs").read_text(),
             "C++": (runners / "epiworld" / "main.cpp").read_text(),
+            "Julia": (runners / "agents.jl").read_text(),
         }
         for key in scenario_parameters(load_scenario(scenario)):
             assert f"--{key.replace('_', '-')}" in sources["python"], (scenario, key)
             assert f'"{key}"' in sources["R"], (scenario, key)
             assert f'"{key}"' in sources["individual"], (scenario, key)
             assert f'"{key}"' in sources["C++"], (scenario, key)
+            assert f'"{key}"' in sources["Julia"], (scenario, key)
             assert f"{key}:" in sources["ixa"], (scenario, key)
 
 
@@ -132,6 +134,7 @@ def test_every_runner_records_the_edge_reading_time() -> None:
         for path in (
             runners / "runner_common.py", runners / "epiworld.R", runners / "individual.R",
             runners / "epiworld" / "main.cpp", runners / "ixa" / "src" / "main.rs",
+            runners / "agents.jl",
         ):
             assert "read_seconds" in path.read_text(), path
 
@@ -240,3 +243,13 @@ def test_daily_series_are_medians_across_replicates(tmp_path, monkeypatch) -> No
         "scenario_02,ixa,10,1,3,2.0",
         "scenario_02,ixa,10,2,4,0.5",
     ]
+
+
+def test_every_scenario_runs_every_engine() -> None:
+    config = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    for scenario in discover_scenarios():
+        engines = engines_for_scenario(config, load_scenario(scenario))
+        assert "FRED" in engines and "Agents.jl" in engines, scenario
+        runners = ROOT / scenario / "runners"
+        assert (runners / "run_FRED.py").is_file(), scenario
+        assert (runners / "agents.jl").is_file(), scenario

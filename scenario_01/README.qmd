@@ -55,7 +55,8 @@ replicate.
   doses on day 0 inside `sim.run()`. Starsim draws the vaccinees when its
   day-0 campaign runs, inside `sim.run()`. epydemic draws inside its
   simulation call, and ixa in a plan at time 0, inside `execute()`.
-  individual's timer covers its draw. The epiworld runners
+  individual's and Agents.jl's timers cover their draws, and FRED draws its
+  vaccinees with an import on day 0, inside its run. The epiworld runners
   draw only the number of protected agents (one binomial draw) before
   `run()`.
 
@@ -113,6 +114,18 @@ comparison reflects what a user of that engine would write.
 - **individual**: no intervention objects, so the protected agents are a
   `Bitset`, and the infection process intersects the susceptible agents with
   its complement.
+- **FRED**: a second condition, `VAX`, written the way FRED's own
+  `models/vaccine` example writes a vaccine. On day 0, `import_count()` moves
+  exactly `round(vaccine_coverage * n)` agents, drawn uniformly, into its
+  vaccinated state, which moves each to `Protected` with probability
+  `vaccine_efficacy`; `Protected` sets the agent's susceptibility to the
+  disease to 0 with `set_sus()`. The disease condition is declared first, so
+  its seed cases are imported before the vaccinees are drawn, and a protected
+  seed case stays infected. The counts come from FRED's daily report for
+  `VAX`.
+- **Agents.jl**: a `protected` field on the agent type, set before the seed
+  cases are drawn. The daily step skips protected neighbours when it looks
+  for susceptible contacts.
 
 ## Results
 
@@ -273,6 +286,15 @@ the tool at random. Both give the same vaccine statistically. epiworldR
 0.16.1 fixed the quadratic cost, so either approach is now fast; the runner
 keeps the second.
 
+### An implementation choice that mattered: Agents.jl's vaccine loop
+
+The first Agents.jl runner drew the vaccine in a loop at the script's top
+level, over Julia's untyped global variables. That doubled its simulation
+time at 10,000 agents, from about 0.02 to 0.05 seconds. Moving the loop into a
+function, which Julia compiles for concrete types (and which the warm-up
+model compiles before any timer starts), removed the cost; the published
+runner does that, as a Julia user would.
+
 ### What the vaccine costs epiworld and ixa
 
 Both place the vaccine inside the timed call, before the first day. epiworld
@@ -290,7 +312,8 @@ engines.
 The transmission multipliers are copied from scenario 00. They correct each
 engine's transmission semantics rather than anything specific to this
 scenario, so they were not recalibrated. The table above shows that the
-engines' attack rates stay aligned with the vaccine in place.
+engines' attack rates stay aligned with the vaccine in place. FRED's sits a
+little below the others at 100,000 agents, where the outbreak is smallest.
 
 ## Recorded versions
 

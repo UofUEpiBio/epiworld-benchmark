@@ -1,6 +1,6 @@
 # Network epidemic ABM speed benchmark
 
-This folder contains a reproducible, resumable benchmark of nine epidemic
+This folder contains a reproducible, resumable benchmark of eleven epidemic
 simulation engines across several scenarios of increasing complexity:
 
 - **epiworld 0.17.0** (C++), the header-only library, using a custom
@@ -17,11 +17,16 @@ simulation engines across several scenarios of increasing complexity:
 - **epydemic 1.14.1** (Python), using a custom synchronous SEIRH model;
 - **ixa 3.1.0** (Rust), using a custom synchronous SEIRH model driven by one
   plan per day on ixa's plan queue, its built-in contact network, and an
-  indexed disease-status property; and
+  indexed disease-status property;
 - **individual 0.1.19** (R, from mrc-ide), using a categorical state variable,
   its built-in transition processes, and an infection process over the
   network written for the benchmark. individual is not on CRAN, so the
-  container installs the v0.1.19 release from GitHub.
+  container installs the v0.1.19 release from GitHub;
+- **FRED 5.7.0** (C++, driven by its own model language), pinned to commit
+  `bd25f04` and built into the container, loading the shared edge list as a
+  FRED `Network` over a synthetic population of single-person households; and
+- **Agents.jl 7.0.4** (Julia), using a `StandardABM` with a daily step over
+  an adjacency list written for the benchmark.
 
 The three epiworld packages are pinned to commits after the counting-sort network build
 ([UofUEpiBio/epiworld#274](https://github.com/UofUEpiBio/epiworld/issues/274)),
@@ -35,7 +40,8 @@ Each scenario lives in its own `scenario_NN/` folder with its report
 (`README.qmd`, rendered to `README.md`), its parameters (`scenario.toml`), and
 one runner per engine (`runners/`). Scenario 00 is the SEIRH baseline,
 scenario 01 adds an all-or-nothing vaccine, scenario 02 adds epidemiological
-outputs, and scenario 03 runs scenario 00 at 1,000,000 agents.
+outputs, scenario 03 runs scenario 00 at 1,000,000 agents, and scenario 04
+runs it on a contact network collapsed from GeoPops.
 [scenarios.md](scenarios.md) explains how to add another.
 
 The full design runs 100 replicates for 100 days at 10,000 and 100,000 agents
@@ -92,9 +98,9 @@ figures in `scenario_NN/README_files/`), so the rendered results stay readable
 directly in a pull request.
 
 The smoke profile is deliberately tiny (1,000 agents, 10 days, one replicate)
-and tests all nine integrations in every scenario. `make benchmark` launches
-the full design: 1,800 runs for each of scenarios 00 to 02, and 180 for
-scenario 03. It is safe to stop and restart: each successful replicate is written
+and tests all eleven integrations in every scenario. `make benchmark` launches
+the full design: 2,200 runs for each of scenarios 00 to 02, and 220 for each
+of scenarios 03 and 04. It is safe to stop and restart: each successful replicate is written
 atomically beneath `cache/results/`, and a later invocation only schedules
 missing or stale results.
 

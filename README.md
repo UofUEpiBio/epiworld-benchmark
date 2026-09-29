@@ -10,18 +10,19 @@
 - [Repository layout](#repository-layout)
 - [References](#references)
 
-This project compares how fast nine epidemic simulation engines run the
-same agent-based model on the same contact network, and how much code
-each engine needs to express that model. Three of them are the epiworld
-family: the header-only C++ library
+This project compares how fast eleven epidemic simulation engines run
+the same agent-based model on the same contact network, and how much
+code each engine needs to express that model. Three of them are the
+epiworld family: the header-only C++ library
 <a href="https://github.com/UofUEpiBio/epiworld"
 target="_blank">epiworld</a> (Vega Yon 2026) and its two wrappers,
 <a href="https://uofuepibio.github.io/epiworldR/"
 target="_blank">epiworldR</a> (Meyer and Vega Yon 2023) for R and
 <a href="https://github.com/UofUEpiBio/epiworldpy"
 target="_blank">epiworldpy</a> (Vega Yon and Banks 2026) for Python. The
-other six are <a href="https://covasim.org/" target="_blank">Covasim</a>
-(Kerr et al. 2021) and its successor
+other eight are
+<a href="https://covasim.org/" target="_blank">Covasim</a> (Kerr et al.
+2021) and its successor
 <a href="https://starsim.org/" target="_blank">Starsim</a> (Kerr et al.
 2025),
 <a href="https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html"
@@ -29,8 +30,12 @@ target="_blank">EoN</a> (Miller and Ting 2019),
 <a href="https://github.com/simoninireland/epydemic"
 target="_blank">epydemic</a> (Dobson 2022),
 <a href="https://ixa.rs/" target="_blank">ixa</a> (The Ixa Developers
-2026), and the R package <a href="https://mrc-ide.github.io/individual/"
-target="_blank">individual</a> (Charles and Wu 2021).
+2026), the R package <a href="https://mrc-ide.github.io/individual/"
+target="_blank">individual</a> (Charles and Wu 2021),
+<a href="https://github.com/PublicHealthDynamicsLab/FRED"
+target="_blank">FRED</a> (Grefenstette et al. 2013), and the Julia
+package <a href="https://github.com/JuliaDynamics/Agents.jl"
+target="_blank">Agents.jl</a> (Datseris et al. 2024).
 
 The benchmark is organized as **scenarios** of increasing complexity.
 Each scenario adds a feature to an earlier one, so together they show
@@ -46,7 +51,7 @@ results, and interpretation.
 | 01 | Scenario 00 plus a day-0 all-or-nothing vaccine (30% coverage, 80% efficacy) | [scenario_01/README.md](scenario_01/README.md) |
 | 02 | Scenario 01 plus four outputs: transmission tree, daily incidence, reproductive number, and transition matrix | [scenario_02/README.md](scenario_02/README.md) |
 | 03 | Scenario 00 at 1,000,000 agents | [scenario_03/README.md](scenario_03/README.md) |
-| 04 | Scenario 00 on a real contact network collapsed from <a href="https://github.com/GeoPopsHub" target="_blank">GeoPops</a>, adding FRED and Agents.jl | [scenario_04/README.md](scenario_04/README.md) |
+| 04 | Scenario 00 on a real contact network collapsed from <a href="https://github.com/GeoPopsHub" target="_blank">GeoPops</a> | [scenario_04/README.md](scenario_04/README.md) |
 
 [analysis.md](analysis.md) explains why ixa is faster than the epiworld
 family, with measurements that apply to every scenario.
@@ -89,18 +94,19 @@ Every scenario shares the following design, set in `config.toml`.
   size-specific transmission multipliers that align the engines’
   realized attack rates. Each scenario’s report states and justifies its
   factors.
-- **Engines.** The epiworld family, epydemic, ixa, and individual use
-  synchronous daily transitions. The three epiworld runners build the
-  same model on the same C++ core; in scenario 00 they produce identical
-  epidemics for each seed, so their run-time differences come from the
-  language layer, not the model. EoN uses continuous-time hazards
-  simulated exactly with its event-driven `fast_simple_contagion`
-  algorithm. Covasim runs its native model, restricted as far as its
-  public API allows. Starsim runs its native SEIR model with a hospital
-  state added, stepping daily with sampled (exponential) durations. The
-  reports therefore measure representative framework throughput under
-  aligned network and disease targets, not bit-for-bit epidemiological
-  equivalence.
+- **Engines.** The epiworld family, epydemic, ixa, individual, and
+  Agents.jl use synchronous daily transitions. FRED also steps daily,
+  but an agent that becomes infectious transmits the same day. The three
+  epiworld runners build the same model on the same C++ core; in
+  scenario 00 they produce identical epidemics for each seed, so their
+  run-time differences come from the language layer, not the model. EoN
+  uses continuous-time hazards simulated exactly with its event-driven
+  `fast_simple_contagion` algorithm. Covasim runs its native model,
+  restricted as far as its public API allows. Starsim runs its native
+  SEIR model with a hospital state added, stepping daily with sampled
+  (exponential) durations. The reports therefore measure representative
+  framework throughput under aligned network and disease targets, not
+  bit-for-bit epidemiological equivalence.
 
 ## What is measured
 
@@ -119,7 +125,10 @@ Each replicate runs in a fresh process and records:
   - for ixa, building the context (population, network, and index),
     because `execute()` runs a context once;
   - for Starsim, building and initializing the `Sim`, which can also run
-    only once.
+    only once;
+  - for FRED, which runs one replicate per process, building its places,
+    population, and network from its input files (parsing those files
+    counts as reading, like the other runners’ edge-list parsing).
 
   epiworld’s `run()` re-initializes its population every time for the
   same reason, so every engine pays for starting a fresh run. Any
@@ -202,12 +211,31 @@ Software* 6 (66): 3539. <https://doi.org/10.21105/joss.03539>.
 
 </div>
 
+<div id="ref-datserisAgentsjl2024" class="csl-entry">
+
+Datseris, George, Ali R. Vahdati, and Timothy C. DuBois. 2024.
+“Agents.jl: A Performant and Feature-Full Agent-Based Modeling Software
+of Minimal Code Complexity.” *SIMULATION* 100 (10): 1019–31.
+<https://doi.org/10.1177/00375497211068820>.
+
+</div>
+
 <div id="ref-dobson2022epydemic" class="csl-entry">
 
 Dobson, Simon. 2022. “Epydemic: Epidemic Simulation on Networks in
 Python.” In *GitHub Repository*.
 <a href="https://github.com/simoninireland/epydemic"
 class="uri">Https://github.com/simoninireland/epydemic</a>; GitHub.
+
+</div>
+
+<div id="ref-grefenstetteFRED2013" class="csl-entry">
+
+Grefenstette, John J., Shawn T. Brown, Roni Rosenfeld, et al. 2013.
+“FRED (<span class="nocase">A Framework for Reconstructing Epidemic
+Dynamics</span>): An Open-Source Software System for Modeling Infectious
+Diseases and Control Strategies Using Census-Based Populations.” *BMC
+Public Health* 13: 940. <https://doi.org/10.1186/1471-2458-13-940>.
 
 </div>
 

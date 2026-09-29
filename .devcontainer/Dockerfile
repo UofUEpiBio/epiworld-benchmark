@@ -32,7 +32,7 @@ RUN curl -fsSL https://sh.rustup.rs \
         | sh -s -- -y --no-modify-path --profile minimal --default-toolchain "${RUST_VERSION}" \
     && rustc --version
 
-# Julia and the Agents.jl environment used only by scenarios that opt in.
+# Julia and the Agents.jl environment, for every scenario's Agents.jl runner.
 ARG JULIA_VERSION=1.13.1
 RUN architecture="$(dpkg --print-architecture)" \
     && case "${architecture}" in \
@@ -106,7 +106,7 @@ RUN mkdir -p /opt/epiworld \
         | tar -xz -C /opt/epiworld --strip-components=1 \
     && grep -q 'EPIWORLD_VERSION_MINOR 17' /opt/epiworld/include/epiworld/epiworld.hpp
 
-# FRED, for the scenario_04 network-transmission runner. Unlike epiworld, it
+# FRED, for every scenario's FRED runner. Unlike epiworld, it
 # takes no bind-mounted scenario inputs (the runner drives it entirely via a
 # generated model file), so it is fully built into the image rather than by
 # `make setup`. Keep the commit in step with FRED_REF in the Makefile. FRED's

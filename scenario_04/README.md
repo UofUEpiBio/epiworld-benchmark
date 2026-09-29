@@ -22,12 +22,11 @@ report](../scenario_00/README.md)
 [Scenario 00](../scenario_00/README.md)’s model on a real contact
 network instead of the shared Watts–Strogatz graph: the model, its
 parameters, the 100 seed cases, and the runners in [`runners/`](runners)
-are copies of scenario 00’s. Two engines are added here rather than in
-scenario 00 because they need extra build steps and are only worth that
-cost once: FRED (a compiled, population-and-network-driven simulator)
-and Agents.jl (Julia). This scenario also asks a different question from
-scenario 00: does the picture change on a graph with real degree
-heterogeneity, rather than Watts–Strogatz’s near-constant degree?
+are copies of scenario 00’s. FRED and Agents.jl were first added in this
+scenario and now run in every scenario. This scenario also asks a
+different question from scenario 00: does the picture change on a graph
+with real degree heterogeneity, rather than Watts–Strogatz’s
+near-constant degree?
 
 ## Model
 
@@ -92,10 +91,10 @@ calibrate against; see [`scenario.toml`](scenario.toml).
 
 ### Engine implementations
 
-The nine engines from [scenario
+The engines from [scenario
 00](../scenario_00/README.md#engine-implementations) run the same model
-unchanged, reading this scenario’s edge list instead. Two more are
-added:
+unchanged, reading this scenario’s edge list instead. FRED and
+Agents.jl, which scenario 00 also describes, were added here first:
 
 - **FRED** (<a href="https://github.com/PublicHealthDynamicsLab/FRED"
   target="_blank">PublicHealthDynamicsLab/FRED</a>): a compiled,
@@ -259,8 +258,8 @@ regions are listed in [`code_regions.yml`](code_regions.yml).
 | epiworldpy | Python   |     1 |          34 |
 | EoN        | Python   |     1 |          37 |
 | epiworldR  | R        |     1 |          47 |
-| Agents.jl  | Julia    |     1 |          54 |
 | covasim    | Python   |     1 |          64 |
+| Agents.jl  | Julia    |     1 |          66 |
 | epydemic   | Python   |     1 |          70 |
 | starsim    | Python   |     1 |          83 |
 | FRED       | Python   |     1 |          92 |
