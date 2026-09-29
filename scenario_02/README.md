@@ -1,6 +1,6 @@
 # Scenario 02: SEIRH + vaccination + epidemiological outputs
 
-2026-09-28
+2026-09-29
 
 - [Model](#model)
   - [Outputs](#outputs)

@@ -130,29 +130,26 @@ table_summary <- function(bench) {
 plot_simulation_time <- function(bench) {
   full <- bench$full
   if (!nrow(full)) return(NULL)
-  full$engine <- factor(full$engine, levels = engine_levels)
+  # Reversed so the first engine_levels entry lands at the top row: ggplot
+  # draws a discrete y-axis's first factor level at the bottom.
+  full$engine <- factor(full$engine, levels = rev(engine_levels))
   full$agents <- agents_factor(full$n)
-  ggplot2::ggplot(full, ggplot2::aes(engine, simulate_seconds, fill = engine)) +
-    ggplot2::geom_boxplot(width = 0.65, outlier.alpha = 0.25) +
-    ggplot2::stat_summary(
-      fun = median, geom = "text",
-      ggplot2::aes(label = ggplot2::after_stat(sprintf("%.2gs", y))),
-      vjust = -1.6, size = 3.6
+  ggplot2::ggplot(full, ggplot2::aes(simulate_seconds, engine, fill = engine)) +
+    ggridges::geom_density_ridges(
+      scale = 0.75, rel_min_height = 0.01, alpha = 0.7,
+      jittered_points = TRUE, point_alpha = 0.5, point_size = 1.2,
+      position = ggridges::position_points_jitter(width = 0, height = 0.25)
     ) +
-    ggplot2::facet_wrap(~ agents, scales = "free_y") +
-    ggplot2::coord_cartesian(clip = "off") +
-    ggplot2::scale_y_log10(expand = ggplot2::expansion(mult = c(0.05, 0.12))) +
+    ggplot2::facet_wrap(~ agents, ncol = 1, scales = "free_x") +
+    ggplot2::scale_x_log10() +
     ggplot2::labs(
-      x = NULL,
-      y = "Simulation wall time\n(seconds, log scale)",
+      x = "Simulation wall time (seconds, log scale)",
+      y = NULL,
       subtitle = "Wall time distribution for 100-day simulations",
-      caption = "Note: Numeric labels show median simulation time"
+      caption = "Note: dots show individual replicates"
     ) +
     ggplot2::theme_minimal(base_size = 18) +
-    ggplot2::theme(
-      legend.position = "none",
-      axis.text.x = ggplot2::element_text(angle = 30, hjust = 1)
-    )
+    ggplot2::theme(legend.position = "none")
 }
 
 #' Median time of each phase of a run. Reading the edge list is benchmark

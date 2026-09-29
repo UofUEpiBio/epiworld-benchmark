@@ -98,7 +98,7 @@ The logarithmic scale keeps fast and slow engines legible in one panel.
 ```{r}
 #| label: simulation-time-plot
 #| fig-width: 12
-#| fig-height: 5
+#| fig-height: 7
 if (bench$has_full) print(plot_simulation_time(bench))
 ```
 

@@ -129,5 +129,10 @@ RUN mkdir -p /opt/fred \
     && echo "${FRED_SHA}" > /opt/fred/COMMIT \
     && rm -rf /opt/fred/tests /opt/fred/docs /opt/fred/pybin /opt/fred/data/country
 
+# ggridges, for the scenario reports' ridgeline simulation-time plots. Last,
+# alongside the other report-only packages, so bumping it never invalidates
+# the epiworld family or FRED layers above.
+RUN Rscript -e 'install.packages("ggridges", Ncpus = parallel::detectCores())'
+
 WORKDIR /workspace
 CMD ["bash"]

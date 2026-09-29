@@ -1,6 +1,6 @@
 # Scenario 04: SEIRH on a collapsed GeoPops network
 
-2026-09-28
+2026-09-29
 
 - [Model](#model)
   - [The network](#the-network)

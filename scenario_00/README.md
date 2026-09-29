@@ -1,6 +1,6 @@
 # Scenario 00: SEIRH baseline
 
-2026-09-28
+2026-09-29
 
 - [Model](#model)
   - [Engine implementations](#engine-implementations)

@@ -1,6 +1,6 @@
 # Scenario 03: SEIRH baseline at 1,000,000 agents
 
-2026-09-28
+2026-09-29
 
 - [Model](#model)
 - [Results](#results)

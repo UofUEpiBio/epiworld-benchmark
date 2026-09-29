@@ -1,6 +1,6 @@
 # Scenario 01: SEIRH + all-or-nothing vaccination
 
-2026-09-28
+2026-09-29
 
 - [Model](#model)
   - [Vaccine](#vaccine)
