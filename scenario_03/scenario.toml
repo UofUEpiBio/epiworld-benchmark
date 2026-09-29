@@ -36,3 +36,5 @@ hospital_days = 7.0
 covasim_transmission_multiplier_1000000 = 0.710
 ixa_transmission_multiplier_1000000 = 0.988
 individual_transmission_multiplier_1000000 = 0.951
+FRED_transmission_multiplier_1000000 = 0.898
+"Agents.jl_transmission_multiplier_1000000" = 0.982

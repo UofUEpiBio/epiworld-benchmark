@@ -59,3 +59,14 @@ ixa_transmission_multiplier_100000 = 0.988
 # competing hospitalization rate shortens it.
 individual_transmission_multiplier_10000 = 0.951
 individual_transmission_multiplier_100000 = 0.951
+#
+# FRED and Agents.jl were calibrated against epiworldR's medians (0.385 and
+# 0.060) over 100 replicates. Agents.jl seeds the initial cases as infectious,
+# like ixa, and its uncalibrated medians (0.414 and 0.065) sat slightly high.
+# FRED's sat much higher (0.519 and 0.095): an agent that becomes infectious
+# at hour 0 transmits the same day, where the synchronous engines' new cases
+# transmit from the next step, so its outbreak grows faster.
+FRED_transmission_multiplier_10000 = 0.911
+FRED_transmission_multiplier_100000 = 0.898
+"Agents.jl_transmission_multiplier_10000" = 0.981
+"Agents.jl_transmission_multiplier_100000" = 0.982
