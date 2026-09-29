@@ -12,7 +12,7 @@ IXA_MANIFESTS := $(sort $(wildcard scenario_*/runners/ixa/Cargo.toml))
 # -DNDEBUG, and double rather than epiworld's default float), so the C++ and R
 # runners differ only in the R layer.
 # epiworld master after the counting-sort network build (UofUEpiBio/epiworld#274).
-EPIWORLD_REF := 092bad189b137e76f32ea19f1d6ed61f834389d0
+EPIWORLD_REF := a1ff20a2e347169bb260440c4a9c26918efda7e0
 EPIWORLD_INCLUDE ?= .deps/$(EPIWORLD_REF)/include
 EPIWORLD_SOURCES := $(sort $(wildcard scenario_*/runners/epiworld/main.cpp))
 EPIWORLD_CXXFLAGS := -std=c++17 -O2 -DNDEBUG -Depiworld_double=double

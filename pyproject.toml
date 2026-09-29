@@ -9,7 +9,7 @@ dependencies = [
   "epydemic==1.14.1",
   # epiworldpy main with the vendored epiworld headers that build networks
   # with a counting sort (UofUEpiBio/epiworldpy#22); no release includes it yet.
-  "epiworldpy @ git+https://github.com/UofUEpiBio/epiworldpy@4a1ee0bf0db3cae181a62ec41a35f44395d0cbd0",
+  "epiworldpy @ git+https://github.com/UofUEpiBio/epiworldpy@07331516fb96a06b853ab6d78e0556201aadb89a",
   "networkx==3.6.1",
   "numpy==2.2.6",
   "scipy==1.15.3",

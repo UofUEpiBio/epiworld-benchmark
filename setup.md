@@ -6,7 +6,7 @@ simulation engines across several scenarios of increasing complexity:
 - **epiworld 0.17.0** (C++), the header-only library, using a custom
   discrete-time SEIRH model built from its state update functions;
 - **epiworldR 0.17.0.0** (R wrapper of epiworld), building the same model;
-- **epiworldpy 0.17.0-0** (Python wrapper of epiworld), building the same
+- **epiworldpy 0.17.0-1** (Python wrapper of epiworld), building the same
   model;
 - **Covasim 3.1.8** (Python), using its native disease progression and severe
   state as the hospitalization proxy;
@@ -26,8 +26,8 @@ simulation engines across several scenarios of increasing complexity:
 The three epiworld packages are pinned to commits after the counting-sort network build
 ([UofUEpiBio/epiworld#274](https://github.com/UofUEpiBio/epiworld/issues/274)),
 which no release includes yet and which still report version 0.17.0: epiworld
-`092bad1` on master, epiworldR `1f5e63b` on main (in `.devcontainer/Dockerfile`),
-and epiworldpy `4a1ee0b` on main (in `pyproject.toml`). Recorded versions do
+`a1ff20a` on master, epiworldR `dc3758c` on main (in `.devcontainer/Dockerfile`),
+and epiworldpy `0733151` on main (in `pyproject.toml`). Recorded versions do
 not show the commit for epiworld and epiworldR, so results from an older
 commit have to be cleared from the cache by hand when the pins change.
 
