@@ -1,6 +1,6 @@
 # Scenario 01: SEIRH + all-or-nothing vaccination
 
-2026-09-28
+2026-09-29
 
 - [Model](#model)
   - [Vaccine](#vaccine)
@@ -20,6 +20,8 @@
 - [Interpretation](#interpretation)
   - [An implementation choice that mattered: epiworldR’s
     `distribute_tool_to_set()`](#an-implementation-choice-that-mattered-epiworldrs-distribute_tool_to_set)
+  - [An implementation choice that mattered: Agents.jl’s vaccine
+    loop](#an-implementation-choice-that-mattered-agentsjls-vaccine-loop)
   - [What the vaccine costs epiworld and
     ixa](#what-the-vaccine-costs-epiworld-and-ixa)
   - [Calibration](#calibration)
@@ -60,9 +62,10 @@ replicate by replicate.
   Covasim gives the doses on day 0 inside `sim.run()`. Starsim draws the
   vaccinees when its day-0 campaign runs, inside `sim.run()`. epydemic
   draws inside its simulation call, and ixa in a plan at time 0, inside
-  `execute()`. individual’s timer covers its draw. The epiworld runners
-  draw only the number of protected agents (one binomial draw) before
-  `run()`.
+  `execute()`. individual’s and Agents.jl’s timers cover their draws,
+  and FRED draws its vaccinees with an import on day 0, inside its run.
+  The epiworld runners draw only the number of protected agents (one
+  binomial draw) before `run()`.
 
 About 24% of agents end up protected, so the effective reproduction
 number falls from about 2 to about 1.5. The disease parameters are those
@@ -119,12 +122,24 @@ model-lines comparison reflects what a user of that engine would write.
 - **individual**: no intervention objects, so the protected agents are a
   `Bitset`, and the infection process intersects the susceptible agents
   with its complement.
+- **FRED**: a second condition, `VAX`, written the way FRED’s own
+  `models/vaccine` example writes a vaccine. On day 0, `import_count()`
+  moves exactly `round(vaccine_coverage * n)` agents, drawn uniformly,
+  into its vaccinated state, which moves each to `Protected` with
+  probability `vaccine_efficacy`; `Protected` sets the agent’s
+  susceptibility to the disease to 0 with `set_sus()`. The disease
+  condition is declared first, so its seed cases are imported before the
+  vaccinees are drawn, and a protected seed case stays infected. The
+  counts come from FRED’s daily report for `VAX`.
+- **Agents.jl**: a `protected` field on the agent type, set before the
+  seed cases are drawn. The daily step skips protected neighbours when
+  it looks for susceptible contacts.
 
 ## Results
 
 > [!TIP]
 >
-> The complete 1,800-run design for this scenario is available.
+> The complete 2,200-run design for this scenario is available.
 
 | Field               | Value                                                 |
 |:--------------------|:------------------------------------------------------|
@@ -139,8 +154,10 @@ model-lines comparison reflects what a user of that engine would write.
 | epiworldR  |  10000 |  100 |                 0.004 |  0.004 |  0.004 |
 | ixa        |  10000 |  100 |                 0.004 |  0.004 |  0.005 |
 | epiworld   |  10000 |  100 |                 0.004 |  0.004 |  0.005 |
+| Agents.jl  |  10000 |  100 |                 0.022 |  0.021 |  0.024 |
 | individual |  10000 |  100 |                 0.023 |  0.022 |  0.024 |
 | EoN        |  10000 |  100 |                 0.036 |  0.034 |  0.039 |
+| FRED       |  10000 |  100 |                 0.062 |  0.059 |  0.066 |
 | covasim    |  10000 |  100 |                 0.067 |  0.065 |  0.076 |
 | starsim    |  10000 |  100 |                 0.178 |  0.172 |  0.186 |
 | epydemic   |  10000 |  100 |                 0.211 |  0.199 |  0.225 |
@@ -148,9 +165,11 @@ model-lines comparison reflects what a user of that engine would write.
 | epiworldpy | 100000 |  100 |                 0.009 |  0.009 |  0.010 |
 | epiworld   | 100000 |  100 |                 0.012 |  0.010 |  0.015 |
 | ixa        | 100000 |  100 |                 0.033 |  0.030 |  0.038 |
+| Agents.jl  | 100000 |  100 |                 0.040 |  0.037 |  0.043 |
 | individual | 100000 |  100 |                 0.054 |  0.051 |  0.057 |
 | EoN        | 100000 |  100 |                 0.220 |  0.213 |  0.232 |
 | covasim    | 100000 |  100 |                 0.375 |  0.349 |  0.427 |
+| FRED       | 100000 |  100 |                 0.643 |  0.618 |  0.691 |
 | starsim    | 100000 |  100 |                 0.929 |  0.841 |  1.011 |
 | epydemic   | 100000 |  100 |                 1.146 |  1.114 |  1.195 |
 
@@ -177,6 +196,8 @@ one mean that epiworldR completed the simulation call faster.
 | epydemic   |  10000 |                   52.56 |  47.68 |  57.24 |
 | ixa        |  10000 |                    1.06 |   1.01 |   1.16 |
 | individual |  10000 |                    5.75 |   5.36 |   6.25 |
+| FRED       |  10000 |                   15.35 |  14.10 |  16.95 |
+| Agents.jl  |  10000 |                    5.45 |   5.09 |   6.28 |
 | epiworld   | 100000 |                    1.25 |   1.07 |   1.54 |
 | epiworldpy | 100000 |                    0.97 |   0.87 |   1.15 |
 | covasim    | 100000 |                   40.99 |  35.75 |  45.26 |
@@ -185,6 +206,8 @@ one mean that epiworldR completed the simulation call faster.
 | epydemic   | 100000 |                  124.63 | 110.06 | 133.45 |
 | ixa        | 100000 |                    3.46 |   3.07 |   4.12 |
 | individual | 100000 |                    5.67 |   5.00 |   6.31 |
+| FRED       | 100000 |                   68.08 |  62.27 |  76.60 |
+| Agents.jl  | 100000 |                    4.17 |   3.68 |   4.69 |
 
 ### Time to a first result
 
@@ -204,19 +227,23 @@ parsing rather than on the engine.
 | epiworldpy |  10000 |          0.017 |     0.008 |        0.004 |                0.011 |
 | epiworldR  |  10000 |          0.008 |     0.015 |        0.004 |                0.019 |
 | individual |  10000 |          0.008 |     0.016 |        0.023 |                0.039 |
+| Agents.jl  |  10000 |          0.161 |     0.021 |        0.022 |                0.044 |
 | EoN        |  10000 |          0.017 |     0.033 |        0.036 |                0.070 |
 | covasim    |  10000 |          0.018 |     0.045 |        0.067 |                0.113 |
 | starsim    |  10000 |          0.018 |     0.000 |        0.178 |                0.178 |
+| FRED       |  10000 |          0.266 |     0.146 |        0.062 |                0.209 |
 | epydemic   |  10000 |          0.017 |     0.017 |        0.211 |                0.229 |
 | epiworld   | 100000 |          0.055 |     0.014 |        0.012 |                0.028 |
 | ixa        | 100000 |          0.029 |     0.000 |        0.033 |                0.034 |
 | epiworldR  | 100000 |          0.073 |     0.032 |        0.009 |                0.041 |
 | epiworldpy | 100000 |          0.173 |     0.055 |        0.009 |                0.064 |
+| Agents.jl  | 100000 |          0.323 |     0.027 |        0.040 |                0.067 |
 | individual | 100000 |          0.072 |     0.030 |        0.054 |                0.084 |
 | covasim    | 100000 |          0.178 |     0.049 |        0.375 |                0.429 |
 | EoN        | 100000 |          0.157 |     0.263 |        0.220 |                0.487 |
 | starsim    | 100000 |          0.158 |     0.000 |        0.929 |                0.930 |
 | epydemic   | 100000 |          0.155 |     0.300 |        1.146 |                1.460 |
+| FRED       | 100000 |          2.594 |     0.892 |        0.643 |                1.531 |
 
 ### The epiworld family
 
@@ -249,21 +276,25 @@ load, and the share of agents the vaccine protected.
 
 | Engine | Agents | Median final attack rate | Median peak hospitalized | Median share protected |
 |:---|---:|---:|---:|---:|
+| Agents.jl | 10000 | 0.118 | 8 | 0.24 |
 | covasim | 10000 | 0.105 | 11 | 0.24 |
 | EoN | 10000 | 0.113 | 10 | 0.24 |
 | epiworld | 10000 | 0.119 | 8 | 0.24 |
 | epiworldpy | 10000 | 0.117 | 8 | 0.24 |
 | epiworldR | 10000 | 0.115 | 9 | 0.24 |
 | epydemic | 10000 | 0.121 | 11 | 0.24 |
+| FRED | 10000 | 0.115 | 10 | 0.24 |
 | individual | 10000 | 0.117 | 9 | 0.24 |
 | ixa | 10000 | 0.119 | 8 | 0.24 |
 | starsim | 10000 | 0.119 | 9 | 0.24 |
+| Agents.jl | 100000 | 0.014 | 9 | 0.24 |
 | covasim | 100000 | 0.012 | 11 | 0.24 |
 | EoN | 100000 | 0.013 | 10 | 0.24 |
 | epiworld | 100000 | 0.014 | 9 | 0.24 |
 | epiworldpy | 100000 | 0.014 | 9 | 0.24 |
 | epiworldR | 100000 | 0.014 | 9 | 0.24 |
 | epydemic | 100000 | 0.014 | 11 | 0.24 |
+| FRED | 100000 | 0.012 | 10 | 0.24 |
 | individual | 100000 | 0.013 | 10 | 0.24 |
 | ixa | 100000 | 0.014 | 9 | 0.24 |
 | starsim | 100000 | 0.014 | 10 | 0.24 |
@@ -286,8 +317,10 @@ scenario took longer.
 | EoN | 10000 | 0.079 | 0.036 | 0.47 | 0.42 | 0.51 |
 | epiworld | 10000 | 0.009 | 0.004 | 0.49 | 0.44 | 0.56 |
 | ixa | 10000 | 0.007 | 0.004 | 0.60 | 0.57 | 0.65 |
+| FRED | 10000 | 0.072 | 0.062 | 0.88 | 0.80 | 0.94 |
 | individual | 10000 | 0.026 | 0.023 | 0.89 | 0.84 | 0.96 |
 | starsim | 10000 | 0.174 | 0.178 | 1.02 | 0.96 | 1.08 |
+| Agents.jl | 10000 | 0.021 | 0.022 | 1.03 | 0.95 | 1.12 |
 | covasim | 10000 | 0.065 | 0.067 | 1.04 | 0.98 | 1.15 |
 | epydemic | 100000 | 1.854 | 1.146 | 0.62 | 0.58 | 0.67 |
 | epiworldR | 100000 | 0.015 | 0.009 | 0.67 | 0.58 | 0.77 |
@@ -296,8 +329,10 @@ scenario took longer.
 | epiworld | 100000 | 0.015 | 0.012 | 0.80 | 0.68 | 0.99 |
 | ixa | 100000 | 0.038 | 0.033 | 0.84 | 0.74 | 0.99 |
 | individual | 100000 | 0.060 | 0.054 | 0.90 | 0.74 | 0.98 |
+| Agents.jl | 100000 | 0.042 | 0.040 | 0.95 | 0.87 | 1.03 |
 | starsim | 100000 | 0.938 | 0.929 | 0.98 | 0.89 | 1.06 |
 | covasim | 100000 | 0.329 | 0.375 | 1.13 | 1.06 | 1.24 |
+| FRED | 100000 | 0.544 | 0.643 | 1.18 | 1.09 | 1.25 |
 
 Run time does not isolate the cost of the vaccine machinery. The vaccine
 cuts the median attack rate from about 0.39 to 0.12 at 10,000 agents and
@@ -330,8 +365,10 @@ regions are listed in [`code_regions.yml`](code_regions.yml).
 | EoN | Python | 1 | 37 | 44 | 7 |
 | epiworldR | R | 1 | 47 | 62 | 15 |
 | covasim | Python | 1 | 64 | 75 | 11 |
+| Agents.jl | Julia | 1 | 66 | 81 | 15 |
 | epydemic | Python | 1 | 70 | 88 | 18 |
 | starsim | Python | 1 | 83 | 94 | 11 |
+| FRED | Python | 1 | 92 | 123 | 31 |
 | ixa | Rust | 3 | 138 | 168 | 30 |
 
 EoN and epydemic only need a compartment with no transitions. Covasim
@@ -357,6 +394,15 @@ agents, and let epiworld place the tool at random. Both give the same
 vaccine statistically. epiworldR 0.16.1 fixed the quadratic cost, so
 either approach is now fast; the runner keeps the second.
 
+### An implementation choice that mattered: Agents.jl’s vaccine loop
+
+The first Agents.jl runner drew the vaccine in a loop at the script’s
+top level, over Julia’s untyped global variables. That doubled its
+simulation time at 10,000 agents, from about 0.02 to 0.05 seconds.
+Moving the loop into a function, which Julia compiles for concrete types
+(and which the warm-up model compiles before any timer starts), removed
+the cost; the published runner does that, as a Julia user would.
+
 ### What the vaccine costs epiworld and ixa
 
 Both place the vaccine inside the timed call, before the first day.
@@ -374,18 +420,22 @@ rest of the difference between the two engines.
 The transmission multipliers are copied from scenario 00. They correct
 each engine’s transmission semantics rather than anything specific to
 this scenario, so they were not recalibrated. The table above shows that
-the engines’ attack rates stay aligned with the vaccine in place.
+the engines’ attack rates stay aligned with the vaccine in place. FRED’s
+sits a little below the others at 100,000 agents, where the outbreak is
+smallest.
 
 ## Recorded versions
 
-| Engine     | Recorded version  |
-|:-----------|:------------------|
-| covasim    | 3.1.8             |
-| EoN        | 1.92              |
-| epiworld   | 0.17.0            |
-| epiworldpy | 0.17.0-0+g4a1ee0b |
-| epiworldR  | 0.17.0.0          |
-| epydemic   | 1.14.1            |
-| individual | 0.1.19            |
-| ixa        | 3.1.0             |
-| starsim    | 3.6.1             |
+| Engine     | Recorded version   |
+|:-----------|:-------------------|
+| Agents.jl  | 7.0.4              |
+| covasim    | 3.1.8              |
+| EoN        | 1.92               |
+| epiworld   | 0.17.0             |
+| epiworldpy | 0.17.0-0+g4a1ee0b  |
+| epiworldR  | 0.17.0.0           |
+| epydemic   | 1.14.1             |
+| FRED       | PUB.5.7.0+gbd25f04 |
+| individual | 0.1.19             |
+| ixa        | 3.1.0              |
+| starsim    | 3.6.1              |

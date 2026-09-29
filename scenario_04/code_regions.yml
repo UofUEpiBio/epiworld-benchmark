@@ -93,6 +93,8 @@ Agents.jl:
   language: Julia
   files: [runners/agents.jl]
   regions:
+    - {from: '^@agent struct Person', to: '^end$'}
+    - {from: '^mutable struct Parameters', to: '^end$'}
     - {from: '^function model_step!', to: '^end$'}
     - {from: '^recovery = 1 /', to: '^model = StandardABM'}
     - {from: '^for _ in 1:n', to: '^step!\(model'}

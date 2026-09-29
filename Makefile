@@ -17,7 +17,7 @@ EPIWORLD_INCLUDE ?= .deps/$(EPIWORLD_REF)/include
 EPIWORLD_SOURCES := $(sort $(wildcard scenario_*/runners/epiworld/main.cpp))
 EPIWORLD_CXXFLAGS := -std=c++17 -O2 -DNDEBUG -Depiworld_double=double
 
-# FRED (scenario_04's network-transmission runner). It is a single shared
+# FRED, for every scenario's FRED runner. It is a single shared
 # binary, not compiled per scenario like epiworld/ixa above. The container
 # bakes a prebuilt binary into the image at $FRED_HOME; natively, the pinned
 # commit is downloaded into .deps/fred and built there. Keep FRED_REF in step

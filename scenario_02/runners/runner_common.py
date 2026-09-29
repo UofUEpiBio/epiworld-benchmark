@@ -101,6 +101,9 @@ def main(engine: str, run: Callable[[argparse.Namespace, np.ndarray, np.ndarray]
     read_elapsed = perf_counter() - total_started
     result = run(args, source, target)
     total_elapsed = perf_counter() - total_started
+    # Engines that must re-read their own input files (FRED) report that time
+    # here, so it is counted as reading like this edge-file parsing.
+    read_elapsed += result.pop("engine_read_seconds", 0.0)
     setup_elapsed = total_elapsed - result["simulate_seconds"] - result["extract_seconds"]
     record = {
         "status": "ok",

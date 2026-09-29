@@ -503,7 +503,7 @@ def main() -> int:
     if unknown:
         raise SystemExit(f"Unknown scenario(s): {', '.join(unknown)}")
     scenario_configs = {scenario: load_scenario(scenario) for scenario in scenarios}
-    available_engines = list(study["engines"]) + list(study.get("additional_engines", []))
+    available_engines = list(study["engines"])
     requested_engines = args.engines
     unknown = sorted(set(requested_engines or []) - set(available_engines))
     if unknown:

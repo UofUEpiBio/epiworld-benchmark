@@ -48,12 +48,12 @@ There are no interventions.
 | `hospitalization_probability` |  0.05 | Lifetime probability that an infectious agent is hospitalized |
 | `hospital_days`               |   7.0 | Mean hospital stay                               |
 
-Initial cases start infectious in every engine except the epiworld family
-and Starsim. epiworldR's API cannot seed a custom model's initial cases in any
-state other than the one new infections enter, so they start exposed there.
-The C++ and Python runners do the same, so that all three epiworld runners
-build exactly the same model. Starsim's SEIR puts its seed cases where new
-infections go, which is also exposed.
+Initial cases start infectious in every engine except the epiworld family,
+Starsim, and FRED. epiworldR's API cannot seed a custom model's initial cases
+in any state other than the one new infections enter, so they start exposed
+there. The C++ and Python runners do the same, so that all three epiworld
+runners build exactly the same model. Starsim's SEIR puts its seed cases where
+new infections go, which is also exposed, and so does FRED's import.
 
 The simulation time covers everything an engine has to redo for another
 replicate on the same network (see
@@ -67,7 +67,9 @@ its timer also covers building the context: the population, the network, and
 the index on disease status; it then seeds in a plan at time 0. Starsim's
 `Sim` also runs only once, so its timer covers building the disease, network,
 and `Sim` objects and `sim.init()`, which builds the agent and network arrays
-and seeds the initial cases.
+and seeds the initial cases. FRED runs one replicate per process and rebuilds
+everything each time; its timer covers building its places, population, and
+network as well as the days (see its engine description below).
 
 [Scenario 03](../scenario_03/README.md) runs this model at 1,000,000
 agents.
@@ -113,6 +115,40 @@ agents.
   infectious neighbours is infected with probability $1 - (1 - \beta)^k$, as
   in epiworld. Updates queued during a day apply at its end, so the steps are
   synchronous.
+- **FRED** ([PublicHealthDynamicsLab/FRED](https://github.com/PublicHealthDynamicsLab/FRED){target="_blank"}):
+  a compiled simulator driven by its own model language, with no edge-list
+  network primitive comparable to the other engines' graphs. The runner
+  ([`run_FRED.py`](runners/run_FRED.py)) writes a synthetic population of
+  single-person households (so FRED's own household mixing adds no contacts
+  beyond the network) and loads the benchmark's edges verbatim as
+  `Contact.add_edge` properties on FRED's `Network` group type, with
+  transmission restricted to that network. The disease is a FRED condition
+  with one state per compartment, and FRED's `import_count()` exposes the
+  seed cases on day 0. Each day, an infectious agent draws about
+  `transmissibility` × degree contacts without replacement among its
+  neighbours, so every neighbour is reached with that daily probability, and
+  the runner uses the same per-day mapping as the synchronous engines.
+  Latent, infectious, and hospital stays are whole days with the configured
+  means. FRED's `days` counts day 0, which here only places the seed cases,
+  so the runner asks for one more day than the other engines run. The build
+  patches an upstream off-by-one in `Date::setup_dates()` that corrupts the
+  heap at large populations (see the
+  [Dockerfile](../.devcontainer/Dockerfile)). FRED runs one replicate per
+  process and must reread and rebuild everything each time. Its timings are
+  split with FRED's own lap timers: parsing the generated model file (which
+  holds every edge) and the population files counts as reading, like the
+  other runners' edge-file parsing; building places, the population, and
+  the network, plus the days themselves, count as simulation, as ixa's and
+  Starsim's per-replicate builds do.
+- **Agents.jl** ([JuliaDynamics/Agents.jl](https://github.com/JuliaDynamics/Agents.jl){target="_blank"}):
+  a `StandardABM` with a per-agent status and a per-day `model_step!` that
+  scans each infectious agent's adjacency list, matching the synchronous
+  daily semantics of epiworldR, epydemic, and individual. The adjacency list
+  and transmission math are written for this benchmark, since Agents.jl has
+  no built-in epidemic model or contact network. Before any timer starts, the
+  runner steps a throwaway two-agent model so that Julia compiles its
+  methods; otherwise about 0.1 seconds of compilation lands in the first
+  simulation.
 
 ## Results
 
@@ -218,8 +254,10 @@ Model lines vary with how much of the model an engine provides built in. For
 example, EoN describes transitions as rate graphs, Covasim needs its native
 parameters overridden to restrict it to SEIRH, Starsim needs a subclass of
 its SEIR to add the hospital state, and the ixa runner writes its daily step
-by hand, as the individual runner writes its infection process. ixa needs a
-Cargo project that is compiled before it runs.
+by hand, as the individual and Agents.jl runners write their infection
+processes. The FRED runner writes FRED's model file and synthetic population
+from Python, so its lines are the Python that generates them. ixa needs a
+Cargo project that is compiled before it runs, and FRED a compiled binary.
 
 ## Interpretation
 
@@ -228,7 +266,8 @@ Cargo project that is compiled before it runs.
 The shared analytic transmission mapping produced different realized attack
 rates across frameworks. Calibration therefore selected size-specific factors
 for restricted Covasim (0.715 at 10,000 agents and 0.710 at 100,000), ixa
-(0.983 and 0.988), and individual (0.951 at both). epiworldR needs none: its
+(0.983 and 0.988), individual (0.951 at both), FRED (0.911 and 0.898), and
+Agents.jl (0.981 and 0.982). epiworldR needs none: its
 uncalibrated median attack rates match EoN's exact continuous-time results,
 and so do epiworld's and epiworldpy's, which run the same model. Starsim
 needs none either (uncalibrated medians 0.387 and 0.060). All 100 replicates
@@ -245,6 +284,15 @@ contact independently rather than with epiworld's roulette. individual's
 sat higher still (0.441 and 0.074). It too seeds the initial cases as
 infectious, and its infectious period averages the full seven days, where the
 epiworld family's competing daily hospitalization rate shortens it slightly.
+Agents.jl seeds the initial cases as infectious too, and its uncalibrated
+medians (0.414 and 0.065) sat slightly above the target, like ixa's. FRED's
+sat far above (0.519 and 0.095). Its contact draw reaches each neighbour with
+the same daily probability as the synchronous engines, but an agent that
+becomes infectious at the start of a day transmits that same day, where a
+synchronous engine's new case first transmits on the next step. Each
+generation is therefore about a day shorter, and within 100 days the outbreak
+grows further. FRED and Agents.jl were calibrated against epiworldR's
+medians over 100 replicates per candidate factor, outside the timed runs.
 
 ### The language layer costs nothing measurable in the simulation
 
@@ -289,8 +337,10 @@ measures each of these, and shows how they map onto every scenario.
 
 ### Equivalence across engines
 
-epiworldR, epydemic, ixa, and individual use synchronous daily transitions,
-while EoN uses continuous-time hazards, simulated exactly. Starsim also steps
+epiworldR, epydemic, ixa, individual, and Agents.jl use synchronous daily
+transitions, while EoN uses continuous-time hazards, simulated exactly. FRED
+steps daily too, but applies each day's transitions before that day's
+transmission, as described above. Starsim also steps
 daily, but samples each agent's time in a state when it enters it, and
 applies transitions before transmission within a step. Covasim retains its native
 exposed, infectious, symptomatic, and severe bookkeeping, with severe

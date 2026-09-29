@@ -93,3 +93,20 @@ individual:
     - {from: '^recovery <- 1', to: '^beta <- beta \*'}
     - {from: '^from <- c\(edges', to: '^neighbours_of <- function'}
     - {from: '^set\.seed', to: '^simulation_loop\('}
+FRED:
+  language: Python
+  files: [runners/run_FRED.py]
+  regions:
+    - {from: '^def discrete_transmission_probability', to: '^    return'}
+    - {from: '^def write_population', to: '^        \(county / name\)\.write_text\(header\)'}
+    - {from: '^def write_model', to: '^    return model_path'}
+Agents.jl:
+  language: Julia
+  files: [runners/agents.jl]
+  regions:
+    - {from: '^@agent struct Person', to: '^end$'}
+    - {from: '^mutable struct Parameters', to: '^end$'}
+    - {from: '^function model_step!', to: '^end$'}
+    - {from: '^function vaccinate!', to: '^end$'}
+    - {from: '^recovery = 1 /', to: '^model = StandardABM'}
+    - {from: '^for _ in 1:n', to: '^step!\(model'}
