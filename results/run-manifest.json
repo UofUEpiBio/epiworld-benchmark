@@ -1,21 +1,42 @@
 {
-  "cached_before_run": 400,
+  "cached_before_run": 3880,
   "engine_versions": {
     "Agents.jl": "7.0.4",
-    "FRED": "PUB.5.7.0+gbd25f04"
+    "EoN": "1.92",
+    "FRED": "PUB.5.7.0+gbd25f04",
+    "covasim": "3.1.8",
+    "epiworld": "0.17.0",
+    "epiworldR": "0.17.0.0",
+    "epiworldpy": "0.17.0-1+g0733151",
+    "epydemic": "1.14.1",
+    "individual": "0.1.19",
+    "ixa": "3.1.0",
+    "starsim": "3.6.1"
   },
-  "executed": 400,
+  "executed": 1920,
   "failures": 0,
   "platform": "Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39",
   "profile": "full",
   "python": "3.12.11",
   "requested_engines": [
+    "epiworldR",
+    "epiworldpy",
+    "epiworld",
+    "covasim",
+    "starsim",
+    "EoN",
+    "epydemic",
+    "ixa",
+    "individual",
     "FRED",
     "Agents.jl"
   ],
   "requested_scenarios": [
+    "scenario_00",
     "scenario_01",
-    "scenario_02"
+    "scenario_02",
+    "scenario_03",
+    "scenario_04"
   ],
   "result_rows_available": 7095,
   "workers": 1

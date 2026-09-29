@@ -294,7 +294,7 @@ Flexible and General Agent-Based Model Engine*. V. 0.17.0. Released.
 
 Vega Yon, George G., and Olivia Banks. 2026.
 *<span class="nocase">epiworldpy</span>: Python Bindings for Epiworld*.
-V. 0.17.0-0. Released. <https://github.com/UofUEpiBio/epiworldpy>.
+V. 0.17.0-1. Released. <https://github.com/UofUEpiBio/epiworldpy>.
 
 </div>
 

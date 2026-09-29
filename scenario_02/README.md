@@ -192,10 +192,10 @@ from the tree, and that helper counts as model code.
 
 | Engine     | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:-----------|-------:|-----:|----------------------:|-------:|-------:|
-| epiworldpy |  10000 |  100 |                 0.004 |  0.004 |  0.004 |
-| epiworldR  |  10000 |  100 |                 0.004 |  0.004 |  0.004 |
+| epiworldR  |  10000 |  100 |                 0.002 |  0.002 |  0.003 |
+| epiworldpy |  10000 |  100 |                 0.002 |  0.002 |  0.002 |
+| epiworld   |  10000 |  100 |                 0.002 |  0.002 |  0.003 |
 | ixa        |  10000 |  100 |                 0.005 |  0.004 |  0.005 |
-| epiworld   |  10000 |  100 |                 0.005 |  0.004 |  0.005 |
 | Agents.jl  |  10000 |  100 |                 0.021 |  0.020 |  0.022 |
 | individual |  10000 |  100 |                 0.043 |  0.042 |  0.047 |
 | EoN        |  10000 |  100 |                 0.059 |  0.056 |  0.062 |
@@ -203,9 +203,9 @@ from the tree, and that helper counts as model code.
 | FRED       |  10000 |  100 |                 0.081 |  0.076 |  0.088 |
 | starsim    |  10000 |  100 |                 0.179 |  0.173 |  0.188 |
 | epydemic   |  10000 |  100 |                 0.209 |  0.200 |  0.220 |
-| epiworldpy | 100000 |  100 |                 0.009 |  0.008 |  0.009 |
-| epiworldR  | 100000 |  100 |                 0.009 |  0.009 |  0.010 |
-| epiworld   | 100000 |  100 |                 0.011 |  0.010 |  0.011 |
+| epiworldpy | 100000 |  100 |                 0.006 |  0.006 |  0.007 |
+| epiworldR  | 100000 |  100 |                 0.007 |  0.006 |  0.007 |
+| epiworld   | 100000 |  100 |                 0.007 |  0.007 |  0.008 |
 | ixa        | 100000 |  100 |                 0.033 |  0.031 |  0.037 |
 | Agents.jl  | 100000 |  100 |                 0.043 |  0.042 |  0.046 |
 | individual | 100000 |  100 |                 0.086 |  0.077 |  0.104 |
@@ -230,26 +230,26 @@ one mean that epiworldR finished faster.
 
 | Engine     | Agents | Median time / epiworldR |     Q1 |     Q3 |
 |:-----------|-------:|------------------------:|-------:|-------:|
-| epiworld   |  10000 |                    1.21 |   1.02 |   1.37 |
-| epiworldpy |  10000 |                    0.97 |   0.85 |   1.11 |
-| covasim    |  10000 |                   16.77 |  15.40 |  18.85 |
-| starsim    |  10000 |                   45.18 |  42.45 |  49.61 |
-| EoN        |  10000 |                   14.67 |  12.97 |  16.61 |
-| epydemic   |  10000 |                   52.20 |  46.63 |  56.43 |
-| ixa        |  10000 |                    1.16 |   1.04 |   1.40 |
-| individual |  10000 |                   10.75 |  10.24 |  12.31 |
-| FRED       |  10000 |                   20.26 |  18.21 |  24.26 |
-| Agents.jl  |  10000 |                    5.20 |   4.94 |   6.24 |
-| epiworld   | 100000 |                    1.16 |   1.03 |   1.27 |
-| epiworldpy | 100000 |                    0.96 |   0.86 |   1.04 |
-| covasim    | 100000 |                   38.99 |  35.84 |  42.71 |
-| starsim    | 100000 |                   87.98 |  82.70 |  96.46 |
-| EoN        | 100000 |                   45.64 |  43.75 |  50.26 |
-| epydemic   | 100000 |                  131.69 | 121.94 | 142.50 |
-| ixa        | 100000 |                    3.59 |   3.25 |   4.15 |
-| individual | 100000 |                    9.61 |   8.44 |  11.10 |
-| FRED       | 100000 |                   83.89 |  77.69 |  92.66 |
-| Agents.jl  | 100000 |                    4.76 |   4.46 |   5.26 |
+| epiworld   |  10000 |                    1.10 |   0.83 |   1.23 |
+| epiworldpy |  10000 |                    0.93 |   0.73 |   1.07 |
+| covasim    |  10000 |                   31.46 |  24.04 |  34.61 |
+| starsim    |  10000 |                   86.12 |  61.39 |  91.45 |
+| EoN        |  10000 |                   27.89 |  19.95 |  30.19 |
+| epydemic   |  10000 |                   99.02 |  72.27 | 107.22 |
+| ixa        |  10000 |                    2.22 |   1.58 |   2.39 |
+| individual |  10000 |                   21.00 |  14.58 |  22.50 |
+| FRED       |  10000 |                   38.17 |  28.84 |  41.59 |
+| Agents.jl  |  10000 |                   10.03 |   7.09 |  10.81 |
+| epiworld   | 100000 |                    1.09 |   0.99 |   1.21 |
+| epiworldpy | 100000 |                    0.89 |   0.79 |   1.02 |
+| covasim    | 100000 |                   53.29 |  48.74 |  59.35 |
+| starsim    | 100000 |                  123.19 | 107.31 | 129.93 |
+| EoN        | 100000 |                   60.89 |  57.77 |  67.63 |
+| epydemic   | 100000 |                  175.99 | 161.77 | 195.67 |
+| ixa        | 100000 |                    4.84 |   4.34 |   5.77 |
+| individual | 100000 |                   12.93 |  11.14 |  15.89 |
+| FRED       | 100000 |                  113.38 | 105.10 | 126.67 |
+| Agents.jl  | 100000 |                    6.52 |   5.94 |   7.08 |
 
 ### Time to a first result
 
@@ -264,10 +264,10 @@ parsing rather than on the engine.
 
 | Engine     | Agents | Read edges (s) | Build (s) | Simulate (s) | Build + simulate (s) |
 |:-----------|-------:|---------------:|----------:|-------------:|---------------------:|
+| epiworld   |  10000 |          0.005 |     0.001 |        0.002 |                0.004 |
 | ixa        |  10000 |          0.003 |     0.000 |        0.005 |                0.005 |
-| epiworld   |  10000 |          0.005 |     0.001 |        0.005 |                0.006 |
-| epiworldpy |  10000 |          0.017 |     0.008 |        0.004 |                0.011 |
-| epiworldR  |  10000 |          0.008 |     0.014 |        0.004 |                0.018 |
+| epiworldpy |  10000 |          0.017 |     0.007 |        0.002 |                0.009 |
+| epiworldR  |  10000 |          0.008 |     0.014 |        0.002 |                0.016 |
 | Agents.jl  |  10000 |          0.200 |     0.024 |        0.021 |                0.045 |
 | individual |  10000 |          0.008 |     0.015 |        0.043 |                0.058 |
 | EoN        |  10000 |          0.016 |     0.030 |        0.059 |                0.089 |
@@ -275,10 +275,10 @@ parsing rather than on the engine.
 | starsim    |  10000 |          0.017 |     0.000 |        0.179 |                0.179 |
 | epydemic   |  10000 |          0.016 |     0.017 |        0.209 |                0.226 |
 | FRED       |  10000 |          0.270 |     0.152 |        0.081 |                0.235 |
-| epiworld   | 100000 |          0.049 |     0.012 |        0.011 |                0.023 |
+| epiworld   | 100000 |          0.049 |     0.011 |        0.007 |                0.018 |
 | ixa        | 100000 |          0.029 |     0.000 |        0.033 |                0.033 |
-| epiworldR  | 100000 |          0.071 |     0.030 |        0.009 |                0.039 |
-| epiworldpy | 100000 |          0.156 |     0.045 |        0.009 |                0.054 |
+| epiworldR  | 100000 |          0.071 |     0.029 |        0.007 |                0.036 |
+| epiworldpy | 100000 |          0.155 |     0.043 |        0.006 |                0.049 |
 | Agents.jl  | 100000 |          0.312 |     0.028 |        0.043 |                0.071 |
 | individual | 100000 |          0.074 |     0.032 |        0.086 |                0.120 |
 | covasim    | 100000 |          0.163 |     0.044 |        0.357 |                0.402 |
@@ -294,10 +294,10 @@ run. It is not part of the simulation times above.
 
 | Engine | Agents | Median simulation (s) | Median extraction (s) | Median extraction / simulation |
 |:---|---:|---:|---:|---:|
-| epiworldpy | 10000 | 0.004 | 0.000 | 0.11 |
-| epiworldR | 10000 | 0.004 | 0.025 | 6.25 |
+| epiworldR | 10000 | 0.002 | 0.025 | 12.00 |
+| epiworldpy | 10000 | 0.002 | 0.000 | 0.19 |
+| epiworld | 10000 | 0.002 | 0.000 | 0.08 |
 | ixa | 10000 | 0.005 | 0.000 | 0.02 |
-| epiworld | 10000 | 0.005 | 0.000 | 0.05 |
 | Agents.jl | 10000 | 0.021 | 0.007 | 0.33 |
 | individual | 10000 | 0.043 | 0.001 | 0.02 |
 | EoN | 10000 | 0.059 | 0.001 | 0.02 |
@@ -305,9 +305,9 @@ run. It is not part of the simulation times above.
 | FRED | 10000 | 0.081 | 0.013 | 0.17 |
 | starsim | 10000 | 0.179 | 0.001 | 0.01 |
 | epydemic | 10000 | 0.209 | 0.000 | 0.00 |
-| epiworldpy | 100000 | 0.009 | 0.000 | 0.06 |
-| epiworldR | 100000 | 0.009 | 0.026 | 2.89 |
-| epiworld | 100000 | 0.011 | 0.000 | 0.02 |
+| epiworldpy | 100000 | 0.006 | 0.000 | 0.08 |
+| epiworldR | 100000 | 0.007 | 0.026 | 3.86 |
+| epiworld | 100000 | 0.007 | 0.000 | 0.03 |
 | ixa | 100000 | 0.033 | 0.000 | 0.00 |
 | Agents.jl | 100000 | 0.043 | 0.008 | 0.19 |
 | individual | 100000 | 0.086 | 0.001 | 0.01 |
@@ -393,22 +393,22 @@ above one is the cost of recording the outputs during the run.
 | Engine | Agents | Median scenario 01 (s) | Median scenario 02 (s) | Median time / scenario 01 | Q1 | Q3 |
 |:---|---:|---:|---:|---:|---:|---:|
 | Agents.jl | 10000 | 0.022 | 0.021 | 0.94 | 0.85 | 1.01 |
+| epiworldpy | 10000 | 0.002 | 0.002 | 0.95 | 0.91 | 1.02 |
 | covasim | 10000 | 0.067 | 0.067 | 0.98 | 0.87 | 1.08 |
+| epiworld | 10000 | 0.002 | 0.002 | 0.98 | 0.95 | 1.02 |
 | epydemic | 10000 | 0.211 | 0.209 | 0.99 | 0.95 | 1.03 |
-| epiworldR | 10000 | 0.004 | 0.004 | 1.00 | 1.00 | 1.00 |
+| epiworldR | 10000 | 0.002 | 0.002 | 1.00 | 1.00 | 1.00 |
 | starsim | 10000 | 0.178 | 0.179 | 1.01 | 0.95 | 1.06 |
-| epiworldpy | 10000 | 0.004 | 0.004 | 1.02 | 0.98 | 1.07 |
 | ixa | 10000 | 0.004 | 0.005 | 1.06 | 1.02 | 1.13 |
-| epiworld | 10000 | 0.004 | 0.005 | 1.11 | 1.02 | 1.17 |
 | FRED | 10000 | 0.062 | 0.081 | 1.29 | 1.20 | 1.43 |
 | EoN | 10000 | 0.036 | 0.059 | 1.62 | 1.54 | 1.69 |
 | individual | 10000 | 0.023 | 0.043 | 1.91 | 1.75 | 2.04 |
 | starsim | 100000 | 0.929 | 0.794 | 0.89 | 0.77 | 1.00 |
-| epiworld | 100000 | 0.012 | 0.011 | 0.90 | 0.74 | 1.00 |
-| epiworldpy | 100000 | 0.009 | 0.009 | 0.94 | 0.86 | 0.99 |
 | covasim | 100000 | 0.375 | 0.357 | 0.96 | 0.85 | 1.02 |
+| epiworld | 100000 | 0.008 | 0.007 | 0.98 | 0.93 | 1.02 |
 | ixa | 100000 | 0.033 | 0.033 | 0.98 | 0.86 | 1.15 |
-| epiworldR | 100000 | 0.009 | 0.009 | 1.00 | 0.90 | 1.02 |
+| epiworldpy | 100000 | 0.006 | 0.006 | 1.00 | 0.96 | 1.04 |
+| epiworldR | 100000 | 0.007 | 0.007 | 1.00 | 0.89 | 1.17 |
 | epydemic | 100000 | 1.146 | 1.185 | 1.03 | 0.97 | 1.10 |
 | Agents.jl | 100000 | 0.040 | 0.043 | 1.11 | 1.01 | 1.20 |
 | FRED | 100000 | 0.643 | 0.768 | 1.19 | 1.08 | 1.28 |
@@ -444,8 +444,8 @@ outputs for the result record is not counted.
 
 For most engines, very little. The epiworld family already records all
 four outputs in scenario 01, so its simulation does not change: the C++
-runner takes 0.90 times as long as in scenario 01 at 100,000 agents,
-epiworldR 1.00 times, and epiworldpy 0.94 times. Covasim keeps its
+runner takes 0.98 times as long as in scenario 01 at 100,000 agents,
+epiworldR 1.00 times, and epiworldpy 1.00 times. Covasim keeps its
 infection log in every run too (0.96 times). The engines that had to add
 recording mostly absorbed it as well. ixa’s event subscription and
 transmission log leave it at 0.98 times its scenario 01 time, and
@@ -506,7 +506,7 @@ times.
 | covasim    | 3.1.8              |
 | EoN        | 1.92               |
 | epiworld   | 0.17.0             |
-| epiworldpy | 0.17.0-0+g4a1ee0b  |
+| epiworldpy | 0.17.0-1+g0733151  |
 | epiworldR  | 0.17.0.0           |
 | epydemic   | 1.14.1             |
 | FRED       | PUB.5.7.0+gbd25f04 |

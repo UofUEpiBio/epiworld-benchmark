@@ -9,24 +9,30 @@ maps it onto each scenario's results.
 
 In short:
 
-- **Per replicate, epiworld is faster from 100,000 agents up.** The benchmark
-  times what each engine has to redo for another replicate on the same
-  network (see [what is measured](README.md#run-time)). For ixa that includes
-  building a new context, the population, network, and index, because
-  `execute()` runs a context only once. That takes about 26 ms at 100,000
-  agents and 360 ms at 1,000,000. epiworld builds its model once and resets it
-  at the start of every `run()`, which takes 1.2 ms and 15 ms.
-- **The simulation proper is faster in ixa.** Comparing ixa's `execute()`
-  alone with epiworld's `run()`, ixa is faster at every size. The two spend
-  about the same time on the epidemic itself. The difference comes from two
-  costs in epiworld that do not depend on it:
-  1. **Reading the transmission probability by name**, once for every
-     susceptible neighbour of every infectious agent. This is about 40% of
-     epiworld's time at 10,000 and 100,000 agents.
-  2. **Re-initializing the population at the start of every run**, which
-     grows with the population rather than the outbreak. It is what makes the
-     model reusable, and it is far cheaper than ixa's rebuild, but ixa's
-     `execute()` does not pay it.
+- **Per replicate, epiworld is now faster at every size**, including 10,000
+  agents, where ixa used to be a little faster. The benchmark times what each
+  engine has to redo for another replicate on the same network (see [what is
+  measured](README.md#run-time)). For ixa that includes building a new
+  context, the population, network, and index, because `execute()` runs a
+  context only once. That takes about 2.6 ms at 10,000 agents, 29 ms at
+  100,000, and 374 ms at 1,000,000. epiworld builds its model once and resets
+  it at the start of every `run()`, which takes 0.17, 1.4, and 17 ms.
+- **On the epidemic computation itself, the two are close**, and epiworld now
+  has a small edge from 100,000 agents up. Comparing ixa's `execute()` alone
+  with epiworld's `run()` with a constant transmission probability, each
+  minus its own fixed cost (its time with no transmission), the two are level
+  at 10,000 agents; epiworld is faster at 100,000 and 1,000,000. This is a
+  change from earlier versions of this analysis, where ixa's `execute()` was
+  faster at every size:
+  1. **Reading the transmission probability by name no longer costs much.**
+     epiworld resolves a virus's named parameters once per model, not on
+     every call (see below); the gap between epiworld as benchmarked and
+     epiworld with the same probability set as a plain number, which used to
+     be 21-43% of `run()`, is now within run-to-run noise at every size.
+  2. **Re-initializing the population at the start of every run** remains a
+     real cost, and it grows with the population rather than the outbreak.
+     It is what makes the model reusable, and it is still far cheaper than
+     ixa's rebuild, but ixa's `execute()` does not pay it.
 
   In the scenarios with a vaccine, placing the vaccine is a third, smaller
   cost.
@@ -67,15 +73,16 @@ Median time in milliseconds:
 
 | Agents | epiworld `run()` | epiworld, constant probability | ixa `execute()` | ixa, per replicate | epiworld, no transmission | ixa `execute()`, no transmission | ixa, building the context |
 |---:|---:|---:|---:|---:|---:|---:|---:|
-| 10,000 | 9.3 | 5.3 | 4.6 | 7.2 | 0.53 | 0.15 | 2.6 |
-| 100,000 | 14.7 | 9.1 | 8.4 | 34.7 | 1.8 | 0.24 | 26 |
-| 1,000,000 | 34.1 | 27.1 | 13.6 | 371 | 17.3 | 0.62 | 360 |
+| 10,000 | 5.02 | 4.63 | 4.72 | 7.31 | 0.31 | 0.16 | 2.6 |
+| 100,000 | 8.09 | 8.49 | 9.47 | 37.75 | 1.84 | 0.27 | 28.6 |
+| 1,000,000 | 26.65 | 25.57 | 11.63 | 401.83 | 17.61 | 0.62 | 374.3 |
 
 The last column is ixa per replicate minus `execute()`, both with no
-transmission. Subtracting each engine's fixed cost from its time with
-transmission leaves the time spent on the epidemic: 5.0, 7.6, and 8.1 ms for
-epiworld with a constant probability, and 4.5, 8.1, and 13.0 ms for ixa's
-`execute()`. On the outbreak itself the two are level.
+transmission. Subtracting each variant's own fixed cost from its time with
+transmission leaves the time spent on the epidemic: 4.4, 6.8, and 9.2 ms for
+epiworld with a constant probability, and 4.6, 9.2, and 11.0 ms for ixa's
+`execute()`. The two are level at 10,000 agents; epiworld is faster at
+100,000 and 1,000,000.
 
 ### What ixa redoes for every replicate
 
@@ -83,35 +90,45 @@ ixa's `execute()` runs the plans in a context until none are left, and the
 context cannot be reset. Another replicate on the same network therefore
 needs a new context: adding one entity per agent, two edges per contact, and
 the index on disease status, which `add_entity()` keeps up to date as agents
-are added. That is 2.6 ms at 10,000 agents, 26 ms at 100,000, and 360 ms at
+are added. That is 2.6 ms at 10,000 agents, 28.6 ms at 100,000, and 374 ms at
 1,000,000, and it is most of ixa's time per replicate from 100,000 agents up.
 
 epiworld's equivalent is `reset()`, below. It keeps the network and the
-agents, and only returns them to their initial state, so it is 20 to 25 times
+agents, and only returns them to their initial state, so it is 15 to 23 times
 cheaper than ixa's rebuild at every size. A user running many replicates, or
 changing parameters between runs, pays it instead of rebuilding the model;
 `run_multiple()` relies on it.
 
-### 1. The transmission probability is looked up by name
+### 1. The transmission probability is looked up by name (now resolved once)
 
-`Virus::set_prob_infecting("Transmission rate")` stores a closure that calls
-`Model::get_param(std::string)`. Push transmission calls it for every
+Earlier versions of this analysis found that
+`Virus::set_prob_infecting("Transmission rate")` stored a closure that called
+`Model::get_param(std::string)` on every push-transmission check, for every
 susceptible neighbour of every infectious agent, hundreds of thousands of
-times per run here. Each call copies the name, which at 17 characters is too
-long for the string's inline buffer and so allocates, and then searches the
-parameter map twice (`find()`, then `operator[]`). The value depends only on
-the infector's virus, and here it never changes.
+times per run. Each call copied the name, which at 17 characters is too long
+for the string's inline buffer and so allocated, and then searched the
+parameter map twice (`find()`, then `operator[]`). That cost 21-43% of
+`run()` in earlier commits, and was the top item on this document's "what
+would make epiworld faster" list.
 
-Setting the probability as a number removes 4.0, 5.6, and 7.0 ms per run:
-43% of the C++ runner's time at 10,000 agents, 38% at 100,000, and 21% at
-1,000,000. At 100,000 agents the instrumented run puts push transmission at
-11.2 ms of `run()`'s 16.4, so the lookup is about half of it.
+epiworld now avoids it. `set_prob_infecting(std::string)` wraps the name in a
+`ParamRef` ([`param-ref.hpp`](https://github.com/UofUEpiBio/epiworld/blob/a1ff20a2e347169bb260440c4a9c26918efda7e0/include/epiworld/param-ref.hpp)),
+which resolves the name to its position in the model's parameter table on
+first use and caches that position, keyed to the model's parameter layout, in
+an atomic. Later calls on that model, or on any copy of it (including the
+copies `run_multiple()` makes), read the value at that position directly; the
+string is looked up again only if the model's parameter layout changed.
+epiworldR's `set_prob_infecting_ptr()` and epiworldpy's `set_prob_infecting()`
+go through the same call, so every wrapper gets this for free.
 
-epiworldR and epiworldpy go through the same call: epiworldR's
-`set_prob_infecting_ptr()`, despite its name, and epiworldpy's
-`set_prob_infecting()` both pass the parameter's name to it. Resolving the
-parameter once, when the run starts, would give every wrapper the
-constant-probability times without any change to the models users write.
+Comparing epiworld as benchmarked against the same runner with the
+probability set as a plain number now shows a gap within run-to-run noise at
+every size: about 8% of `run()` at 10,000 agents, not measurably different at
+100,000 (the named-parameter run was fractionally faster than the constant
+one there, which is noise, not a real effect), and about 4% at 1,000,000.
+Pushing transmission is still a large share of `run()` at 10,000 and 100,000
+agents (70% and 61% of the instrumented run below), but that is now the cost
+of the transmission computation itself, not of looking up its parameter.
 
 ### 2. `run()` re-initializes the population
 
@@ -122,23 +139,23 @@ to draw the 100 seed cases, builds a list of every agent without a virus:
 
 | Phase of `reset()` | 10,000 agents (ms) | 100,000 agents (ms) | 1,000,000 agents (ms) |
 |:---|---:|---:|---:|
-| Reset each agent | 0.02 | 0.18 | 2.5 |
-| Rebuild the state index | 0.04 | 0.35 | 5.2 |
-| Reset the database | 0.01 | 0.12 | 1.5 |
-| Clear the queue | 0.01 | 0.13 | 1.6 |
-| Seed the initial cases | 0.05 | 0.42 | 4.1 |
-| **Total** | **0.13** | **1.2** | **15.0** |
+| Reset each agent | 0.02 | 0.23 | 3.02 |
+| Rebuild the state index | 0.04 | 0.42 | 6.23 |
+| Reset the database | 0.02 | 0.15 | 1.70 |
+| Clear the queue | 0.02 | 0.15 | 1.56 |
+| Seed the initial cases | 0.07 | 0.48 | 4.02 |
+| **Total** | **0.17** | **1.44** | **16.53** |
 
 The runs with no transmission show the same from the outside: epiworld's
-fixed cost grows with the population (0.53, 1.8, and 17.3 ms), while that of
-ixa's `execute()` barely does (0.15, 0.24, and 0.62 ms), because its context
+fixed cost grows with the population (0.31, 1.84, and 17.6 ms), while that of
+ixa's `execute()` barely does (0.16, 0.27, and 0.62 ms), because its context
 arrives already built.
 
 `reset()` is small next to the epidemic at 10,000 and 100,000 agents. At
-1,000,000 agents, with an outbreak of about 6,000 cases, it is nearly half
-of `run()`. Several of its passes could be merged or skipped: on a model's first
-run the agents are already in their initial state, and drawing 100 seed
-cases does not need a list of a million candidates.
+1,000,000 agents, with an outbreak of about 6,000 cases, it is well over half
+of `run()`. Several of its passes could be merged or skipped: on a
+model's first run the agents are already in their initial state, and drawing
+100 seed cases does not need a list of a million candidates.
 
 ### What is not part of the gap
 
@@ -154,10 +171,10 @@ cases does not need a list of a million candidates.
   reports showed at 100,000 agents.
 - **Bookkeeping.** epiworld records the transmission tree, the transition
   matrix, and daily counts in every run. Recording a day in the database
-  (`next()`) takes about 0.2 µs, and applying the day's events 0.7 ms per run
-  at 100,000 agents. [Scenario 02](scenario_02/README.md), where every engine
-  has to record the same outputs, confirms it: ixa adds that bookkeeping at
-  little cost, and the gap does not change.
+  (`next()`) takes well under a microsecond, and applying the day's events
+  under a millisecond per run at 100,000 agents. [Scenario 02](scenario_02/README.md),
+  where every engine has to record the same outputs, confirms it: ixa adds
+  that bookkeeping at little cost, and the gap does not change.
 - **The daily loop's overhead.** In the runs with no transmission, 100 days
   add almost nothing to `reset()`: epiworld's daily work follows the agents
   who are infected, as ixa's does.
@@ -171,33 +188,32 @@ now like for like.
 
 epiworld places the vaccine on about 24,000 agents at 100,000 agents in
 `reset()`, and each placement clones the tool onto the heap and queues an
-event. The instrumented run spends 3.6 ms placing tools and seeds, against
-0.42 ms for the seeds alone in scenario 00: about 3.2 ms for the vaccine. ixa
+event. The instrumented run spends 4.0 ms placing tools and seeds, against
+0.48 ms for the seeds alone in scenario 00: about 3.5 ms for the vaccine. ixa
 sets a property on its 30,000 vaccinees in a plan at time 0, which raises the
-fixed cost of `execute()` from 0.24 to 1.9 ms, about 1.7 ms for the vaccine.
+fixed cost of `execute()` from 0.27 to 1.72 ms, about 1.5 ms for the vaccine.
 
 Median time in milliseconds, scenario 01's model:
 
 | Agents | epiworld `run()` | epiworld, constant probability | ixa `execute()` | ixa, per replicate | epiworld, no transmission | ixa `execute()`, no transmission |
 |---:|---:|---:|---:|---:|---:|---:|
-| 10,000 | 4.4 | 2.6 | 1.9 | 4.2 | 0.86 | 0.31 |
-| 100,000 | 9.5 | 8.3 | 4.2 | 30.6 | 5.4 | 1.9 |
+| 10,000 | 2.28 | 2.23 | 1.82 | 4.23 | 0.61 | 0.30 |
+| 100,000 | 7.55 | 7.21 | 4.22 | 28.55 | 6.20 | 1.72 |
 
 The heap also matters here. The tool clones are the only large batch of
 small allocations inside `run()`, and a fresh C++ process has to grow its
 heap to serve them, while R and Python start with a large one. This is why
 the C++ runner is slower than epiworldR and epiworldpy in scenarios 01 and
 02. Letting glibc keep a large heap in reserve (`MALLOC_TOP_PAD_=268435456`)
-brings the C++ runner from 10.9 to 9.2 ms at 100,000 agents, over 15 seeds;
+brings the C++ runner from 6.99 to 6.34 ms at 100,000 agents, over 15 seeds;
 serving large blocks from the heap (`MALLOC_MMAP_THRESHOLD_=1073741824`)
-brings it to 9.0 ms. Sharing one tool object among agents would remove these
+brings it to 5.94 ms. Sharing one tool object among agents would remove these
 allocations altogether.
 
-The vaccine shrinks the outbreak, so the parameter lookup matters less here
-(1.2 to 1.8 ms), and the fixed cost, with the vaccine, matters more: at
-100,000 agents it is more than half of `run()`. ixa's rebuild still
-dominates its time per replicate. Scenario 02 runs the same model and the
-same epidemics, so the same holds there.
+The vaccine shrinks the outbreak, so the fixed cost, with the vaccine,
+matters more here: at 100,000 agents it is over 80% of `run()`. ixa's
+rebuild still dominates its time per replicate. Scenario 02 runs the same
+model and the same epidemics, so the same holds there.
 
 ## In each scenario's results
 
@@ -207,37 +223,40 @@ replicate at a time:
 
 | Scenario | Agents | epiworld (C++) | epiworldR | epiworldpy | ixa | ixa / epiworld (C++) |
 |:---|---:|---:|---:|---:|---:|---:|
-| [00](scenario_00/README.md) | 10,000 | 8.8 | 9.0 | 8.3 | 7.2 | 0.82 |
-| [00](scenario_00/README.md) | 100,000 | 15.2 | 15.0 | 14.0 | 38.5 | 2.53 |
-| [01](scenario_01/README.md) | 10,000 | 4.3 | 4.0 | 3.9 | 4.3 | 1.00 |
-| [01](scenario_01/README.md) | 100,000 | 11.7 | 9.0 | 9.5 | 33.3 | 2.85 |
-| [02](scenario_02/README.md) | 10,000 | 4.8 | 4.0 | 3.9 | 4.7 | 0.97 |
-| [02](scenario_02/README.md) | 100,000 | 10.6 | 9.0 | 8.7 | 32.7 | 3.10 |
-| [03](scenario_03/README.md) | 1,000,000 | 35.8 | 33.0 | 39.6 | 460.2 | 12.84 |
+| [00](scenario_00/README.md) | 10,000 | 4.8 | 5.0 | 4.2 | 7.2 | 1.50 |
+| [00](scenario_00/README.md) | 100,000 | 8.4 | 8.0 | 7.5 | 38.5 | 4.60 |
+| [01](scenario_01/README.md) | 10,000 | 2.4 | 2.0 | 2.1 | 4.3 | 1.76 |
+| [01](scenario_01/README.md) | 100,000 | 7.6 | 7.0 | 6.1 | 33.3 | 4.38 |
+| [02](scenario_02/README.md) | 10,000 | 2.4 | 2.0 | 2.1 | 4.7 | 1.94 |
+| [02](scenario_02/README.md) | 100,000 | 7.4 | 7.0 | 6.1 | 32.7 | 4.45 |
+| [03](scenario_03/README.md) | 1,000,000 | 28.1 | 24.5 | 27.8 | 460.2 | 16.38 |
 
 Times are in milliseconds.
 
-- **At 10,000 agents ixa is a little faster.** Its rebuild is small here
-  (about 2.6 ms), and costs less than the parameter lookup and `reset()` cost
-  epiworld: ixa takes 0.82 times as long as the C++ runner in scenario 00.
-  With the vaccine the two are level.
-- **At 100,000 agents epiworld is about three times faster per replicate.**
-  Rebuilding ixa's context now takes more time than the whole of epiworld's
-  `run()`. The ratio is largest in scenarios 01 and 02 (2.8 and 3.1 against
-  2.5), where the vaccine shrinks the outbreak but not the rebuild.
+- **epiworld is now faster at every size, including 10,000 agents.** Earlier
+  versions of this benchmark, before epiworld resolved named parameters once
+  per model instead of on every push-transmission check, showed ixa a little
+  faster there. That gap is gone: ixa now takes 1.5 to 1.9 times as long as
+  the C++ runner at 10,000 agents.
+- **At 100,000 agents epiworld is four to five times faster per replicate.**
+  Rebuilding ixa's context now takes several times the whole of epiworld's
+  `run()`. The ratio is fairly stable across scenarios 00-02 (4.4 to 4.6),
+  since the vaccine shrinks the outbreak but not the rebuild, and both sides
+  of the ratio shrink together.
 - **At 1,000,000 agents ([scenario 03](scenario_03/README.md)) the rebuild
-  dominates.** ixa takes about 13 times as long as epiworld per replicate,
-  although its `execute()` alone is still faster than epiworld's `run()`, of
-  which `reset()` is now nearly half.
+  dominates.** ixa takes about 16 times as long as epiworld per replicate,
+  although its `execute()` alone is still a little faster than epiworld's
+  `run()`, of which `reset()` is now well over half.
 
 ## What would make epiworld faster
 
-These would be changes to epiworld, not to the benchmark's runners, which
-use each engine as its documentation shows:
+The first item below is already done, upstream, since the last version of
+this analysis; the rest would still be changes to epiworld, not to the
+benchmark's runners, which use each engine as its documentation shows:
 
-- Resolve a virus's named parameters once, when the run starts, instead of
-  on every call. This alone would bring `run()` close to ixa's `execute()` at
-  10,000 and 100,000 agents in scenario 00.
+- ~~Resolve a virus's named parameters once, when the run starts, instead of
+  on every call.~~ Done: `ParamRef` now caches a resolved parameter's
+  position per model layout (see above).
 - Make `reset()` cheaper for large populations: merge its passes over the
   agents, skip resetting agents that are already in their initial state, and
   draw the seed cases without first listing every candidate.

@@ -89,7 +89,7 @@ RUN Rscript -e 'install.packages(c("R6", "Rcpp", "testthat"), Ncpus = parallel::
 # commits: epiworld's master and epiworldR's main after the counting-sort
 # network build (UofUEpiBio/epiworld#274), which still report version 0.17.0.
 # epiworldpy is pinned in pyproject.toml above.
-ARG EPIWORLDR_SHA=1f5e63b4b40297e969f3b0ee8ccea652f5c7d277
+ARG EPIWORLDR_SHA=dc3758c9212baca629eaa007775fd973345e8957
 RUN curl -fsSL "https://github.com/UofUEpiBio/epiworldR/archive/${EPIWORLDR_SHA}.tar.gz" -o /tmp/epiworldR.tar.gz \
     && R CMD INSTALL /tmp/epiworldR.tar.gz \
     && rm /tmp/epiworldR.tar.gz \
@@ -98,7 +98,7 @@ RUN curl -fsSL "https://github.com/UofUEpiBio/epiworldR/archive/${EPIWORLDR_SHA}
 # epiworld's C++ headers, for the epiworld (C++) runner. The library is
 # header-only; each scenario's runner is compiled by `make setup`. Keep the
 # commit in step with EPIWORLD_REF in the Makefile.
-ARG EPIWORLD_SHA=092bad189b137e76f32ea19f1d6ed61f834389d0
+ARG EPIWORLD_SHA=a1ff20a2e347169bb260440c4a9c26918efda7e0
 ENV EPIWORLD_INCLUDE=/opt/epiworld/include \
     EPIWORLD_BUILD_DIR=/opt/epiworld-build
 RUN mkdir -p /opt/epiworld \
@@ -128,6 +128,11 @@ RUN mkdir -p /opt/fred \
     && make -C /opt/fred/src FRED M64= \
     && echo "${FRED_SHA}" > /opt/fred/COMMIT \
     && rm -rf /opt/fred/tests /opt/fred/docs /opt/fred/pybin /opt/fred/data/country
+
+# ggridges, for the scenario reports' ridgeline simulation-time plots. Last,
+# alongside the other report-only packages, so bumping it never invalidates
+# the epiworld family or FRED layers above.
+RUN Rscript -e 'install.packages("ggridges", Ncpus = parallel::detectCores())'
 
 WORKDIR /workspace
 CMD ["bash"]
