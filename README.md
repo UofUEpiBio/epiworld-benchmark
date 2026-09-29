@@ -53,9 +53,6 @@ results, and interpretation.
 | 03 | Scenario 00 at 1,000,000 agents | [scenario_03/README.md](scenario_03/README.md) |
 | 04 | Scenario 00 on a real contact network collapsed from <a href="https://github.com/GeoPopsHub" target="_blank">GeoPops</a> | [scenario_04/README.md](scenario_04/README.md) |
 
-[analysis.md](analysis.md) explains why ixa is faster than the epiworld
-family, with measurements that apply to every scenario.
-
 **MEmilio was evaluated and excluded for now.** Its ABM has no edge-list
 network primitive comparable to the other engines’ graphs — agents
 interact only through shared Locations (household, work, school, …), so
