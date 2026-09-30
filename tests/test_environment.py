@@ -127,3 +127,24 @@ def test_run_task_tags_the_record_its_runner_wrote(tmp_path, monkeypatch) -> Non
     result = run.run_task(task, {})
     assert result.ok and result.message == "done" and result.scenario == "scenario_00"
     assert json.loads(output.read_text())["environment_id"] == "e"
+
+
+def test_placeholder_cpu_model_falls_back_to_the_vendor(monkeypatch) -> None:
+    lscpu = "Architecture: aarch64\nVendor ID: Apple\nModel name: -\nSocket(s): -\n"
+    monkeypatch.setattr(environment.sys, "platform", "linux")
+    monkeypatch.setattr(environment, "_read", lambda path: "processor : 0\nCPU part : 0x000\n")
+    monkeypatch.setattr(environment, "_run", lambda command: lscpu)
+    assert environment.cpu_model() == "Apple (model not reported)"
+    monkeypatch.setattr(environment, "_run", lambda command: lscpu.replace(": -", ": M3"))
+    assert environment.cpu_model() == "M3"
+
+
+def test_host_cpu_comes_from_the_makefile_in_a_container(monkeypatch) -> None:
+    monkeypatch.setattr(environment, "in_container", lambda: True)
+    monkeypatch.delenv("BENCHMARK_HOST_CPU", raising=False)
+    assert environment.hardware()["host_cpu_model"] is None
+    monkeypatch.setenv("BENCHMARK_HOST_CPU", "Apple M3 Pro")
+    assert environment.hardware()["host_cpu_model"] == "Apple M3 Pro"
+    monkeypatch.setattr(environment, "in_container", lambda: False)
+    monkeypatch.delenv("BENCHMARK_HOST_CPU")
+    assert environment.hardware()["host_cpu_model"] == environment.cpu_model()

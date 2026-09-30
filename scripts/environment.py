@@ -75,11 +75,17 @@ def cpu_model() -> str | None:
         key, _, value = line.partition(":")
         if key.strip() in ("model name", "Model Name", "Hardware") and value.strip():
             return value.strip()
-    # aarch64 kernels do not report a model name in /proc/cpuinfo.
+    # aarch64 kernels do not report a model name in /proc/cpuinfo, and in a
+    # virtual machine lscpu may know only the vendor ("Model name: -").
+    fields = {}
     for line in (_run(["lscpu"]) or "").splitlines():
         key, _, value = line.partition(":")
-        if key.strip() == "Model name" and value.strip():
-            return value.strip()
+        if value.strip() not in ("", "-"):
+            fields.setdefault(key.strip(), value.strip())
+    if "Model name" in fields:
+        return fields["Model name"]
+    if "Vendor ID" in fields:
+        return f"{fields['Vendor ID']} (model not reported)"
     return None
 
 
@@ -117,9 +123,18 @@ def parse_memory_max(text: str | None) -> int | None:
     return _int(text.strip()) if text else None
 
 
+def in_container() -> bool:
+    return Path("/run/.containerenv").exists() or Path("/.dockerenv").exists()
+
+
 def hardware() -> dict[str, Any]:
+    model = cpu_model()
     return {
-        "cpu_model": cpu_model(),
+        "cpu_model": model,
+        # The machine running the container. On macOS, podman and Docker run
+        # containers in a virtual machine that hides the CPU model, so
+        # `make container-TARGET` passes the host's as BENCHMARK_HOST_CPU.
+        "host_cpu_model": os.environ.get("BENCHMARK_HOST_CPU") or (None if in_container() else model),
         "logical_cores": os.cpu_count(),
         "physical_cores": physical_cores(),
         "memory_bytes": total_memory_bytes(),
@@ -134,7 +149,7 @@ def operating_system() -> dict[str, Any]:
         "platform": platform.platform(),
         "kernel": platform.release(),
         "architecture": platform.machine(),
-        "container": Path("/run/.containerenv").exists() or Path("/.dockerenv").exists(),
+        "container": in_container(),
     }
 
 

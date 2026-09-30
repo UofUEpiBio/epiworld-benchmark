@@ -143,12 +143,18 @@ table_environment <- function(bench) {
   commit <- env_value(e$repository$commit, function(x) substr(x, 1, 7))
   if (isTRUE(e$repository$dirty)) commit <- paste(commit, "(uncommitted changes)")
   day <- function(x) env_value(x, function(x) substr(x, 1, 10))
+  cpu <- env_value(e$hardware$cpu_model)
+  host <- e$hardware$host_cpu_model
+  # A container on macOS sees only a virtual CPU; name the machine behind it.
+  if (!is.null(host) && !identical(host, e$hardware$cpu_model)) {
+    cpu <- paste0(host, " (container sees: ", cpu, ")")
+  }
   rows <- data.frame(
     Field = c("CPU", "Cores", "Memory", "OS", "Kernel", "Container image",
               "Python", "R", "Julia", "Rust", "C++ compiler", "Quarto",
               "Repository commit", "Workers", "Run dates", "Latest run"),
     Value = c(
-      env_value(e$hardware$cpu_model), cores, memory,
+      cpu, cores, memory,
       env_value(e$os$platform), env_value(e$os$kernel), image,
       env_value(e$toolchains$python), env_value(e$toolchains$r),
       env_value(e$toolchains$julia), env_value(e$toolchains$rust),
