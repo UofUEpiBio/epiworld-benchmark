@@ -11,6 +11,7 @@ import gzip
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -68,16 +69,25 @@ def stop_simulate(started: float) -> float:
 
 def run_measured(command: list[str], **kwargs) -> tuple[subprocess.CompletedProcess, int | None]:
     """subprocess.run(..., text=True, capture_output=True), plus the peak RSS of
-    the child process in bytes, from wait4()."""
-    with tempfile.TemporaryFile("w+") as out, tempfile.TemporaryFile("w+") as err:
-        process = subprocess.Popen(command, stdout=out, stderr=err, text=True, **kwargs)
-        _, status, usage = os.wait4(process.pid, 0)
-        process.returncode = os.waitstatus_to_exitcode(status)
-        out.seek(0)
-        err.seek(0)
-        completed = subprocess.CompletedProcess(command, process.returncode, out.read(), err.read())
-    # ru_maxrss is in kilobytes on Linux and in bytes on macOS.
-    return completed, usage.ru_maxrss * (1 if sys.platform == "darwin" else 1024)
+    the command in bytes, or None off Linux or without GNU time.
+
+    On Linux, ru_maxrss of a process includes the memory its parent held when it
+    forked, here this runner with its edge list. GNU time forks the command from
+    its own image, under a megabyte, and reports the command's ru_maxrss.
+    """
+    gnu_time = shutil.which("time") if sys.platform.startswith("linux") else None
+    if gnu_time is None:
+        return subprocess.run(command, text=True, capture_output=True, **kwargs), None
+    with tempfile.TemporaryDirectory(prefix="maxrss-") as directory:
+        report = Path(directory) / "maxrss"
+        completed = subprocess.run(
+            [gnu_time, "-f", "%M", "-o", str(report), *command],
+            text=True, capture_output=True, **kwargs,
+        )
+        # A failed command adds a "Command exited with ..." line before it.
+        lines = report.read_text(encoding="utf-8").split() if report.exists() else []
+    completed.args = command
+    return completed, int(lines[-1]) * 1024 if lines and lines[-1].isdigit() else None
 
 
 # Compartment order of the transition matrices.

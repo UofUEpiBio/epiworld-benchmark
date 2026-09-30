@@ -4,6 +4,8 @@ import json
 import os
 import sys
 
+import pytest
+
 import run
 from run import TaskOutcome, merge_into_record, write_environment_records
 from scripts import environment
@@ -131,9 +133,27 @@ def test_run_task_completes_the_record_its_runner_wrote(tmp_path, monkeypatch) -
     record = json.loads(output.read_text())
     assert record["environment_id"] == "e"
     assert record["format_version"] == run.RUNNER_FORMAT_VERSION
-    # In bytes on every platform.
-    assert 64 * 2**20 <= record["process_peak_rss_bytes"] < 2**31
+    if run.GNU_TIME is None:
+        # Off Linux, or without GNU time, the process peak is not recorded.
+        assert record["process_peak_rss_bytes"] is None
+    else:
+        assert 64 * 2**20 <= record["process_peak_rss_bytes"] < 2**31
     assert run.valid_cache(output, "f")
+
+
+@pytest.mark.skipif(run.GNU_TIME is None, reason="needs Linux and GNU time")
+def test_process_peak_excludes_the_parent_memory() -> None:
+    """On Linux, ru_maxrss counts the memory of the parent at fork; a large
+    orchestrator must not raise a small runner's peak."""
+    ballast = bytearray(256 * 2**20)
+    ballast[::4096] = b"x" * len(ballast[::4096])
+    completed, peak = run.run_measured([sys.executable, "-c", "print('small')"])
+    assert completed.returncode == 0 and completed.stdout == "small\n"
+    assert completed.args == [sys.executable, "-c", "print('small')"]
+    assert peak is not None and peak < 128 * 2**20
+    failed, peak = run.run_measured([sys.executable, "-c", "import sys; sys.exit(3)"])
+    assert failed.returncode == 3 and peak is not None
+    del ballast
 
 
 def test_run_task_reports_a_failed_runner(tmp_path, monkeypatch) -> None:

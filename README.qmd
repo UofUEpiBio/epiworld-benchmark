@@ -150,8 +150,12 @@ time phases:
 - `peak_rss_simulate_bytes`: the high-water mark at the end of the simulate
   timer. The runner resets it (by writing `5` to `/proc/self/clear_refs`)
   just before the timer starts, so it is the peak of the simulation alone;
-- `process_peak_rss_bytes`: the runner's `ru_maxrss`, which the orchestrator
-  reads with `wait4()` when the runner exits.
+- `process_peak_rss_bytes`: the runner's `ru_maxrss` as the operating system
+  reports it when the runner exits. On Linux, `ru_maxrss` also counts the
+  memory the parent held when it forked the runner, so the orchestrator
+  starts each runner through GNU `time`, whose own image is under a
+  megabyte, and records the peak it reports. Without GNU `time` (off Linux,
+  or on a host that lacks it) the field is null.
 
 The reports derive three measures from these. *Simulation memory*,
 `peak_rss_simulate - rss_after_setup`, is the extra memory one more replicate
@@ -176,8 +180,8 @@ A few details affect how to read the numbers:
   most of it, and whatever it misses counts toward simulation memory.
 - FRED runs as a child process of its Python runner, which cannot read
   FRED's memory between phases. Its record holds only FRED's whole-run peak,
-  from `wait4()`, as `peak_rss_simulate_bytes`, and the phase fields are
-  null.
+  from GNU `time` as above, as `peak_rss_simulate_bytes`, and the phase
+  fields are null.
 - Off Linux, where `/proc` does not exist, the phase fields are null.
 
 ### Measuring implementation effort

@@ -289,31 +289,33 @@ def valid_cache(
         return False
 
 
-def maxrss_bytes(ru_maxrss: int) -> int:
-    """ru_maxrss is in kilobytes on Linux and in bytes on macOS."""
-    return ru_maxrss * (1 if sys.platform == "darwin" else 1024)
+# On Linux, ru_maxrss of a process includes the memory its parent held when it
+# forked, which would put the orchestrator's own size into every runner's peak.
+# GNU time forks the runner from its own image, under a megabyte, and reports
+# the runner's ru_maxrss. Without it the process peak is not recorded.
+GNU_TIME = shutil.which("time") if sys.platform.startswith("linux") else None
 
 
 def run_measured(
     command: list[str], **kwargs: Any
-) -> tuple[subprocess.CompletedProcess, int]:
+) -> tuple[subprocess.CompletedProcess, int | None]:
     """subprocess.run(..., text=True, capture_output=True), plus the peak RSS
-    in bytes of the child and every descendant it waited for, from wait4()."""
-    with tempfile.TemporaryFile("w+") as out, tempfile.TemporaryFile("w+") as err:
-        process = subprocess.Popen(command, stdout=out, stderr=err, text=True, **kwargs)
-        try:
-            _, status, usage = os.wait4(process.pid, 0)
-        except BaseException:
-            process.kill()
-            process.wait()
-            raise
-        process.returncode = os.waitstatus_to_exitcode(status)
-        out.seek(0)
-        err.seek(0)
-        completed = subprocess.CompletedProcess(
-            command, process.returncode, out.read(), err.read()
+    in bytes of the command and of every descendant it waited for."""
+    if GNU_TIME is None:
+        return subprocess.run(command, text=True, capture_output=True, **kwargs), None
+    fd, report = tempfile.mkstemp(prefix="maxrss-")
+    os.close(fd)
+    try:
+        completed = subprocess.run(
+            [GNU_TIME, "-f", "%M", "-o", report, *command],
+            text=True, capture_output=True, **kwargs,
         )
-    return completed, maxrss_bytes(usage.ru_maxrss)
+        # A failed command adds a "Command exited with ..." line before it.
+        lines = Path(report).read_text(encoding="utf-8").split()
+    finally:
+        os.unlink(report)
+    completed.args = command
+    return completed, int(lines[-1]) * 1024 if lines and lines[-1].isdigit() else None
 
 
 def resolve_workers(cli_value: int | None, resources: dict[str, Any]) -> int:
@@ -396,7 +398,8 @@ def run_task(task: dict[str, Any], env: dict[str, str]) -> TaskOutcome:
         # the operating system saw it; the orchestrator adds both to its record.
         # The runners reset their high-water mark when the simulate timer
         # starts, which lowers ru_maxrss too, so this peak is an independent
-        # check of peak_rss_simulate_bytes, not of the whole run.
+        # check of peak_rss_simulate_bytes and whatever follows, not of the
+        # whole run.
         try:
             merge_into_record(output, {
                 "environment_id": task["environment_id"],

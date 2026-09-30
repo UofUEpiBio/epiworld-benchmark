@@ -310,7 +310,7 @@ def run_fred(args: argparse.Namespace, source: np.ndarray, target: np.ndarray) -
         "engine_read_seconds": read_seconds,
         # FRED runs as a child process, so this runner's own memory says
         # nothing about the engine, and FRED cannot be probed between
-        # phases. Its whole-run peak, from wait4(), is the only measure.
+        # phases. Its whole-run peak, from GNU time, is the only measure.
         "rss_baseline_bytes": None,
         "rss_after_read_bytes": None,
         "rss_after_setup_bytes": None,

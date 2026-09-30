@@ -139,5 +139,13 @@ RUN mkdir -p /opt/fred \
 # the epiworld family or FRED layers above.
 RUN Rscript -e 'install.packages("ggridges", Ncpus = parallel::detectCores())'
 
+# GNU time, which run.py and the FRED runners start each measured process
+# through: it reports the process's peak memory without counting its parent's
+# (see run_measured() in run.py). Late in the file, so adding it rebuilt
+# nothing above.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends time \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /workspace
 CMD ["bash"]
