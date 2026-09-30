@@ -148,14 +148,22 @@ complete model. The report leaves that shared plumbing out of the line counts.
 
 ## Caching
 
-Results are cached at `cache/results/<scenario>/<engine>/n<n>/`. A scenario's
-fingerprint covers `config.toml`, `run.py`, `scripts/`, its own
-`scenario.toml`, and its own `runners/`. Editing one scenario's runners
-therefore never invalidates another scenario's results. Editing `run.py`,
-`config.toml`, or `scripts/` invalidates all of them. Every record also
-carries the orchestrator's `format_version`, and a record in an older format
-is never reused, even when a scenario accepts published results; bump
-`RUNNER_FORMAT_VERSION` in `run.py` when the contents of a record change.
+Each full-profile replicate is committed as one record at
+`results/runs/<scenario>/<engine>/n<n>/replicate-NNN.json` (smoke records stay
+in the untracked `cache/results/`), and it is reused whenever its fingerprint
+matches. The fingerprint is a SHA-256 of the replicate's identity: the
+scenario's own `scenario.toml` and `runners/` (a hash of their contents), the
+engine and its version, the population size, days, replicate, and seed, the
+network's checksum (of its decompressed edge list, so it does not depend on
+the zlib build that compressed it) and edge count, the model parameters and transmission
+multiplier, the operating system and architecture, and the record format.
+Editing one scenario's runners therefore never invalidates another scenario's
+results. Editing `run.py`, `scripts/`, or anything else outside the scenario
+invalidates nothing on its own: `config.toml` matters only through the
+parameters, sizes, and seeds it feeds into the identity, and a change to how
+records are produced must bump `RUNNER_FORMAT_VERSION` in `run.py`. Every
+record carries that `format_version`, and a record in an older format is never
+reused, even when a scenario accepts published results.
 
 Where a scenario's results were produced is recorded separately, in
 `results/environments/<scenario>.json`, and by an `environment_id` in each

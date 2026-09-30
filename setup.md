@@ -114,7 +114,7 @@ The smoke profile is deliberately tiny (1,000 agents, 10 days, one replicate)
 and tests all eleven integrations in every scenario. `make benchmark` launches
 the full design: 2,200 runs for each of scenarios 00 to 02, and 220 for each
 of scenarios 03 and 04. It is safe to stop and restart: each successful replicate is written
-atomically beneath `cache/results/`, and a later invocation only schedules
+atomically beneath `results/runs/`, and a later invocation only schedules
 missing or stale results.
 
 Useful targeted runs include:
@@ -132,16 +132,29 @@ Useful targeted runs include:
 .venv/bin/python run.py --profile full --engines EoN --force
 ```
 
-Do not delete `cache/` between runs. Records live at
-`cache/results/<scenario>/<engine>/n<n>/`, and the cache key covers the shared
-configuration, the scenario's parameters and runner sources, the engine
-version, and the shared-network checksum. Changing one scenario's runners
-invalidates only that scenario. `results/results.csv` (with a `scenario`
-column), `results/scenarios.json`, and, for scenarios that report daily
-series, `results/daily.csv` (medians across replicates) are rebuilt from all
-successful cached records after each invocation. The report filters them to the full-profile
-sizes and 100 days; `results/scenarios.json` records each scenario's sizes and
-replicate counts.
+Each full-profile replicate is one JSON record at
+`results/runs/<scenario>/<engine>/n<n>/replicate-NNN.json`, committed with the
+results. A replicate whose record exists with the fingerprint the run expects
+is skipped, so a fresh clone, or another machine, reruns only what is missing
+or stale, not what has been published. Runs from several machines combine by
+committing their records; they touch different files, so git merges them
+cleanly. Smoke records are throwaway and stay in `cache/results/`, next to the
+generated networks, which are not committed. The fingerprint is described in
+"Caching" in [`scenarios.md`](scenarios.md#caching); it includes the
+operating system and architecture, so a machine of another architecture
+reruns everything.
+
+`results/results.csv` (with a `scenario` column), `results/scenarios.json`,
+and, for scenarios that report daily series, `results/daily.csv` (medians
+across replicates) are derived from `results/runs/` alone after each
+invocation, so they are the same on every clone. After merging branches that
+both changed records, regenerate them with `make collect` (or
+`run.py --collect`) rather than resolving conflicts by hand. Records of a
+replicate the design no longer includes (for example, after lowering a
+replicate count) are not removed automatically; delete them from
+`results/runs/` before collecting. The report filters the results to the
+full-profile sizes and 100 days; `results/scenarios.json` records each
+scenario's sizes and replicate counts.
 
 ## Environment records
 

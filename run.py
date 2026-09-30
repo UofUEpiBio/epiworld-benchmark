@@ -32,6 +32,11 @@ CONFIG_PATH = ROOT / "config.toml"
 CACHE_DIR = ROOT / "cache"
 RESULTS_DIR = ROOT / "results"
 ENVIRONMENTS_DIR = RESULTS_DIR / "environments"
+# One JSON record per full-profile replicate, committed with the results, so any
+# clone skips what has been published and runs from several machines combine by
+# copying files. results.csv and daily.csv are derived from them. Smoke records
+# are throwaway and stay in the untracked cache.
+RUNS_DIR = RESULTS_DIR / "runs"
 # Bump when the contents of a cache record change. Records carry it as
 # format_version, and valid_cache() rejects older ones: identity alone is not
 # enough, as accept_published_results matches published fingerprints without it.
@@ -470,20 +475,41 @@ def write_daily_series(records: list[dict[str, Any]]) -> None:
             ])
 
 
+def report_collected(count: int) -> None:
+    if count:
+        print(f"Wrote {count} published rows to {RESULTS_DIR / 'results.csv'}")
+    else:
+        print(f"No published records in {RUNS_DIR}; left {RESULTS_DIR / 'results.csv'} as it was")
+
+
+def records_dir(profile: str) -> Path:
+    """Where a profile's replicate records live: published for the full
+    profile, the untracked cache for smoke runs."""
+    return RUNS_DIR if profile == "full" else CACHE_DIR / "results"
+
+
+def record_path(profile: str, scenario: str, engine: str, n: int, replicate: int) -> Path:
+    return records_dir(profile) / scenario / engine / f"n{n}" / f"replicate-{replicate:03d}.json"
+
+
 def collect_results() -> int:
+    """Rebuild the derived results files from the published records alone, so
+    they are the same on every clone whatever its cache holds."""
     records: list[dict[str, Any]] = []
-    # Records live at cache/results/<scenario>/<engine>/...; anything else is
-    # left over from the single-scenario layout and is ignored.
-    for path in sorted((CACHE_DIR / "results").glob("scenario_*/**/*.json")):
+    for path in sorted(RUNS_DIR.glob("scenario_*/*/n*/replicate-*.json")):
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
             if record.get("status") == "ok":
-                scenario = path.relative_to(CACHE_DIR / "results").parts[0]
+                scenario = path.relative_to(RUNS_DIR).parts[0]
                 records.append(record | {"scenario": scenario})
         except (OSError, ValueError):
             continue
     RESULTS_DIR.mkdir(exist_ok=True)
     output = RESULTS_DIR / "results.csv"
+    if not records and output.is_file():
+        # Nothing published yet (a smoke-only clone, or results/runs/ not yet
+        # populated): keep the committed results rather than emptying them.
+        return 0
     fields = [
         "scenario", "engine", "engine_version", "n", "days", "replicate", "seed",
         "network_sha256", "network_edges", "mean_degree", "target_r0",
@@ -600,11 +626,18 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--force", action="store_true", help="ignore matching cached results")
     parser.add_argument("--dry-run", action="store_true", help="show work without running models")
+    parser.add_argument(
+        "--collect", action="store_true",
+        help="only rebuild results.csv, daily.csv, and scenarios.json from results/runs/",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    if args.collect:
+        report_collected(collect_results())
+        return 0
     config = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     study, resources = config["study"], config["resources"]
     available = discover_scenarios()
@@ -716,10 +749,7 @@ def main() -> int:
                         ),
                     }
                     task_fingerprint = fingerprint(identity)
-                    output = (
-                        CACHE_DIR / "results" / scenario / engine / f"n{n}"
-                        / f"replicate-{replicate:03d}.json"
-                    )
+                    output = record_path(args.profile, scenario, engine, int(n), replicate)
                     expected_fingerprints = compatible_fingerprints(identity, scenario_config)
                     if not args.force and valid_cache(output, expected_fingerprints):
                         cached[scenario] = cached.get(scenario, 0) + 1
@@ -795,7 +825,7 @@ def main() -> int:
         for label, message in failures:
             print(f"\n{label}:\n{message}", file=sys.stderr)
         return 1
-    print(f"Wrote {count} cached rows to {RESULTS_DIR / 'results.csv'}")
+    report_collected(count)
     return 0
 
 

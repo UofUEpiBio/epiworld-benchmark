@@ -24,6 +24,17 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def sha256_edges(path: Path) -> str:
+    """SHA-256 of a gzipped edge list's decompressed contents: the network's
+    identity. The compressed bytes depend on the zlib build that wrote them,
+    so a network regenerated on another machine would not match otherwise."""
+    digest = hashlib.sha256()
+    with gzip.open(path, "rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def _atomic_json(path: Path, value: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
@@ -53,7 +64,8 @@ def ensure_network(
     edge_path = network_dir / f"{stem}.tsv.gz"
     metadata_path = network_dir / f"{stem}.json"
     expected = {
-        "format_version": 1,
+        # 2: "sha256" hashes the decompressed edge list.
+        "format_version": 2,
         "network_type": "watts_strogatz",
         "n": n,
         "mean_degree_requested": mean_degree,
@@ -65,7 +77,7 @@ def ensure_network(
         try:
             metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
             matching = all(metadata.get(key) == value for key, value in expected.items())
-            if matching and metadata.get("sha256") == sha256_file(edge_path):
+            if matching and metadata.get("sha256") == sha256_edges(edge_path):
                 return edge_path, metadata
         except (OSError, ValueError):
             pass
@@ -92,7 +104,7 @@ def ensure_network(
         "edges": edge_count,
         "mean_degree_observed": 2.0 * edge_count / n,
         "density": 2.0 * edge_count / (n * (n - 1)),
-        "sha256": sha256_file(edge_path),
+        "sha256": sha256_edges(edge_path),
     }
     _atomic_json(metadata_path, metadata)
     return edge_path, metadata
@@ -179,7 +191,8 @@ def ensure_geopops_network(cache_dir: Path, n: int, config: dict) -> tuple[Path,
     edge_path = network_dir / f"{stem}.tsv.gz"
     metadata_path = network_dir / f"{stem}.json"
     expected = {
-        "format_version": 2,
+        # 3: "sha256" hashes the decompressed edge list.
+        "format_version": 3,
         "network_type": "geopops_collapsed",
         "n": n,
         "rows": rows,
@@ -200,7 +213,7 @@ def ensure_geopops_network(cache_dir: Path, n: int, config: dict) -> tuple[Path,
         try:
             metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
             if all(metadata.get(key) == value for key, value in expected.items()):
-                if metadata.get("sha256") == sha256_file(edge_path):
+                if metadata.get("sha256") == sha256_edges(edge_path):
                     return edge_path, metadata
         except (OSError, ValueError):
             pass
@@ -248,7 +261,7 @@ def ensure_geopops_network(cache_dir: Path, n: int, config: dict) -> tuple[Path,
         "duplicates_removed_by_union": sum(layer_edges.values()) - len(row_edges),
         "mean_degree_observed": 2.0 * edge_count / n,
         "density": 2.0 * edge_count / (n * (n - 1)),
-        "sha256": sha256_file(edge_path),
+        "sha256": sha256_edges(edge_path),
     }
     _atomic_json(metadata_path, metadata)
     return edge_path, metadata
