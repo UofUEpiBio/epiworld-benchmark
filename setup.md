@@ -87,7 +87,8 @@ The same image is a development container: open the folder in VS Code (with
 shell.
 
 Running natively is still possible given Python 3.12, uv, R with `epiworldR`,
-`individual`, and `jsonlite`, a Rust toolchain, a C++17 compiler with zlib, and Quarto
+`individual`, and `jsonlite`, a Rust toolchain, a C++17 compiler with zlib, Quarto, and,
+for each run's process peak memory, GNU `time` (Linux only)
 (`make setup check smoke benchmark report`); `make setup` downloads epiworld's
 headers into `.deps/`. Cache records carry the host OS and architecture in
 their fingerprint, so native and container timings are never mixed.
