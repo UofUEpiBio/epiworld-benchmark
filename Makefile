@@ -29,9 +29,14 @@ FRED_BINARY := $(FRED_HOME)/bin/FRED
 # Restrict smoke/benchmark to some scenarios, e.g. SCENARIOS="scenario_01".
 SCENARIOS ?=
 SCENARIO_ARGS := $(if $(strip $(SCENARIOS)),--scenarios $(SCENARIOS),)
+# Extra run.py flags for smoke/benchmark, e.g. RUN_ARGS=--force.
+RUN_ARGS ?=
 
 CONTAINER ?= podman
 IMAGE ?= epiworld-benchmark
+# The host's CPU, which a container on macOS cannot see (see scripts/environment.py).
+HOST_CPU := $(shell sysctl -n machdep.cpu.brand_string 2>/dev/null \
+	|| sed -n 's/^model name[[:space:]]*: //p' /proc/cpuinfo 2>/dev/null | head -n 1)
 
 help:
 	@echo "Available targets:"
@@ -43,7 +48,8 @@ help:
 	@echo "  report          - Render the overview and every scenario report with Quarto"
 	@echo "  clean-cache     - Remove benchmark/cache manually if you really want to discard reusable runs."
 	@echo ""
-	@echo "smoke and benchmark run every scenario_* folder; set SCENARIOS to pick some."
+	@echo "smoke and benchmark run every scenario_* folder; set SCENARIOS to pick some,"
+	@echo "and RUN_ARGS for extra run.py flags (e.g. RUN_ARGS=--force)."
 	@echo ""
 	@echo "Container targets (the documented way to run the benchmark):"
 	@echo "  container-image - Build the $(IMAGE) image with $(CONTAINER)"
@@ -89,10 +95,10 @@ check:
 	Rscript --vanilla -e 'stopifnot(requireNamespace("epiworldR", quietly = TRUE), requireNamespace("individual", quietly = TRUE), requireNamespace("jsonlite", quietly = TRUE))'
 
 smoke:
-	$(PYTHON) run.py --profile smoke $(SCENARIO_ARGS)
+	$(PYTHON) run.py --profile smoke $(SCENARIO_ARGS) $(RUN_ARGS)
 
 benchmark:
-	$(PYTHON) run.py --profile full $(SCENARIO_ARGS)
+	$(PYTHON) run.py --profile full $(SCENARIO_ARGS) $(RUN_ARGS)
 
 # Run alone: concurrent work distorts the timings.
 profile:
@@ -112,9 +118,10 @@ clean-cache:
 container-image:
 	$(CONTAINER) build -t $(IMAGE) -f .devcontainer/Dockerfile .
 
-# BENCHMARK_IMAGE_ID identifies the image in each scenario's environment record.
+# BENCHMARK_IMAGE_ID and BENCHMARK_HOST_CPU go into each scenario's environment record.
 container-%:
 	$(CONTAINER) run --rm -v "$(CURDIR)":/workspace -w /workspace \
-		-e N_THREADS -e SCENARIOS \
+		-e N_THREADS -e SCENARIOS -e RUN_ARGS \
 		-e BENCHMARK_IMAGE_ID=$$($(CONTAINER) image inspect -f '{{.Id}}' $(IMAGE)) \
+		-e BENCHMARK_HOST_CPU="$(HOST_CPU)" \
 		$(IMAGE) make setup $*

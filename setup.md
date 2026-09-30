@@ -137,7 +137,10 @@ that executes at least one replicate of a scenario writes
 `results/environments/<scenario>.json` (via `scripts/environment.py`). It holds:
 
 - hardware: CPU model, logical and physical cores, total memory, and the cgroup
-  CPU and memory limits of the container, if any;
+  CPU and memory limits of the container, if any (`null` when unlimited). On
+  macOS the container runs in a virtual machine that hides the CPU model, so
+  `make container-TARGET` also records the host's as `host_cpu_model`, and
+  cores and memory are those of the virtual machine;
 - OS: platform, kernel, architecture, and whether it runs in a container;
 - the container image ID (`make container-TARGET` passes it as
   `BENCHMARK_IMAGE_ID`; `null` natively);
