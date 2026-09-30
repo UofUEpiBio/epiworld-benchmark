@@ -154,7 +154,8 @@ in the untracked `cache/results/`), and it is reused whenever its fingerprint
 matches. The fingerprint is a SHA-256 of the replicate's identity: the
 scenario's own `scenario.toml` and `runners/` (a hash of their contents), the
 engine and its version, the population size, days, replicate, and seed, the
-network's checksum and edge count, the model parameters and transmission
+network's checksum (of its decompressed edge list, so it does not depend on
+the zlib build that compressed it) and edge count, the model parameters and transmission
 multiplier, the operating system and architecture, and the record format.
 Editing one scenario's runners therefore never invalidates another scenario's
 results. Editing `run.py`, `scripts/`, or anything else outside the scenario
