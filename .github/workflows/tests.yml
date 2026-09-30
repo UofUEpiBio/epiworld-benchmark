@@ -1,0 +1,93 @@
+# Checks and a smoke run of every engine, inside the benchmark's own container
+# image (.devcontainer/Dockerfile), so CI tests the environment the published
+# results come from. The image is keyed on the files the Dockerfile copies in:
+# it is built and pushed to ghcr.io only when one of them changes, and pulled
+# otherwise. Runs on arm64, like the published results.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/uofuepibio/epiworld-benchmark
+
+jobs:
+  image:
+    name: container image
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      ref: ${{ steps.tag.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: tag
+        # Keep this list in step with the Dockerfile's COPY lines. git's blob
+        # ids make the hash independent of checkout details.
+        run: |
+          inputs=$(git ls-files -s .devcontainer/Dockerfile pyproject.toml uv.lock \
+            julia/Project.toml julia/Manifest.toml \
+            scenario_00/runners/ixa/Cargo.toml scenario_00/runners/ixa/Cargo.lock \
+            scenario_00/runners/ixa/rust-toolchain.toml | sha256sum | cut -c1-16)
+          echo "ref=$IMAGE:inputs-$inputs" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: exists
+        run: |
+          if docker manifest inspect "${{ steps.tag.outputs.ref }}" > /dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+      # The image is about 5 GB; the runner's preinstalled SDKs are not needed.
+      - if: steps.exists.outputs.found == 'false'
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+      - if: steps.exists.outputs.found == 'false'
+        uses: docker/setup-buildx-action@v3
+      - if: steps.exists.outputs.found == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .devcontainer/Dockerfile
+          push: true
+          tags: ${{ steps.tag.outputs.ref }}
+          # Layers from earlier builds, so a change near the end of the
+          # Dockerfile rebuilds only what follows it.
+          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+      - if: github.ref == 'refs/heads/main'
+        run: docker buildx imagetools create --tag "$IMAGE:latest" "${{ steps.tag.outputs.ref }}"
+
+  check:
+    name: make check and smoke (container)
+    needs: image
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      # What `make container-check container-smoke` runs locally: builds every
+      # scenario's ixa and epiworld runners, runs pytest, the ixa tests, and
+      # the R package check, then one small replicate of every engine in
+      # every scenario.
+      - run: make setup check smoke
