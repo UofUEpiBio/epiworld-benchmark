@@ -12,6 +12,26 @@ parse_args <- function(x) {
   stats::setNames(as.list(values), gsub("-", "_", keys))
 }
 
+# Resident memory in bytes from /proc/self/status: VmRSS now and VmHWM, its
+# high-water mark. NA off Linux. Uncollected garbage counts as resident; no
+# collection is forced beyond the one before the simulate timer.
+memory_status <- function() {
+  lines <- tryCatch(readLines("/proc/self/status"), error = function(e) character(),
+                    warning = function(w) character())
+  kib <- function(key) {
+    line <- grep(paste0("^", key, ":"), lines, value = TRUE)
+    if (length(line)) as.numeric(gsub("[^0-9]", "", line)) * 1024 else NA_real_
+  }
+  c(rss = kib("VmRSS"), peak = kib("VmHWM"))
+}
+# Writing 5 to clear_refs resets VmHWM to the current RSS (Linux 4.0 and later).
+reset_peak <- function() {
+  tryCatch({
+    cat(5, file = "/proc/self/clear_refs")
+    TRUE
+  }, error = function(e) FALSE, warning = function(w) FALSE)
+}
+
 args <- parse_args(commandArgs(trailingOnly = TRUE))
 number <- function(name) as.numeric(args[[name]])
 integer <- function(name) as.integer(args[[name]])
@@ -31,10 +51,12 @@ transmissibility <- min(0.999, target_r0 / max(1, mean_degree - 1))
 beta <- transmissibility * recovery / (1 - transmissibility * (1 - recovery))
 beta <- beta * number("transmission_multiplier")
 
+memory_baseline <- memory_status()
 total_started <- proc.time()[["elapsed"]]
 edges <- utils::read.delim(gzfile(args$network), colClasses = "integer")
 if (nrow(edges) != integer("network_edges")) stop("Network edge count mismatch")
 read_seconds <- proc.time()[["elapsed"]] - total_started
+memory_after_read <- memory_status()
 
 # individual has no contact networks, so the network is an adjacency list:
 # agent i's neighbours are neighbours[first[i] + 0:(degree[i] - 1)].
@@ -49,6 +71,8 @@ invisible(gc(FALSE))
 
 # The initial conditions differ in every run, so building them is timed with
 # the simulation, as epiworld seeds its infections inside run().
+memory_after_setup <- memory_status()
+peak_reset <- reset_peak()
 simulate_started <- proc.time()[["elapsed"]]
 set.seed(integer("seed"))
 states <- c("S", "E", "I", "H", "R")
@@ -130,6 +154,7 @@ simulation_loop(variables = list(health), processes = processes, timesteps = day
 # counted against the final state.
 count_transitions(days, previous, snapshot())
 simulate_seconds <- proc.time()[["elapsed"]] - simulate_started
+memory_simulate <- memory_status()
 
 # Extracting the outputs comes after the simulation and is timed apart.
 extract_started <- proc.time()[["elapsed"]]
@@ -169,6 +194,11 @@ record <- list(
   setup_seconds = total_seconds - simulate_seconds - extract_seconds,
   simulate_seconds = simulate_seconds,
   total_seconds = total_seconds,
+  rss_baseline_bytes = memory_baseline[["rss"]],
+  rss_after_read_bytes = memory_after_read[["rss"]],
+  rss_after_setup_bytes = memory_after_setup[["rss"]],
+  peak_rss_setup_bytes = memory_after_setup[["peak"]],
+  peak_rss_simulate_bytes = if (peak_reset) memory_simulate[["peak"]] else NA_real_,
   final_susceptible = final[["S"]],
   final_exposed = final[["E"]],
   final_infected = final[["I"]],

@@ -4,11 +4,10 @@
 from __future__ import annotations
 
 import argparse
-from time import perf_counter
 
 import numpy as np
 
-from runner_common import main
+from runner_common import main, start_simulate, stop_simulate
 
 
 def discrete_transmission_probability(target_r0: float, degree: float, recovery: float) -> float:
@@ -100,9 +99,9 @@ def run_epydemic(args: argparse.Namespace, source: np.ndarray, target: np.ndarra
     process.setMaximumTime(float(args.days) + 1.0)
     dynamics = epydemic.SynchronousDynamics(process, graph)
     epydemic.rng.bit_generator.state = np.random.PCG64(args.seed).state
-    started = perf_counter()
+    started = start_simulate()
     result = dynamics.set({}).run(fatal=True)["results"]
-    elapsed = perf_counter() - started
+    elapsed = stop_simulate(started)
     return {
         "simulate_seconds": elapsed,
         "final_susceptible": int(result[SEIRH.S]),

@@ -12,6 +12,26 @@ parse_args <- function(x) {
   stats::setNames(as.list(values), gsub("-", "_", keys))
 }
 
+# Resident memory in bytes from /proc/self/status: VmRSS now and VmHWM, its
+# high-water mark. NA off Linux. Uncollected garbage counts as resident; no
+# collection is forced beyond the one before the simulate timer.
+memory_status <- function() {
+  lines <- tryCatch(readLines("/proc/self/status"), error = function(e) character(),
+                    warning = function(w) character())
+  kib <- function(key) {
+    line <- grep(paste0("^", key, ":"), lines, value = TRUE)
+    if (length(line)) as.numeric(gsub("[^0-9]", "", line)) * 1024 else NA_real_
+  }
+  c(rss = kib("VmRSS"), peak = kib("VmHWM"))
+}
+# Writing 5 to clear_refs resets VmHWM to the current RSS (Linux 4.0 and later).
+reset_peak <- function() {
+  tryCatch({
+    cat(5, file = "/proc/self/clear_refs")
+    TRUE
+  }, error = function(e) FALSE, warning = function(w) FALSE)
+}
+
 args <- parse_args(commandArgs(trailingOnly = TRUE))
 number <- function(name) as.numeric(args[[name]])
 integer <- function(name) as.integer(args[[name]])
@@ -31,10 +51,12 @@ beta <- beta * number("transmission_multiplier")
 hospital_rate <- hospital_probability * recovery /
   (1 - hospital_probability * (1 - recovery))
 
+memory_baseline <- memory_status()
 total_started <- proc.time()[["elapsed"]]
 edges <- utils::read.delim(gzfile(args$network), colClasses = "integer")
 if (nrow(edges) != integer("network_edges")) stop("Network edge count mismatch")
 read_seconds <- proc.time()[["elapsed"]] - total_started
+memory_after_read <- memory_status()
 
 model <- Model() |>
   add_param("Transmission rate", beta) |>
@@ -86,9 +108,12 @@ verbose_off(model)
 rm(edges)
 invisible(gc(FALSE))
 
+memory_after_setup <- memory_status()
+peak_reset <- reset_peak()
 simulate_started <- proc.time()[["elapsed"]]
 run(model, ndays = days, seed = integer("seed"))
 simulate_seconds <- proc.time()[["elapsed"]] - simulate_started
+memory_simulate <- memory_status()
 total_seconds <- proc.time()[["elapsed"]] - total_started
 
 today <- get_today_total(model)
@@ -114,6 +139,11 @@ record <- list(
   setup_seconds = total_seconds - simulate_seconds,
   simulate_seconds = simulate_seconds,
   total_seconds = total_seconds,
+  rss_baseline_bytes = memory_baseline[["rss"]],
+  rss_after_read_bytes = memory_after_read[["rss"]],
+  rss_after_setup_bytes = memory_after_setup[["rss"]],
+  peak_rss_setup_bytes = memory_after_setup[["peak"]],
+  peak_rss_simulate_bytes = if (peak_reset) memory_simulate[["peak"]] else NA_real_,
   final_susceptible = unname(today[["Susceptible"]]),
   final_exposed = unname(today[["Exposed"]]),
   final_infected = unname(today[["Infected"]]),
@@ -131,5 +161,5 @@ stopifnot(sum(unlist(record[c(
 
 dir.create(dirname(args$output), recursive = TRUE, showWarnings = FALSE)
 temporary <- tempfile(pattern = paste0(".", basename(args$output), "."), tmpdir = dirname(args$output))
-write_json(record, temporary, auto_unbox = TRUE, pretty = TRUE, digits = NA)
+write_json(record, temporary, auto_unbox = TRUE, pretty = TRUE, digits = NA, na = "null")
 if (!file.rename(temporary, args$output)) stop("Could not atomically install result file")

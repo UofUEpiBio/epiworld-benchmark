@@ -11,11 +11,73 @@ import gzip
 import json
 import os
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 from time import perf_counter
 from typing import Callable
 
 import numpy as np
+
+
+# Memory at the timing boundaries, in bytes, merged into the record by main().
+# Off Linux, where /proc does not exist, every value is None. Garbage the
+# interpreter has not collected yet counts as resident: no collection is forced,
+# as it would change the timings.
+MEMORY: dict[str, int | None] = {}
+MEMORY_FIELDS = (
+    "rss_baseline_bytes", "rss_after_read_bytes", "rss_after_setup_bytes",
+    "peak_rss_setup_bytes", "peak_rss_simulate_bytes",
+)
+_peak_reset = False
+
+
+def memory_status() -> tuple[int | None, int | None]:
+    """VmRSS and VmHWM (its high-water mark) of this process, in bytes."""
+    try:
+        with open("/proc/self/status", encoding="ascii") as stream:
+            fields = dict(line.split(":", 1) for line in stream if line.startswith(("VmRSS", "VmHWM")))
+    except OSError:
+        return None, None
+    kib = lambda key: int(fields[key].split()[0]) * 1024 if key in fields else None
+    return kib("VmRSS"), kib("VmHWM")
+
+
+def start_simulate() -> float:
+    """Record memory after setup, reset the high-water mark, and start the
+    simulate timer. Both reads happen before the timer starts."""
+    global _peak_reset
+    MEMORY["rss_after_setup_bytes"], MEMORY["peak_rss_setup_bytes"] = memory_status()
+    try:
+        # Writing 5 resets VmHWM to the current RSS (Linux 4.0 and later).
+        with open("/proc/self/clear_refs", "w", encoding="ascii") as stream:
+            stream.write("5")
+        _peak_reset = True
+    except OSError:
+        _peak_reset = False
+    return perf_counter()
+
+
+def stop_simulate(started: float) -> float:
+    """Stop the simulate timer, then record the peak since start_simulate()."""
+    elapsed = perf_counter() - started
+    # Without a reset the high-water mark would include setup, so it is left out.
+    MEMORY["peak_rss_simulate_bytes"] = memory_status()[1] if _peak_reset else None
+    return elapsed
+
+
+def run_measured(command: list[str], **kwargs) -> tuple[subprocess.CompletedProcess, int | None]:
+    """subprocess.run(..., text=True, capture_output=True), plus the peak RSS of
+    the child process in bytes, from wait4()."""
+    with tempfile.TemporaryFile("w+") as out, tempfile.TemporaryFile("w+") as err:
+        process = subprocess.Popen(command, stdout=out, stderr=err, text=True, **kwargs)
+        _, status, usage = os.wait4(process.pid, 0)
+        process.returncode = os.waitstatus_to_exitcode(status)
+        out.seek(0)
+        err.seek(0)
+        completed = subprocess.CompletedProcess(command, process.returncode, out.read(), err.read())
+    # ru_maxrss is in kilobytes on Linux and in bytes on macOS.
+    return completed, usage.ru_maxrss * (1 if sys.platform == "darwin" else 1024)
 
 
 def parse_args() -> argparse.Namespace:
@@ -72,11 +134,13 @@ def main(engine: str, run: Callable[[argparse.Namespace, np.ndarray, np.ndarray]
     # process startup costs and are excluded from setup/simulation timings.
     for module in preload:
         __import__(module)
+    MEMORY["rss_baseline_bytes"] = memory_status()[0]
     total_started = perf_counter()
     source, target = read_edges(args.network)
     if len(source) != args.network_edges:
         raise ValueError(f"edge count mismatch: expected {args.network_edges}, read {len(source)}")
     read_elapsed = perf_counter() - total_started
+    MEMORY["rss_after_read_bytes"] = memory_status()[0]
     result = run(args, source, target)
     total_elapsed = perf_counter() - total_started
     # Engines that must re-read their own input files (FRED) report that time
@@ -101,6 +165,7 @@ def main(engine: str, run: Callable[[argparse.Namespace, np.ndarray, np.ndarray]
         "total_seconds": total_elapsed,
         "fingerprint": args.fingerprint,
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        **{field: MEMORY.get(field) for field in MEMORY_FIELDS},
         **result,
     }
     if sum(record[f"final_{state}"] for state in ("susceptible", "exposed", "infected", "hospitalized", "recovered")) != args.n:

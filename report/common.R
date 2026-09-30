@@ -223,6 +223,78 @@ plot_simulation_time <- function(bench) {
     ggplot2::theme(legend.position = "none")
 }
 
+memory_fields <- c(
+  "rss_baseline_bytes", "rss_after_read_bytes", "rss_after_setup_bytes",
+  "peak_rss_setup_bytes", "peak_rss_simulate_bytes", "process_peak_rss_bytes"
+)
+
+#' Memory measures of each run, in MiB (see "What is measured" in the
+#' overview). The overall peak is the largest of the runner's high-water mark
+#' before the simulation, the one during it, and the orchestrator's process
+#' peak: the runners reset their high-water mark when the simulate timer starts,
+#' which lowers the process peak too.
+memory_measures <- function(full) {
+  if (!nrow(full) || !all(memory_fields %in% names(full)) ||
+      all(is.na(full$process_peak_rss_bytes))) {
+    return(data.frame())
+  }
+  mib <- function(bytes) bytes / 2^20
+  data.frame(
+    engine = full$engine,
+    n = full$n,
+    baseline = mib(full$rss_baseline_bytes),
+    footprint = mib(full$rss_after_setup_bytes - full$rss_after_read_bytes),
+    simulation = mib(full$peak_rss_simulate_bytes - full$rss_after_setup_bytes),
+    peak = mib(pmax(full$peak_rss_setup_bytes, full$peak_rss_simulate_bytes,
+                    full$process_peak_rss_bytes, na.rm = TRUE))
+  )
+}
+
+#' Median and interquartile range of each memory measure by engine and size.
+table_memory <- function(bench) {
+  measures <- memory_measures(bench$full)
+  if (!nrow(measures)) return(NULL)
+  cell <- function(x) {
+    if (all(is.na(x))) return(NA_character_)
+    sprintf("%.1f [%.1f, %.1f]", median(x, na.rm = TRUE), q(x, 0.25), q(x, 0.75))
+  }
+  rows <- do.call(rbind, lapply(split(measures, list(measures$engine, measures$n), drop = TRUE),
+    function(d) data.frame(
+      engine = d$engine[[1]],
+      agents = d$n[[1]],
+      order = median(d$peak),
+      baseline = cell(d$baseline),
+      footprint = cell(d$footprint),
+      simulation = cell(d$simulation),
+      peak = cell(d$peak)
+    )))
+  rows <- rows[order(rows$agents, rows$order), setdiff(names(rows), "order")]
+  knitr::kable(rows, col.names = c(
+    "Engine", "Agents", "Baseline (MiB)", "Model footprint (MiB)",
+    "Simulation memory (MiB)", "Overall peak (MiB)"
+  ), row.names = FALSE, align = "llrrrr")
+}
+
+plot_memory <- function(bench) {
+  measures <- memory_measures(bench$full)
+  if (!nrow(measures)) return(NULL)
+  # Reversed so the first engine_levels entry lands at the top row.
+  measures$engine <- factor(measures$engine, levels = rev(engine_levels))
+  measures$agents <- agents_factor(measures$n)
+  ggplot2::ggplot(measures, ggplot2::aes(peak, engine, fill = engine)) +
+    ggplot2::geom_boxplot(outlier.shape = NA, alpha = 0.7, width = 0.6) +
+    ggplot2::geom_jitter(width = 0, height = 0.15, alpha = 0.4, size = 1) +
+    ggplot2::facet_wrap(~ agents, ncol = 1) +
+    ggplot2::scale_x_log10() +
+    ggplot2::labs(
+      x = "Overall peak resident memory (MiB, log scale)",
+      y = NULL,
+      caption = "Note: dots show individual replicates"
+    ) +
+    ggplot2::theme_minimal(base_size = 14) +
+    ggplot2::theme(legend.position = "none")
+}
+
 #' Median time of each phase of a run. Reading the edge list is benchmark
 #' plumbing whose cost depends on the language, not the engine, so it is shown
 #' but left out of "build + simulate", the time to a first result once the

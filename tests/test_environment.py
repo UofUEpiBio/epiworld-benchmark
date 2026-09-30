@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 
 import run
 from run import TaskOutcome, merge_into_record, write_environment_records
@@ -108,25 +110,41 @@ def test_merge_into_record_adds_fields_and_keeps_the_rest(tmp_path) -> None:
     assert json.loads(path.read_text()) == {
         "status": "ok", "fingerprint": "f", "simulate_seconds": 0.25, "environment_id": "e",
     }
-    assert run.valid_cache(path, "f")
+    assert run.valid_cache(path, "f", None)
 
 
-def test_run_task_tags_the_record_its_runner_wrote(tmp_path, monkeypatch) -> None:
+def test_run_task_completes_the_record_its_runner_wrote(tmp_path, monkeypatch) -> None:
     output = tmp_path / "replicate-001.json"
-
-    def fake_runner(command, **kwargs):
-        output.write_text(json.dumps({"status": "ok", "fingerprint": "f"}))
-        return run.subprocess.CompletedProcess(command, 0, stdout="done\n", stderr="")
-
-    monkeypatch.setattr(run.subprocess, "run", fake_runner)
-    monkeypatch.setattr(run, "task_command", lambda task: ["runner"])
+    # A real child process, so wait4() runs: it holds about 64 MB and writes
+    # its record as a runner would.
+    script = (
+        "import json, sys; block = bytearray(64 * 2**20); block[::4096] = b'x' * len(block[::4096]); "
+        f"json.dump({{'status': 'ok', 'fingerprint': 'f'}}, open({str(output)!r}, 'w')); print('done')"
+    )
+    monkeypatch.setattr(run, "task_command", lambda task: [sys.executable, "-c", script])
     task = {
         "scenario": "scenario_00", "engine": "ixa", "n": 10, "replicate": 1,
         "output": str(output), "fingerprint": "f", "environment_id": "e",
     }
-    result = run.run_task(task, {})
+    result = run.run_task(task, dict(os.environ))
     assert result.ok and result.message == "done" and result.scenario == "scenario_00"
-    assert json.loads(output.read_text())["environment_id"] == "e"
+    record = json.loads(output.read_text())
+    assert record["environment_id"] == "e"
+    assert record["format_version"] == run.RUNNER_FORMAT_VERSION
+    # In bytes on every platform.
+    assert 64 * 2**20 <= record["process_peak_rss_bytes"] < 2**31
+    assert run.valid_cache(output, "f")
+
+
+def test_run_task_reports_a_failed_runner(tmp_path, monkeypatch) -> None:
+    command = [sys.executable, "-c", "import sys; sys.exit('model diverged')"]
+    monkeypatch.setattr(run, "task_command", lambda task: command)
+    task = {
+        "scenario": "scenario_00", "engine": "ixa", "n": 10, "replicate": 1,
+        "output": str(tmp_path / "missing.json"), "fingerprint": "f", "environment_id": "e",
+    }
+    result = run.run_task(task, dict(os.environ))
+    assert not result.ok and result.message == "model diverged"
 
 
 def test_placeholder_cpu_model_falls_back_to_the_vendor(monkeypatch) -> None:

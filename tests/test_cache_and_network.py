@@ -31,11 +31,43 @@ def test_fingerprint_is_order_independent() -> None:
 
 def test_cache_requires_success_and_matching_fingerprint(tmp_path) -> None:
     path = tmp_path / "result.json"
-    path.write_text(json.dumps({"status": "ok", "fingerprint": "right"}))
+    current = {"format_version": run.RUNNER_FORMAT_VERSION}
+    path.write_text(json.dumps({"status": "ok", "fingerprint": "right"} | current))
     assert valid_cache(path, "right")
     assert not valid_cache(path, "wrong")
-    path.write_text(json.dumps({"status": "failed", "fingerprint": "right"}))
+    path.write_text(json.dumps({"status": "failed", "fingerprint": "right"} | current))
     assert not valid_cache(path, "right")
+
+
+def test_cache_rejects_records_in_an_older_format(tmp_path, monkeypatch) -> None:
+    """A published fingerprint must not bring back a record without memory data."""
+    path = tmp_path / "replicate-001.json"
+    path.write_text(json.dumps({"status": "ok", "fingerprint": "published"}))
+    assert not valid_cache(path, {"current", "published"})
+    path.write_text(json.dumps({"status": "ok", "fingerprint": "published", "format_version": 2}))
+    assert not valid_cache(path, {"current", "published"})
+    # A runner's own record, before the orchestrator completes it, is checked
+    # without the format.
+    assert valid_cache(path, "published", None)
+
+    # The same through compatible_fingerprints(), as a scenario that accepts
+    # published results sees it.
+    identity = {
+        "scenario": "scenario_00", "engine": "ixa", "engine_version": "3.1.0", "n": 10,
+        "days": 5, "replicate": 1, "seed": 1, "network_sha256": "x", "network_edges": 50,
+        "transmission_multiplier": 1.0, "format_version": run.RUNNER_FORMAT_VERSION,
+    }
+    key = (
+        "scenario_00", "ixa", "3.1.0", 10, 5, 1, 1, "x", 50, 1.0,
+    )
+    monkeypatch.setattr(run, "published_fingerprint_registry", lambda: {key: "published"})
+    expected = run.compatible_fingerprints(identity, {"cache": {"accept_published_results": True}})
+    assert "published" in expected
+    assert not valid_cache(path, expected)
+    path.write_text(json.dumps({
+        "status": "ok", "fingerprint": "published", "format_version": run.RUNNER_FORMAT_VERSION,
+    }))
+    assert valid_cache(path, expected)
 
 
 def test_network_cache_is_deterministic_and_verified(tmp_path) -> None:
@@ -137,6 +169,29 @@ def test_every_runner_records_the_edge_reading_time() -> None:
             runners / "agents.jl",
         ):
             assert "read_seconds" in path.read_text(), path
+
+
+def test_every_runner_records_memory_at_the_timing_boundaries() -> None:
+    fields = (
+        "rss_baseline_bytes", "rss_after_read_bytes", "rss_after_setup_bytes",
+        "peak_rss_setup_bytes", "peak_rss_simulate_bytes",
+    )
+    for scenario in discover_scenarios():
+        runners = ROOT / scenario / "runners"
+        for path in (
+            runners / "runner_common.py", runners / "epiworld.R", runners / "individual.R",
+            runners / "epiworld" / "main.cpp", runners / "ixa" / "src" / "main.rs",
+            runners / "agents.jl", runners / "run_FRED.py",
+        ):
+            source = path.read_text()
+            assert all(field in source for field in fields), path
+            if path.name != "run_FRED.py":
+                assert "/proc/self/clear_refs" in source, path
+        # Each Python engine resets the peak where its simulate timer starts.
+        for engine, script in PYTHON_RUNNERS.items():
+            if engine != "FRED":
+                source = (runners / script).read_text()
+                assert "start_simulate()" in source and "stop_simulate(started)" in source, script
 
 
 def test_r_engines_run_their_own_script() -> None:

@@ -12,7 +12,7 @@ from time import perf_counter
 
 import numpy as np
 
-from runner_common import STATES, main, output_summary
+from runner_common import STATES, main, output_summary, start_simulate, stop_simulate
 
 
 def discrete_transmission_probability(target_r0: float, degree: float, recovery: float) -> float:
@@ -163,9 +163,9 @@ def run_epydemic(args: argparse.Namespace, source: np.ndarray, target: np.ndarra
     process.setMaximumTime(float(args.days) + 1.0)
     dynamics = epydemic.SynchronousDynamics(process, graph)
     epydemic.rng.bit_generator.state = np.random.PCG64(args.seed).state
-    started = perf_counter()
+    started = start_simulate()
     result = dynamics.set({}).run(fatal=True)["results"]
-    elapsed = perf_counter() - started
+    elapsed = stop_simulate(started)
     # Extracting the outputs comes after the simulation and is timed apart.
     extract_started = perf_counter()
     tree, transitions = result["tree"], result["transitions"]

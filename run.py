@@ -32,7 +32,11 @@ CONFIG_PATH = ROOT / "config.toml"
 CACHE_DIR = ROOT / "cache"
 RESULTS_DIR = ROOT / "results"
 ENVIRONMENTS_DIR = RESULTS_DIR / "environments"
-RUNNER_FORMAT_VERSION = 2
+# Bump when the contents of a cache record change. Records carry it as
+# format_version, and valid_cache() rejects older ones: identity alone is not
+# enough, as accept_published_results matches published fingerprints without it.
+# Version 3 added the memory measures.
+RUNNER_FORMAT_VERSION = 3
 DIST_NAMES = {
     "covasim": "covasim", "EoN": "EoN", "epydemic": "epydemic", "epiworldpy": "epiworldpy",
     "starsim": "starsim",
@@ -263,15 +267,53 @@ def fingerprint(payload: dict[str, Any]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def valid_cache(path: Path, expected_fingerprint: str | set[str]) -> bool:
+def valid_cache(
+    path: Path,
+    expected_fingerprint: str | set[str],
+    format_version: int | None = RUNNER_FORMAT_VERSION,
+) -> bool:
+    """A successful record with a matching fingerprint and, unless
+    `format_version` is None (a runner's record before the orchestrator adds
+    its fields), the current record format."""
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
         expected = (
             {expected_fingerprint} if isinstance(expected_fingerprint, str) else expected_fingerprint
         )
-        return value.get("status") == "ok" and value.get("fingerprint") in expected
+        return (
+            value.get("status") == "ok"
+            and value.get("fingerprint") in expected
+            and (format_version is None or value.get("format_version") == format_version)
+        )
     except (OSError, ValueError):
         return False
+
+
+def maxrss_bytes(ru_maxrss: int) -> int:
+    """ru_maxrss is in kilobytes on Linux and in bytes on macOS."""
+    return ru_maxrss * (1 if sys.platform == "darwin" else 1024)
+
+
+def run_measured(
+    command: list[str], **kwargs: Any
+) -> tuple[subprocess.CompletedProcess, int]:
+    """subprocess.run(..., text=True, capture_output=True), plus the peak RSS
+    in bytes of the child and every descendant it waited for, from wait4()."""
+    with tempfile.TemporaryFile("w+") as out, tempfile.TemporaryFile("w+") as err:
+        process = subprocess.Popen(command, stdout=out, stderr=err, text=True, **kwargs)
+        try:
+            _, status, usage = os.wait4(process.pid, 0)
+        except BaseException:
+            process.kill()
+            process.wait()
+            raise
+        process.returncode = os.waitstatus_to_exitcode(status)
+        out.seek(0)
+        err.seek(0)
+        completed = subprocess.CompletedProcess(
+            command, process.returncode, out.read(), err.read()
+        )
+    return completed, maxrss_bytes(usage.ru_maxrss)
 
 
 def resolve_workers(cli_value: int | None, resources: dict[str, Any]) -> int:
@@ -343,21 +385,26 @@ class TaskOutcome(NamedTuple):
 def run_task(task: dict[str, Any], env: dict[str, str]) -> TaskOutcome:
     label = f"{task['scenario']} {task['engine']} n={task['n']} replicate={task['replicate']}"
     started = utc_now()
-    completed = subprocess.run(
-        task_command(task), cwd=ROOT, env=env, text=True, capture_output=True
-    )
+    completed, peak_rss = run_measured(task_command(task), cwd=ROOT, env=env)
     output = Path(task["output"])
-    ok = completed.returncode == 0 and valid_cache(output, task["fingerprint"])
+    ok = completed.returncode == 0 and valid_cache(output, task["fingerprint"], None)
     message = completed.stdout.strip()
     if not ok:
         message = completed.stderr.strip() or message or "runner produced no diagnostic"
     else:
-        # The runner does not know where it runs; the orchestrator tags the
-        # record it wrote with the environment of this invocation.
+        # The runner does not know where it runs, nor its own peak memory as
+        # the operating system saw it; the orchestrator adds both to its record.
+        # The runners reset their high-water mark when the simulate timer
+        # starts, which lowers ru_maxrss too, so this peak is an independent
+        # check of peak_rss_simulate_bytes, not of the whole run.
         try:
-            merge_into_record(output, {"environment_id": task["environment_id"]})
+            merge_into_record(output, {
+                "environment_id": task["environment_id"],
+                "format_version": RUNNER_FORMAT_VERSION,
+                "process_peak_rss_bytes": peak_rss,
+            })
         except (OSError, ValueError) as error:
-            ok, message = False, f"could not tag {output} with its environment: {error}"
+            ok, message = False, f"could not complete {output}: {error}"
     return TaskOutcome(label, ok, message, task["scenario"], started, utc_now())
 
 
@@ -445,6 +492,8 @@ def collect_results() -> int:
         "vaccinated", "vaccine_protected",
         "extract_seconds", "transmissions",
         "transitions_se", "transitions_ei", "transitions_ih", "transitions_ir", "transitions_hr",
+        "rss_baseline_bytes", "rss_after_read_bytes", "rss_after_setup_bytes",
+        "peak_rss_setup_bytes", "peak_rss_simulate_bytes", "process_peak_rss_bytes",
         "fingerprint", "environment_id", "timestamp_utc",
     ]
     with output.open("w", encoding="utf-8", newline="") as stream:
