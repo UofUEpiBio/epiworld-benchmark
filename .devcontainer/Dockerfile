@@ -147,5 +147,10 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends time \
     && rm -rf /var/lib/apt/lists/*
 
+# Julia installed and precompiled the Agents.jl environment under root's home;
+# pin the depot so it is found whatever HOME a runner sets (GitHub Actions job
+# containers use /github/home).
+ENV JULIA_DEPOT_PATH=/root/.julia
+
 WORKDIR /workspace
 CMD ["bash"]

@@ -1,7 +1,8 @@
-# Tests that need no engine installed beyond what each job sets up. The R
-# package check and the benchmark itself need the container image
-# (.devcontainer/Dockerfile); run `make container-check` and
-# `make container-smoke` for those.
+# Checks and a smoke run of every engine, inside the benchmark's own container
+# image (.devcontainer/Dockerfile), so CI tests the environment the published
+# results come from. The image is keyed on the files the Dockerfile copies in:
+# it is built and pushed to ghcr.io only when one of them changes, and pulled
+# otherwise. Runs on arm64, like the published results.
 name: Tests
 
 on:
@@ -17,54 +18,76 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  IMAGE: ghcr.io/uofuepibio/epiworld-benchmark
+
 jobs:
-  python:
-    name: pytest
-    runs-on: ubuntu-24.04
+  image:
+    name: container image
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      ref: ${{ steps.tag.outputs.ref }}
     steps:
       - uses: actions/checkout@v4
-      # GNU time, so the process-peak tests run instead of being skipped.
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends time
-      - uses: astral-sh/setup-uv@v6
+      - id: tag
+        # Keep this list in step with the Dockerfile's COPY lines. git's blob
+        # ids make the hash independent of checkout details.
+        run: |
+          inputs=$(git ls-files -s .devcontainer/Dockerfile pyproject.toml uv.lock \
+            julia/Project.toml julia/Manifest.toml \
+            scenario_00/runners/ixa/Cargo.toml scenario_00/runners/ixa/Cargo.lock \
+            scenario_00/runners/ixa/rust-toolchain.toml | sha256sum | cut -c1-16)
+          echo "ref=$IMAGE:inputs-$inputs" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
         with:
-          python-version: "3.12"
-          enable-cache: true
-      - run: uv sync --frozen
-      # As `make check` does: `python -m` puts the repository root on sys.path.
-      - run: uv run --frozen python -m pytest -ra
-
-  rust:
-    name: ixa runners (cargo test)
-    runs-on: ubuntu-24.04
-    env:
-      # Every scenario's crate pins the same dependencies; one target
-      # directory builds them once.
-      CARGO_TARGET_DIR: ${{ github.workspace }}/target
-    steps:
-      - uses: actions/checkout@v4
-      # rustup installs the toolchain pinned in each crate's rust-toolchain.toml.
-      - uses: actions/cache@v4
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: exists
+        run: |
+          if docker manifest inspect "${{ steps.tag.outputs.ref }}" > /dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+      # The image is about 5 GB; the runner's preinstalled SDKs are not needed.
+      - if: steps.exists.outputs.found == 'false'
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+      - if: steps.exists.outputs.found == 'false'
+        uses: docker/setup-buildx-action@v3
+      - if: steps.exists.outputs.found == 'false'
+        uses: docker/build-push-action@v6
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: cargo-${{ runner.os }}-${{ hashFiles('scenario_*/runners/ixa/Cargo.lock', 'scenario_*/runners/ixa/rust-toolchain.toml') }}
-      - run: |
-          for manifest in scenario_*/runners/ixa/Cargo.toml; do
-            cargo test --release --locked --manifest-path "$manifest"
-          done
+          context: .
+          file: .devcontainer/Dockerfile
+          push: true
+          tags: ${{ steps.tag.outputs.ref }}
+          # Layers from earlier builds, so a change near the end of the
+          # Dockerfile rebuilds only what follows it.
+          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+      - if: github.ref == 'refs/heads/main'
+        run: docker buildx imagetools create --tag "$IMAGE:latest" "${{ steps.tag.outputs.ref }}"
 
-  cpp:
-    name: epiworld runners (C++ build)
-    runs-on: ubuntu-24.04
+  check:
+    name: make check and smoke (container)
+    needs: image
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ needs.image.outputs.ref }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends zlib1g-dev
-      # Downloads the pinned epiworld headers into .deps/ and compiles every
-      # scenario's runner with the flags the benchmark uses.
-      - run: make epiworld-runners
-      - run: |
-          for binary in scenario_*/runners/epiworld/build/epiworld-scenario-*; do
-            echo "$binary: $("$binary" --version)"
-          done
+      # What `make container-check container-smoke` runs locally: builds every
+      # scenario's ixa and epiworld runners, runs pytest, the ixa tests, and
+      # the R package check, then one small replicate of every engine in
+      # every scenario.
+      - run: make setup check smoke
