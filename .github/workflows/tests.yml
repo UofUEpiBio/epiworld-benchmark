@@ -30,7 +30,8 @@ jobs:
           python-version: "3.12"
           enable-cache: true
       - run: uv sync --frozen
-      - run: uv run --frozen pytest -ra
+      # As `make check` does: `python -m` puts the repository root on sys.path.
+      - run: uv run --frozen python -m pytest -ra
 
   rust:
     name: ixa runners (cargo test)
