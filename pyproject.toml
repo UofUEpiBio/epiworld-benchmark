@@ -7,9 +7,9 @@ dependencies = [
   "covasim==3.1.8",
   "EoN==1.92",
   "epydemic==1.14.1",
-  # epiworldpy main with the vendored epiworld headers that build networks
-  # with a counting sort (UofUEpiBio/epiworldpy#22); no release includes it yet.
-  "epiworldpy @ git+https://github.com/UofUEpiBio/epiworldpy@07331516fb96a06b853ab6d78e0556201aadb89a",
+  # epiworldpy main at epiworld 0.17.1 (UofUEpiBio/epiworldpy#27); no release
+  # includes it yet.
+  "epiworldpy @ git+https://github.com/UofUEpiBio/epiworldpy@c24b4f9e255fdb062d8cf338c1e958dd0ec49790",
   "networkx==3.6.1",
   "numpy==2.2.6",
   "scipy==1.15.3",

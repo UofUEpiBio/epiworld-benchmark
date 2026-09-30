@@ -11,8 +11,8 @@ IXA_MANIFESTS := $(sort $(wildcard scenario_*/runners/ixa/Cargo.toml))
 # EPIWORLD_SHA in the Dockerfile. The flags are the ones epiworldR is compiled with (R's -O2
 # -DNDEBUG, and double rather than epiworld's default float), so the C++ and R
 # runners differ only in the R layer.
-# epiworld master after the counting-sort network build (UofUEpiBio/epiworld#274).
-EPIWORLD_REF := a1ff20a2e347169bb260440c4a9c26918efda7e0
+# epiworld master at 0.17.1 (the automatic push/pull cost model, UofUEpiBio/epiworld#281).
+EPIWORLD_REF := 04c4ad866b1866ca88332a888d941b395c96b8a0
 EPIWORLD_INCLUDE ?= .deps/$(EPIWORLD_REF)/include
 EPIWORLD_SOURCES := $(sort $(wildcard scenario_*/runners/epiworld/main.cpp))
 EPIWORLD_CXXFLAGS := -std=c++17 -O2 -DNDEBUG -Depiworld_double=double

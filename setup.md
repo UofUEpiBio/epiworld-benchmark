@@ -3,10 +3,10 @@
 This folder contains a reproducible, resumable benchmark of eleven epidemic
 simulation engines across several scenarios of increasing complexity:
 
-- **epiworld 0.17.0** (C++), the header-only library, using a custom
+- **epiworld 0.17.1** (C++), the header-only library, using a custom
   discrete-time SEIRH model built from its state update functions;
-- **epiworldR 0.17.0.0** (R wrapper of epiworld), building the same model;
-- **epiworldpy 0.17.0-1** (Python wrapper of epiworld), building the same
+- **epiworldR 0.17.1** (R wrapper of epiworld), building the same model;
+- **epiworldpy 0.17.1** (Python wrapper of epiworld), building the same
   model;
 - **Covasim 3.1.8** (Python), using its native disease progression and severe
   state as the hospitalization proxy;
@@ -28,13 +28,14 @@ simulation engines across several scenarios of increasing complexity:
 - **Agents.jl 7.0.4** (Julia), using a `StandardABM` with a daily step over
   an adjacency list written for the benchmark.
 
-The three epiworld packages are pinned to commits after the counting-sort network build
-([UofUEpiBio/epiworld#274](https://github.com/UofUEpiBio/epiworld/issues/274)),
-which no release includes yet and which still report version 0.17.0: epiworld
-`a1ff20a` on master, epiworldR `dc3758c` on main (in `.devcontainer/Dockerfile`),
-and epiworldpy `0733151` on main (in `pyproject.toml`). Recorded versions do
-not show the commit for epiworld and epiworldR, so results from an older
-commit have to be cleared from the cache by hand when the pins change.
+The three epiworld packages are pinned to commits on their default branches at
+epiworld 0.17.1, which no release includes yet: epiworld `04c4ad8` on master,
+epiworldR `fca60f3` on main (in `.devcontainer/Dockerfile`), and epiworldpy
+`c24b4f9` on main (in `pyproject.toml`). Each engine's recorded version ends
+in the commit it was built from (for example `0.17.1+g04c4ad8`), so moving a
+pin invalidates that engine's results even when the version number stays the
+same. Natively, epiworldR's commit is unknown and its version is recorded
+without it.
 
 Each scenario lives in its own `scenario_NN/` folder with its report
 (`README.qmd`, rendered to `README.md`), its parameters (`scenario.toml`), and
@@ -57,8 +58,8 @@ to grow linearly with population size.
 ## Quick start
 
 The benchmark is meant to run inside the container defined in
-`.devcontainer/`. It pins R 4.5.1 with epiworldR 0.17.0.0 and individual
-0.1.19, epiworld's 0.17.0 headers (both epiworld pins at the commits above),
+`.devcontainer/`. It pins R 4.5.1 with epiworldR 0.17.1 and individual
+0.1.19, epiworld's 0.17.1 headers (both epiworld pins at the commits above),
 Python 3.12 via uv (with epiworldpy and Starsim), Rust 1.98.0,
 and Quarto 1.10.18, so every engine is built and timed on the same
 toolchain. The only host prerequisite is [podman](https://podman.io/) (or
