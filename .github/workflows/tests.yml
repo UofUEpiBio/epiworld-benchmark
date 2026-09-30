@@ -1,0 +1,69 @@
+# Tests that need no engine installed beyond what each job sets up. The R
+# package check and the benchmark itself need the container image
+# (.devcontainer/Dockerfile); run `make container-check` and
+# `make container-smoke` for those.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: pytest
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      # GNU time, so the process-peak tests run instead of being skipped.
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends time
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: uv run --frozen pytest -ra
+
+  rust:
+    name: ixa runners (cargo test)
+    runs-on: ubuntu-24.04
+    env:
+      # Every scenario's crate pins the same dependencies; one target
+      # directory builds them once.
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+    steps:
+      - uses: actions/checkout@v4
+      # rustup installs the toolchain pinned in each crate's rust-toolchain.toml.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('scenario_*/runners/ixa/Cargo.lock', 'scenario_*/runners/ixa/rust-toolchain.toml') }}
+      - run: |
+          for manifest in scenario_*/runners/ixa/Cargo.toml; do
+            cargo test --release --locked --manifest-path "$manifest"
+          done
+
+  cpp:
+    name: epiworld runners (C++ build)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends zlib1g-dev
+      # Downloads the pinned epiworld headers into .deps/ and compiles every
+      # scenario's runner with the flags the benchmark uses.
+      - run: make epiworld-runners
+      - run: |
+          for binary in scenario_*/runners/epiworld/build/epiworld-scenario-*; do
+            echo "$binary: $("$binary" --version)"
+          done

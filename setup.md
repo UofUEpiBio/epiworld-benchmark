@@ -81,6 +81,12 @@ image and never touch a host `.venv/` or `target/`. Set `SCENARIOS` to run
 only some scenarios, for example `SCENARIOS=scenario_01 make
 container-benchmark`.
 
+Every pull request and push to `main` runs the tests on GitHub Actions
+(`.github/workflows/tests.yml`): pytest, the ixa runners' `cargo test`, and a
+build of the epiworld (C++) runners. The R package check and the models
+themselves need the image, so run `make container-check` and
+`make container-smoke` before merging a change to the runners.
+
 The same image is a development container: open the folder in VS Code (with
 `"dev.containers.dockerPath": "podman"`) or another devcontainer client, and
 `make setup`, `make check`, `make benchmark`, and so on work unchanged in its
