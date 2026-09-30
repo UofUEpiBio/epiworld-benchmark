@@ -21,7 +21,7 @@ from run import (
     task_command,
     valid_cache,
 )
-from scripts.generate_network import ensure_network, sha256_file
+from scripts.generate_network import ensure_network, sha256_edges, sha256_file
 
 
 def test_fingerprint_is_order_independent() -> None:
@@ -77,7 +77,21 @@ def test_network_cache_is_deterministic_and_verified(tmp_path) -> None:
     assert first == second
     assert first["edges"] == 500
     assert first["mean_degree_observed"] == 10
-    assert first["sha256"] == sha256_file(first_path)
+    assert first["sha256"] == sha256_edges(first_path)
+
+
+def test_network_identity_does_not_depend_on_the_compressor(tmp_path) -> None:
+    """Another zlib build compresses the same edges to different bytes; the
+    network, and so every fingerprint, must keep its checksum."""
+    import gzip
+
+    path, metadata = ensure_network(tmp_path, 100, 10, 0.05, 42)
+    edges = gzip.decompress(path.read_bytes())
+    path.write_bytes(gzip.compress(edges, compresslevel=1, mtime=0))
+    assert sha256_file(path) != metadata["sha256"]
+    assert sha256_edges(path) == metadata["sha256"]
+    # The cached network is still accepted, not regenerated.
+    assert ensure_network(tmp_path, 100, 10, 0.05, 42)[1] == metadata
 
 
 def base_task(**overrides) -> dict:
