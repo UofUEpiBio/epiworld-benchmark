@@ -155,6 +155,20 @@ that executes at least one replicate of a scenario writes
 - when the run started and finished, and how many replicates it executed,
   found in the cache, and failed.
 
+The container cannot see the host's CPU model or its own image ID, so
+`make container-TARGET` reads both on the host and passes them in as
+`BENCHMARK_HOST_CPU` (from `sysctl -n machdep.cpu.brand_string` on macOS, or
+the `model name` in `/proc/cpuinfo` on Linux) and `BENCHMARK_IMAGE_ID`. A
+container started any other way, with `podman run`, `docker run`, or as a
+devcontainer, records both as `null`. Inside a devcontainer on macOS, the
+record then names only the CPU's vendor ("Apple (model not reported)"), not
+the model the timings ran on; on a Linux host, the container's own
+`cpu_model` is still the real one. Both fields are part of `environment_id`, so the
+replicates of such a run also get a different id from those run through
+`make`, and the scenario report shows its mixed-environment warning. Run
+published benchmarks through `make container-TARGET`, or pass both variables
+yourself.
+
 A field that cannot be read is `null`. `environment_id` is a SHA-256 of the
 hardware, OS, image, toolchains, pins, and engine versions, so two runs on the
 same setup share it whatever their dates, commit, or concurrency. It is stored in each
