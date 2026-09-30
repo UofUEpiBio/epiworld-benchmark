@@ -112,6 +112,9 @@ clean-cache:
 container-image:
 	$(CONTAINER) build -t $(IMAGE) -f .devcontainer/Dockerfile .
 
+# BENCHMARK_IMAGE_ID identifies the image in each scenario's environment record.
 container-%:
 	$(CONTAINER) run --rm -v "$(CURDIR)":/workspace -w /workspace \
-		-e N_THREADS -e SCENARIOS $(IMAGE) make setup $*
+		-e N_THREADS -e SCENARIOS \
+		-e BENCHMARK_IMAGE_ID=$$($(CONTAINER) image inspect -f '{{.Id}}' $(IMAGE)) \
+		$(IMAGE) make setup $*

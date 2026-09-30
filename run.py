@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timezone
 from functools import lru_cache
 import hashlib
 import importlib.metadata
@@ -20,8 +21,9 @@ import subprocess
 import sys
 import tempfile
 import tomllib
-from typing import Any
+from typing import Any, NamedTuple
 
+from scripts.environment import RUNNER_ENV, collect_environment
 from scripts.generate_network import ensure_network_from_config
 
 
@@ -29,6 +31,7 @@ ROOT = Path(__file__).resolve().parent
 CONFIG_PATH = ROOT / "config.toml"
 CACHE_DIR = ROOT / "cache"
 RESULTS_DIR = ROOT / "results"
+ENVIRONMENTS_DIR = RESULTS_DIR / "environments"
 RUNNER_FORMAT_VERSION = 2
 DIST_NAMES = {
     "covasim": "covasim", "EoN": "EoN", "epydemic": "epydemic", "epiworldpy": "epiworldpy",
@@ -118,6 +121,16 @@ def atomic_json(path: Path, value: dict[str, Any]) -> None:
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
+
+
+def merge_into_record(path: Path, fields: dict[str, Any]) -> None:
+    """Add `fields` to a cached replicate record, which its runner has written."""
+    record = json.loads(path.read_text(encoding="utf-8"))
+    atomic_json(path, record | fields)
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 def source_paths(scenario: str) -> list[Path]:
@@ -318,15 +331,60 @@ def task_command(task: dict[str, Any]) -> list[str]:
     return [sys.executable, str(runner_dir / PYTHON_RUNNERS[task["engine"]]), *common]
 
 
-def run_task(task: dict[str, Any], env: dict[str, str]) -> tuple[str, bool, str]:
+class TaskOutcome(NamedTuple):
+    label: str
+    ok: bool
+    message: str
+    scenario: str
+    started_utc: str
+    finished_utc: str
+
+
+def run_task(task: dict[str, Any], env: dict[str, str]) -> TaskOutcome:
     label = f"{task['scenario']} {task['engine']} n={task['n']} replicate={task['replicate']}"
+    started = utc_now()
     completed = subprocess.run(
         task_command(task), cwd=ROOT, env=env, text=True, capture_output=True
     )
-    if completed.returncode == 0 and valid_cache(Path(task["output"]), task["fingerprint"]):
-        return label, True, completed.stdout.strip()
-    message = completed.stderr.strip() or completed.stdout.strip() or "runner produced no diagnostic"
-    return label, False, message
+    output = Path(task["output"])
+    ok = completed.returncode == 0 and valid_cache(output, task["fingerprint"])
+    message = completed.stdout.strip()
+    if not ok:
+        message = completed.stderr.strip() or message or "runner produced no diagnostic"
+    else:
+        # The runner does not know where it runs; the orchestrator tags the
+        # record it wrote with the environment of this invocation.
+        try:
+            merge_into_record(output, {"environment_id": task["environment_id"]})
+        except (OSError, ValueError) as error:
+            ok, message = False, f"could not tag {output} with its environment: {error}"
+    return TaskOutcome(label, ok, message, task["scenario"], started, utc_now())
+
+
+def write_environment_records(
+    environment: dict[str, Any],
+    outcomes: list[TaskOutcome],
+    cached: dict[str, int],
+    directory: Path,
+) -> list[str]:
+    """One record per scenario that executed a task, in `directory`.
+
+    A scenario whose replicates were all cached keeps the record of the run
+    that produced them. Returns the scenarios written.
+    """
+    written = []
+    for scenario in sorted({outcome.scenario for outcome in outcomes}):
+        own = [outcome for outcome in outcomes if outcome.scenario == scenario]
+        atomic_json(directory / f"{scenario}.json", environment | {
+            "scenario": scenario,
+            "started_utc": min(outcome.started_utc for outcome in own),
+            "finished_utc": max(outcome.finished_utc for outcome in own),
+            "executed": len(own),
+            "failures": sum(not outcome.ok for outcome in own),
+            "cached": cached.get(scenario, 0),
+        })
+        written.append(scenario)
+    return written
 
 
 def write_daily_series(records: list[dict[str, Any]]) -> None:
@@ -387,7 +445,7 @@ def collect_results() -> int:
         "vaccinated", "vaccine_protected",
         "extract_seconds", "transmissions",
         "transitions_se", "transitions_ei", "transitions_ih", "transitions_ir", "transitions_hr",
-        "fingerprint", "timestamp_utc",
+        "fingerprint", "environment_id", "timestamp_utc",
     ]
     with output.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=fields, extrasaction="ignore")
@@ -562,9 +620,10 @@ def main() -> int:
     if "FRED" in engines and not fred_binary().is_file():
         raise SystemExit(f"FRED runner not built at {fred_binary()}; run `make setup`")
     versions = engine_versions(engines, scenarios)
+    environment = collect_environment(versions, workers, args.profile)
     host_platform = f"{platform.system()}-{platform.machine()}"
     tasks: list[dict[str, Any]] = []
-    cached = 0
+    cached: dict[str, int] = {}
 
     for n, size_index, size_scenarios, replicate_count in plan:
         for scenario in size_scenarios:
@@ -611,9 +670,10 @@ def main() -> int:
                     )
                     expected_fingerprints = compatible_fingerprints(identity, scenario_config)
                     if not args.force and valid_cache(output, expected_fingerprints):
-                        cached += 1
+                        cached[scenario] = cached.get(scenario, 0) + 1
                         continue
                     tasks.append(identity | {
+                        "environment_id": environment["environment_id"],
                         "network": str(edge_path),
                         "output": str(output),
                         "fingerprint": task_fingerprint,
@@ -622,7 +682,7 @@ def main() -> int:
     print(
         f"Profile={args.profile}; scenarios={','.join(scenarios)}; "
         f"engines={','.join(engines)}; "
-        f"workers={workers}; cached={cached}; pending={len(tasks)}",
+        f"workers={workers}; cached={sum(cached.values())}; pending={len(tasks)}",
         flush=True,
     )
     if workers > 1 and tasks:
@@ -640,14 +700,7 @@ def main() -> int:
         return 0
 
     env = os.environ.copy()
-    env.update({
-        "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1",
-        "MKL_NUM_THREADS": "1", "VECLIB_MAXIMUM_THREADS": "1",
-        "NUMEXPR_NUM_THREADS": "1", "NUMBA_NUM_THREADS": "1",
-        "RCPP_PARALLEL_NUM_THREADS": "1", "PYTHONHASHSEED": "0",
-        # Starsim otherwise rebuilds matplotlib's font cache on import.
-        "STARSIM_INSTALL_FONTS": "0",
-    })
+    env.update(RUNNER_ENV)
     # A scenario's [design] can cap concurrency for its own runs in the full
     # profile: scenario_03's million-agent runs compete for memory when
     # several run at once, so they run one at a time.
@@ -656,30 +709,34 @@ def main() -> int:
         design = designs.get(task["scenario"], {}) if args.profile == "full" else {}
         groups.setdefault(min(workers, int(design.get("workers", workers))), []).append(task)
     failures: list[tuple[str, str]] = []
+    outcomes: list[TaskOutcome] = []
     index = 0
     for group_workers, group in groups.items():
         with ThreadPoolExecutor(max_workers=group_workers) as pool:
             futures = {pool.submit(run_task, task, env): task for task in group}
             for future in as_completed(futures):
                 index += 1
-                label, ok, message = future.result()
-                print(f"[{index}/{len(tasks)}] {'ok' if ok else 'FAILED'} {label}", flush=True)
-                if not ok:
-                    failures.append((label, message))
+                outcome = future.result()
+                outcomes.append(outcome)
+                print(
+                    f"[{index}/{len(tasks)}] {'ok' if outcome.ok else 'FAILED'} {outcome.label}",
+                    flush=True,
+                )
+                if not outcome.ok:
+                    failures.append((outcome.label, outcome.message))
 
     count = collect_results()
+    write_environment_records(environment, outcomes, cached, ENVIRONMENTS_DIR)
     manifest = {
         "profile": args.profile,
         "requested_scenarios": scenarios,
         "requested_engines": engines,
-        "cached_before_run": cached,
+        "cached_before_run": sum(cached.values()),
         "executed": len(tasks),
         "failures": len(failures),
         "result_rows_available": count,
         "workers": workers,
         "python": platform.python_version(),
-        "platform": platform.platform(),
-        "engine_versions": versions,
     }
     atomic_json(RESULTS_DIR / "run-manifest.json", manifest)
     if failures:

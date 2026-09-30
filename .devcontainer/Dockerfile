@@ -6,7 +6,8 @@ FROM docker.io/rocker/r-ver:4.5.1
 
 # Each ARG is declared just before the step that uses it: a changed ARG
 # invalidates the build cache from its declaration on, so bumping one package
-# rebuilds only the layers after it.
+# rebuilds only the layers after it. The pinned commits are also ENV, so
+# run.py can record them (scripts/environment.py).
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -79,6 +80,7 @@ RUN mkdir -p ixa/src && echo 'fn main() {}' > ixa/src/main.rs \
 # installed from its GitHub release, pinned to the v0.1.19 tag's commit. It
 # links against testthat's C++ headers, so testthat is needed to build it.
 ARG INDIVIDUAL_SHA=50524f239e965d38b40f178290262760f252fc60
+ENV INDIVIDUAL_SHA=${INDIVIDUAL_SHA}
 RUN Rscript -e 'install.packages(c("R6", "Rcpp", "testthat"), Ncpus = parallel::detectCores())' \
     && curl -fsSL "https://github.com/mrc-ide/individual/archive/${INDIVIDUAL_SHA}.tar.gz" -o /tmp/individual.tar.gz \
     && R CMD INSTALL /tmp/individual.tar.gz \
@@ -90,6 +92,7 @@ RUN Rscript -e 'install.packages(c("R6", "Rcpp", "testthat"), Ncpus = parallel::
 # network build (UofUEpiBio/epiworld#274), which still report version 0.17.0.
 # epiworldpy is pinned in pyproject.toml above.
 ARG EPIWORLDR_SHA=dc3758c9212baca629eaa007775fd973345e8957
+ENV EPIWORLDR_SHA=${EPIWORLDR_SHA}
 RUN curl -fsSL "https://github.com/UofUEpiBio/epiworldR/archive/${EPIWORLDR_SHA}.tar.gz" -o /tmp/epiworldR.tar.gz \
     && R CMD INSTALL /tmp/epiworldR.tar.gz \
     && rm /tmp/epiworldR.tar.gz \
@@ -99,7 +102,8 @@ RUN curl -fsSL "https://github.com/UofUEpiBio/epiworldR/archive/${EPIWORLDR_SHA}
 # header-only; each scenario's runner is compiled by `make setup`. Keep the
 # commit in step with EPIWORLD_REF in the Makefile.
 ARG EPIWORLD_SHA=a1ff20a2e347169bb260440c4a9c26918efda7e0
-ENV EPIWORLD_INCLUDE=/opt/epiworld/include \
+ENV EPIWORLD_SHA=${EPIWORLD_SHA} \
+    EPIWORLD_INCLUDE=/opt/epiworld/include \
     EPIWORLD_BUILD_DIR=/opt/epiworld-build
 RUN mkdir -p /opt/epiworld \
     && curl -fsSL "https://github.com/UofUEpiBio/epiworld/archive/${EPIWORLD_SHA}.tar.gz" \
@@ -119,7 +123,8 @@ RUN mkdir -p /opt/epiworld \
 # run; glibc aborts on the corrupted heap at 200,000 agents, so the array gets
 # one more entry. Keep this patch in step with the Makefile's.
 ARG FRED_SHA=bd25f048f8e390ff697bdfa83a0bd3c2e19d6046
-ENV FRED_HOME=/opt/fred
+ENV FRED_SHA=${FRED_SHA} \
+    FRED_HOME=/opt/fred
 RUN mkdir -p /opt/fred \
     && curl -fsSL "https://github.com/PublicHealthDynamicsLab/FRED/archive/${FRED_SHA}.tar.gz" \
         | tar -xz -C /opt/fred --strip-components=1 \
