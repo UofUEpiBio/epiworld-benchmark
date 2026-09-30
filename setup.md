@@ -130,6 +130,41 @@ successful cached records after each invocation. The report filters them to the 
 sizes and 100 days; `results/scenarios.json` records each scenario's sizes and
 replicate counts.
 
+## Environment records
+
+Timings only mean something next to the machine that produced them, so a run
+that executes at least one replicate of a scenario writes
+`results/environments/<scenario>.json` (via `scripts/environment.py`). It holds:
+
+- hardware: CPU model, logical and physical cores, total memory, and the cgroup
+  CPU and memory limits of the container, if any;
+- OS: platform, kernel, architecture, and whether it runs in a container;
+- the container image ID (`make container-TARGET` passes it as
+  `BENCHMARK_IMAGE_ID`; `null` natively);
+- toolchain versions: Python, R, Julia, Rust, the C++ compiler, and Quarto;
+- the pinned commits of epiworld, epiworldR, FRED, and individual (the image
+  records them as environment variables; a native run reads epiworld's and
+  FRED's from `.deps/`, and epiworldR's and individual's are `null`);
+- the engine versions, this checkout's commit and whether it has uncommitted
+  changes (files under `results/` are ignored), the profile, the harness
+  concurrency, and the thread variables set for the runners;
+- when the run started and finished, and how many replicates it executed,
+  found in the cache, and failed.
+
+A field that cannot be read is `null`. `environment_id` is a SHA-256 of the
+hardware, OS, image, toolchains, pins, and engine versions, so two runs on the
+same setup share it whatever their dates, commit, or concurrency. It is stored in each
+replicate's cache record and appears as a column of `results/results.csv`; a
+scenario report warns when its replicates carry more than one id. The id covers
+the engine versions of the invocation, so a run restricted with `--engines` gets
+a different one from a full run. Replicates cached before ids were recorded have
+none.
+
+A scenario whose replicates were all cached keeps its previous record, and a
+run of one scenario never touches another's. `results/run-manifest.json` remains
+the log of the latest invocation (profile, requested scenarios and engines,
+counts, workers, Python version).
+
 ## Resource policy
 
 The default is intentionally conservative: one simulation subprocess at a

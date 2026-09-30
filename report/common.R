@@ -30,6 +30,7 @@ load_benchmark <- function(scenario, root = "..") {
   results_path <- file.path(root, "results", "results.csv")
   manifest_path <- file.path(root, "results", "run-manifest.json")
   scenarios_path <- file.path(root, "results", "scenarios.json")
+  environment_path <- file.path(root, "results", "environments", paste0(scenario, ".json"))
   all_results <- if (file.exists(results_path)) {
     read.csv(results_path, stringsAsFactors = FALSE)
   } else {
@@ -78,6 +79,12 @@ load_benchmark <- function(scenario, root = "..") {
     } else {
       NULL
     },
+    # Where the scenario's latest replicates ran; see scripts/environment.py.
+    environment = if (file.exists(environment_path)) {
+      jsonlite::read_json(environment_path)
+    } else {
+      NULL
+    },
     info = info[[scenario]]
   )
 }
@@ -98,15 +105,73 @@ completion_status <- function(bench) {
   }
 }
 
+#' A field of the environment record, or "unknown" if the run could not read it.
+env_value <- function(x, format = as.character) {
+  if (is.null(x) || (length(x) == 1 && is.na(x))) "unknown" else format(x)
+}
+
+#' Distinct environments among the scenario's replicates. Replicates run before
+#' environments were recorded have no id and count as one more environment.
+environment_ids <- function(bench) {
+  ids <- bench$full$environment_id
+  if (is.null(ids)) ids <- rep(NA_character_, nrow(bench$full))
+  unique(ifelse(is.na(ids) | !nzchar(ids), "untagged", ids))
+}
+
+#' Hardware, OS, image, and toolchains of the scenario's latest run, with a
+#' warning if its replicates were not all produced in one environment.
 table_environment <- function(bench) {
-  m <- bench$manifest
-  if (is.null(m)) return(NULL)
-  knitr::kable(data.frame(
-    Field = c("Platform", "Python", "Workers", "Latest run failures"),
-    Value = c(m$platform, m$python,
-              if (is.null(bench$info$workers)) m$workers else bench$info$workers,
-              m$failures)
-  ), row.names = FALSE)
+  e <- bench$environment
+  if (is.null(e)) return(NULL)
+  gib <- function(bytes) sprintf("%.1f GiB", bytes / 2^30)
+  cores <- paste0(env_value(e$hardware$logical_cores), " logical, ",
+                  env_value(e$hardware$physical_cores), " physical")
+  # Limits are recorded only when the container has them.
+  if (!is.null(e$hardware$cgroup_cpu_limit)) {
+    cores <- paste0(cores, " (container limit ", e$hardware$cgroup_cpu_limit, ")")
+  }
+  memory <- env_value(e$hardware$memory_bytes, gib)
+  if (!is.null(e$hardware$cgroup_memory_limit_bytes)) {
+    memory <- paste0(memory, " (container limit ",
+                     gib(e$hardware$cgroup_memory_limit_bytes), ")")
+  }
+  image <- if (isTRUE(e$os$container)) {
+    env_value(e$container_image, function(x) substr(sub("^sha256:", "", x), 1, 12))
+  } else {
+    "none (native run)"
+  }
+  commit <- env_value(e$repository$commit, function(x) substr(x, 1, 7))
+  if (isTRUE(e$repository$dirty)) commit <- paste(commit, "(uncommitted changes)")
+  day <- function(x) env_value(x, function(x) substr(x, 1, 10))
+  rows <- data.frame(
+    Field = c("CPU", "Cores", "Memory", "OS", "Kernel", "Container image",
+              "Python", "R", "Julia", "Rust", "C++ compiler", "Quarto",
+              "Repository commit", "Workers", "Run dates", "Latest run"),
+    Value = c(
+      env_value(e$hardware$cpu_model), cores, memory,
+      env_value(e$os$platform), env_value(e$os$kernel), image,
+      env_value(e$toolchains$python), env_value(e$toolchains$r),
+      env_value(e$toolchains$julia), env_value(e$toolchains$rust),
+      env_value(e$toolchains$cxx), env_value(e$toolchains$quarto),
+      commit,
+      if (is.null(bench$info$workers)) env_value(e$run$workers) else bench$info$workers,
+      paste(day(e$started_utc), "to", day(e$finished_utc)),
+      paste0(env_value(e$executed), " executed, ", env_value(e$cached), " cached, ",
+             env_value(e$failures), " failed")
+    )
+  )
+  table <- paste(knitr::kable(rows, row.names = FALSE), collapse = "\n")
+  ids <- environment_ids(bench)
+  warning <- if (length(ids) > 1) {
+    paste0("::: {.callout-warning}\nThis scenario's results were produced in ",
+           length(ids), " different environments (",
+           if ("untagged" %in% ids) "including runs before environments were recorded; " else "",
+           "see `environment_id` in `results/results.csv`). The table describes the latest ",
+           "run only, and timings from different environments are not comparable.\n:::\n\n")
+  } else {
+    ""
+  }
+  knitr::asis_output(paste0(warning, table, "\n"))
 }
 
 table_summary <- function(bench) {

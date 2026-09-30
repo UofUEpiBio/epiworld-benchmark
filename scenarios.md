@@ -153,3 +153,9 @@ fingerprint covers `config.toml`, `run.py`, `scripts/`, its own
 `scenario.toml`, and its own `runners/`. Editing one scenario's runners
 therefore never invalidates another scenario's results. Editing `run.py`,
 `config.toml`, or `scripts/` invalidates all of them.
+
+Where a scenario's results were produced is recorded separately, in
+`results/environments/<scenario>.json`, and by an `environment_id` in each
+replicate. Neither is part of the fingerprint, so they never invalidate cached
+results. A run that only reads the cache leaves the scenario's record as it was;
+see "Environment records" in [`setup.md`](setup.md).
