@@ -1,4 +1,4 @@
-.PHONY: help setup check smoke benchmark profile report clean-cache container-image epiworld-runners fred-runner
+.PHONY: help setup check smoke benchmark collect profile report clean-cache container-image epiworld-runners fred-runner
 
 # Inside the container, PYTHON and CARGO_TARGET_DIR come from the image.
 PYTHON ?= .venv/bin/python
@@ -44,6 +44,7 @@ help:
 	@echo "  check           - Run tests and check R package dependencies"
 	@echo "  smoke           - Run a quick smoke test of the simulation"
 	@echo "  benchmark       - Run the full benchmark simulation"
+	@echo "  collect         - Rebuild results/*.csv from results/runs/ (e.g. after a git merge)"
 	@echo "  profile         - Side measurements of epiworld and ixa behind analysis.md"
 	@echo "  report          - Render the overview and every scenario report with Quarto"
 	@echo "  clean-cache     - Remove benchmark/cache manually if you really want to discard reusable runs."
@@ -99,6 +100,9 @@ smoke:
 
 benchmark:
 	$(PYTHON) run.py --profile full $(SCENARIO_ARGS) $(RUN_ARGS)
+
+collect:
+	$(PYTHON) run.py --collect
 
 # Run alone: concurrent work distorts the timings.
 profile:

@@ -6,3 +6,4 @@ scenario_*/runners/ixa/target
 .pytest_cache
 scenario_*/runners/epiworld/build
 .deps
+results/runs
