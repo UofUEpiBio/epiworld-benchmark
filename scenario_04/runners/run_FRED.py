@@ -16,12 +16,11 @@ import csv
 import os
 import re
 from pathlib import Path
-import subprocess
 import tempfile
 
 import numpy as np
 
-from runner_common import main
+from runner_common import main, run_measured
 
 
 def discrete_transmission_probability(target_r0: float, degree: float, recovery: float) -> float:
@@ -182,10 +181,9 @@ def run_fred(args: argparse.Namespace, source: np.ndarray, target: np.ndarray) -
         model_path = write_model(work_dir, pop_dir, locations_file, args, source, target, edge_probability)
 
         out_dir = work_dir / "out"
-        completed = subprocess.run(
+        completed, fred_peak_rss = run_measured(
             [str(fred_binary), "-p", str(model_path), "-r", str(args.replicate), "-d", str(out_dir)],
             env=os.environ | {"FRED_HOME": fred_home},
-            text=True, capture_output=True,
         )
         if completed.returncode != 0:
             raise RuntimeError(f"FRED exited {completed.returncode}: {completed.stderr[-4000:]}")
@@ -203,6 +201,14 @@ def run_fred(args: argparse.Namespace, source: np.ndarray, target: np.ndarray) -
 
     return {
         "engine_read_seconds": read_seconds,
+        # FRED runs as a child process, so this runner's own memory says
+        # nothing about the engine, and FRED cannot be probed between
+        # phases. Its whole-run peak, from GNU time, is the only measure.
+        "rss_baseline_bytes": None,
+        "rss_after_read_bytes": None,
+        "rss_after_setup_bytes": None,
+        "peak_rss_setup_bytes": None,
+        "peak_rss_simulate_bytes": fred_peak_rss,
         "simulate_seconds": simulate_seconds,
         "final_susceptible": int(final["BENCH.S"]),
         "final_exposed": int(final["BENCH.E"]),

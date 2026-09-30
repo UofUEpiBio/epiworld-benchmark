@@ -134,6 +134,56 @@ libraries pinned to one thread, inside the container defined in
 slowed some engines by up to 30% and others not at all; see
 [setup.md](setup.md#resource-policy).
 
+### Memory
+
+Each runner also reads its resident memory (RSS, from `/proc/self/status`)
+at the same boundaries as the timings, so the memory phases line up with the
+time phases:
+
+- `rss_baseline_bytes`: after the runtime and the engine are loaded, before
+  the edge list is read, which is what the language and packages cost;
+- `rss_after_read_bytes`: after the edge list is parsed;
+- `rss_after_setup_bytes`: after the reusable model is built, just before
+  the simulate timer starts;
+- `peak_rss_setup_bytes`: the high-water mark (`VmHWM`) at that point, the
+  peak through reading and building;
+- `peak_rss_simulate_bytes`: the high-water mark at the end of the simulate
+  timer. The runner resets it (by writing `5` to `/proc/self/clear_refs`)
+  just before the timer starts, so it is the peak of the simulation alone;
+- `process_peak_rss_bytes`: the runner's `ru_maxrss` as the operating system
+  reports it when the runner exits. On Linux, `ru_maxrss` also counts the
+  memory the parent held when it forked the runner, so the orchestrator
+  starts each runner through GNU `time`, whose own image is under a
+  megabyte, and records the peak it reports. Without GNU `time` (off Linux,
+  or on a host that lacks it) the field is null.
+
+The reports derive three measures from these. *Simulation memory*,
+`peak_rss_simulate - rss_after_setup`, is the extra memory one more replicate
+needs, and the main measure. *Model footprint*,
+`rss_after_setup - rss_after_read`, is what the reusable model holds.
+*Overall peak* is the largest of `peak_rss_setup`, `peak_rss_simulate`, and
+`process_peak_rss`. The kernel derives `ru_maxrss` from the same high-water
+mark, so resetting it lowers `process_peak_rss` as well; that value is an
+independent check of the simulation peak and of anything after it, not of
+the whole run.
+
+A few details affect how to read the numbers:
+
+- The phases follow the timings, so an engine that builds its model inside
+  the simulate timer (ixa, Starsim) shows that model as simulation memory,
+  not as footprint.
+- R, Python, and Julia count garbage they have not collected yet as
+  resident. No collection is forced before a reading, as that would change
+  the timings; the R runners' existing collection before the simulate timer
+  stays.
+- Julia compiles code the first time it runs it. The runner's warm-up covers
+  most of it, and whatever it misses counts toward simulation memory.
+- FRED runs as a child process of its Python runner, which cannot read
+  FRED's memory between phases. Its record holds only FRED's whole-run peak,
+  from GNU `time` as above, as `peak_rss_simulate_bytes`, and the phase
+  fields are null.
+- Off Linux, where `/proc` does not exist, the phase fields are null.
+
 ### Measuring implementation effort
 
 Each report also counts how much code each engine needs to express the

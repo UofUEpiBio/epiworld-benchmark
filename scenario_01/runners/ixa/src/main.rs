@@ -311,8 +311,29 @@ fn atomic_write(path: &Path, contents: &str) {
     std::fs::rename(&temporary, path).expect("cannot install output");
 }
 
+/// Resident memory in bytes from /proc/self/status: VmRSS now and VmHWM, its
+/// high-water mark. None off Linux.
+fn memory_status() -> (Option<u64>, Option<u64>) {
+    let Ok(status) = std::fs::read_to_string("/proc/self/status") else {
+        return (None, None);
+    };
+    let kib = |key: &str| {
+        status
+            .lines()
+            .find_map(|line| line.strip_prefix(key)?.split_whitespace().next()?.parse::<u64>().ok())
+            .map(|kib| kib * 1024)
+    };
+    (kib("VmRSS:"), kib("VmHWM:"))
+}
+
+/// Writing 5 to clear_refs resets VmHWM to the current RSS (Linux 4.0 and later).
+fn reset_peak() -> bool {
+    std::fs::write("/proc/self/clear_refs", "5").is_ok()
+}
+
 fn main() {
     let args = Args::parse();
+    let memory_baseline = memory_status();
     let total_started = Instant::now();
 
     let edges = read_edges(&args.network);
@@ -326,9 +347,12 @@ fn main() {
     let rates = Rates::from_args(&args);
     let vaccine = Vaccine { coverage: args.vaccine_coverage, efficacy: args.vaccine_efficacy };
     let read_seconds = total_started.elapsed().as_secs_f64();
+    let memory_after_read = memory_status();
     // execute() runs a context's plans once, so every replicate needs a new
     // context: building the population and network is timed with the
     // simulation, as epiworld's run() re-initializes its model.
+    let memory_after_setup = memory_status();
+    let peak_reset = reset_peak();
     let simulate_started = Instant::now();
     let mut context = build_context(args.n, &edges, args.seed);
     schedule_seeding(&mut context, args.n, args.initial_infected);
@@ -337,6 +361,7 @@ fn main() {
 
     context.execute();
     let simulate_seconds = simulate_started.elapsed().as_secs_f64();
+    let memory_simulate = memory_status();
     drop(edges);
     let total_seconds = total_started.elapsed().as_secs_f64();
 
@@ -362,6 +387,11 @@ fn main() {
         "setup_seconds": total_seconds - simulate_seconds,
         "simulate_seconds": simulate_seconds,
         "total_seconds": total_seconds,
+        "rss_baseline_bytes": memory_baseline.0,
+        "rss_after_read_bytes": memory_after_read.0,
+        "rss_after_setup_bytes": memory_after_setup.0,
+        "peak_rss_setup_bytes": memory_after_setup.1,
+        "peak_rss_simulate_bytes": if peak_reset { memory_simulate.1 } else { None },
         "final_susceptible": result.susceptible,
         "final_exposed": result.exposed,
         "final_infected": result.infected,

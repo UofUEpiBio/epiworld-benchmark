@@ -5,11 +5,10 @@ from __future__ import annotations
 
 import argparse
 import random
-from time import perf_counter
 
 import numpy as np
 
-from runner_common import main
+from runner_common import main, start_simulate, stop_simulate
 
 
 def draw_vaccine(args: argparse.Namespace, rng: np.random.Generator) -> tuple[np.ndarray, np.ndarray]:
@@ -53,7 +52,7 @@ def run_eon(args: argparse.Namespace, source: np.ndarray, target: np.ndarray) ->
     # The initial conditions differ in every run, so building them is timed with
     # the simulation, as epiworld resets its agents, seeds the infections, and
     # distributes its tools inside run().
-    started = perf_counter()
+    started = start_simulate()
     initial = {node: "S" for node in range(args.n)}
     # Protected agents get a status "V" that has no transitions, so no induced
     # rate ever reaches them.
@@ -76,7 +75,7 @@ def run_eon(args: argparse.Namespace, source: np.ndarray, target: np.ndarray) ->
         rng=rng,
         return_full_data=False,
     )
-    elapsed = perf_counter() - started
+    elapsed = stop_simulate(started)
     return {
         "simulate_seconds": elapsed,
         # Protected agents who were never infected count as susceptible.

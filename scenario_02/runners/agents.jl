@@ -166,11 +166,34 @@ let warmup = StandardABM(
     outputs(abmproperties(warmup), [1], 2, 2)
 end
 
+# Resident memory in bytes from /proc/self/status: VmRSS now and VmHWM, its
+# high-water mark. `nothing` off Linux. Uncollected garbage counts as resident,
+# and so does code compiled during the first step!, which the warm-up above
+# does not fully cover.
+function memory_status()
+    isfile("/proc/self/status") || return (rss = nothing, peak = nothing)
+    lines = readlines("/proc/self/status")
+    function kib(key)
+        index = findfirst(line -> startswith(line, key * ":"), lines)
+        index === nothing ? nothing : parse(Int, match(r"(\d+)", lines[index])[1]) * 1024
+    end
+    (rss = kib("VmRSS"), peak = kib("VmHWM"))
+end
+# Writing 5 to clear_refs resets VmHWM to the current RSS (Linux 4.0 and later).
+reset_peak() = try
+    write("/proc/self/clear_refs", "5")
+    true
+catch
+    false
+end
+
 n = integer("n")
+memory_baseline = memory_status()
 total_started = time_ns()
 adjacency, edge_count = read_edges(arg["network"], n)
 edge_count == integer("network_edges") || error("edge count mismatch")
 read_seconds = (time_ns() - total_started) / 1e9
+memory_after_read = memory_status()
 
 recovery = 1 / number("infectious_days")
 transmissibility = min(0.999, number("target_r0") / max(1.0, number("mean_degree") - 1))
@@ -189,6 +212,8 @@ for _ in 1:n
     add_agent!(model, S, false)
 end
 
+memory_after_setup = memory_status()
+peak_reset = reset_peak()
 simulate_started = time_ns()
 vaccinated, protected = vaccinate!(model, number("vaccine_coverage"), number("vaccine_efficacy"))
 seeds = randperm(abmrng(model), n)[1:min(integer("initial_infected"), n)]
@@ -198,6 +223,7 @@ end
 days = integer("days")
 step!(model, days)
 simulate_seconds = (time_ns() - simulate_started) / 1e9
+memory_simulate = memory_status()
 
 # Extracting the outputs comes after the simulation and is timed apart.
 extract_started = time_ns()
@@ -211,6 +237,7 @@ sum(values(counts)) == n || error("final compartment counts do not sum to popula
 
 function json_string(value)
     value isa AbstractString && return "\"" * replace(value, "\\" => "\\\\", "\"" => "\\\"") * "\""
+    value === nothing && return "null"
     value isa Bool && return value ? "true" : "false"
     value === nothing && return "null"
     value isa AbstractVector && return "[" * join(json_string.(value), ", ") * "]"
@@ -226,6 +253,11 @@ record = [
     "transmission_multiplier" => number("transmission_multiplier"),
     "read_seconds" => read_seconds, "setup_seconds" => total_seconds - simulate_seconds - extract_seconds,
     "simulate_seconds" => simulate_seconds, "total_seconds" => total_seconds,
+    "rss_baseline_bytes" => memory_baseline.rss,
+    "rss_after_read_bytes" => memory_after_read.rss,
+    "rss_after_setup_bytes" => memory_after_setup.rss,
+    "peak_rss_setup_bytes" => memory_after_setup.peak,
+    "peak_rss_simulate_bytes" => peak_reset ? memory_simulate.peak : nothing,
     "final_susceptible" => counts[S], "final_exposed" => counts[E],
     "final_infected" => counts[I], "final_hospitalized" => counts[H],
     "final_recovered" => counts[R], "peak_hospitalized" => properties.peak_hospitalized,

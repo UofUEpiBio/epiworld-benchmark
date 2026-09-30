@@ -12,7 +12,7 @@ from time import perf_counter
 
 import numpy as np
 
-from runner_common import STATES, main, output_summary
+from runner_common import STATES, main, output_summary, start_simulate, stop_simulate
 
 
 def discrete_transmission_probability(target_r0: float, degree: float, recovery: float) -> float:
@@ -129,9 +129,9 @@ def run_covasim(args: argparse.Namespace, source: np.ndarray, target: np.ndarray
         cv.simple_vaccine(days=0, prob=0.0, rel_sus=1.0, rel_symp=1.0, subtarget=everyone_in(unprotected)),
     ]
     sim = cv.Sim(pars=pars, people=popdict)
-    started = perf_counter()
+    started = start_simulate()
     sim.run()
-    elapsed = perf_counter() - started
+    elapsed = stop_simulate(started)
     # Extracting the outputs comes after the simulation and is timed apart.
     extract_started = perf_counter()
     results = sim.results

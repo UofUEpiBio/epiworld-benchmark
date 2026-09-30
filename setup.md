@@ -87,7 +87,8 @@ The same image is a development container: open the folder in VS Code (with
 shell.
 
 Running natively is still possible given Python 3.12, uv, R with `epiworldR`,
-`individual`, and `jsonlite`, a Rust toolchain, a C++17 compiler with zlib, and Quarto
+`individual`, and `jsonlite`, a Rust toolchain, a C++17 compiler with zlib, Quarto, and,
+for each run's process peak memory, GNU `time` (Linux only)
 (`make setup check smoke benchmark report`); `make setup` downloads epiworld's
 headers into `.deps/`. Cache records carry the host OS and architecture in
 their fingerprint, so native and container timings are never mixed.
@@ -137,7 +138,10 @@ that executes at least one replicate of a scenario writes
 `results/environments/<scenario>.json` (via `scripts/environment.py`). It holds:
 
 - hardware: CPU model, logical and physical cores, total memory, and the cgroup
-  CPU and memory limits of the container, if any;
+  CPU and memory limits of the container, if any (`null` when unlimited). On
+  macOS the container runs in a virtual machine that hides the CPU model, so
+  `make container-TARGET` also records the host's as `host_cpu_model`, and
+  cores and memory are those of the virtual machine;
 - OS: platform, kernel, architecture, and whether it runs in a container;
 - the container image ID (`make container-TARGET` passes it as
   `BENCHMARK_IMAGE_ID`; `null` natively);
@@ -150,6 +154,20 @@ that executes at least one replicate of a scenario writes
   concurrency, and the thread variables set for the runners;
 - when the run started and finished, and how many replicates it executed,
   found in the cache, and failed.
+
+The container cannot see the host's CPU model or its own image ID, so
+`make container-TARGET` reads both on the host and passes them in as
+`BENCHMARK_HOST_CPU` (from `sysctl -n machdep.cpu.brand_string` on macOS, or
+the `model name` in `/proc/cpuinfo` on Linux) and `BENCHMARK_IMAGE_ID`. A
+container started any other way, with `podman run`, `docker run`, or as a
+devcontainer, records both as `null`. Inside a devcontainer on macOS, the
+record then names only the CPU's vendor ("Apple (model not reported)"), not
+the model the timings ran on; on a Linux host, the container's own
+`cpu_model` is still the real one. Both fields are part of `environment_id`, so the
+replicates of such a run also get a different id from those run through
+`make`, and the scenario report shows its mixed-environment warning. Run
+published benchmarks through `make container-TARGET`, or pass both variables
+yourself.
 
 A field that cannot be read is `null`. `environment_id` is a SHA-256 of the
 hardware, OS, image, toolchains, pins, and engine versions, so two runs on the

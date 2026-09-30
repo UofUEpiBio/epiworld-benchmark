@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <ctime>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -58,6 +59,37 @@ double seconds_since(Clock::time_point start) {
     return std::chrono::duration<double>(Clock::now() - start).count();
 }
 
+// Resident memory in bytes from /proc/self/status: VmRSS now and VmHWM, its
+// high-water mark. -1 (written as null) off Linux.
+struct Memory {
+    long long rss = -1;
+    long long peak = -1;
+};
+
+Memory memory_status() {
+    Memory memory;
+    std::ifstream status("/proc/self/status");
+    std::string line;
+    while (std::getline(status, line)) {
+        if (line.rfind("VmRSS:", 0) == 0)
+            memory.rss = std::stoll(line.substr(6)) * 1024;
+        else if (line.rfind("VmHWM:", 0) == 0)
+            memory.peak = std::stoll(line.substr(6)) * 1024;
+    }
+    return memory;
+}
+
+// Writing 5 to clear_refs resets VmHWM to the current RSS (Linux 4.0 and later).
+bool reset_peak() {
+    std::ofstream clear("/proc/self/clear_refs");
+    clear << "5" << std::flush;
+    return static_cast<bool>(clear);
+}
+
+std::string json_bytes(long long bytes) {
+    return bytes < 0 ? "null" : std::to_string(bytes);
+}
+
 int main(int argc, char ** argv) {
     if (argc == 2 && std::string(argv[1]) == "--version") {
         std::cout << epiworld_version() << std::endl;
@@ -83,12 +115,14 @@ int main(int argc, char ** argv) {
     double hospital_rate = hospital_probability * recovery /
         (1.0 - hospital_probability * (1.0 - recovery));
 
+    Memory memory_baseline = memory_status();
     auto total_started = Clock::now();
     std::vector<int> source, target;
     read_edges(args.at("network"), source, target);
     if (static_cast<int>(source.size()) != integer("network_edges"))
         throw std::runtime_error("Network edge count mismatch");
     double read_seconds = seconds_since(total_started);
+    Memory memory_after_read = memory_status();
 
     Model<> model;
     model.add_param(beta, "Transmission rate");
@@ -119,9 +153,12 @@ int main(int argc, char ** argv) {
     source = {};
     target = {};
 
+    Memory memory_after_setup = memory_status();
+    bool peak_reset = reset_peak();
     auto simulate_started = Clock::now();
     model.run(days, integer("seed"));
     double simulate_seconds = seconds_since(simulate_started);
+    Memory memory_simulate = memory_status();
     double total_seconds = seconds_since(total_started);
 
     std::vector<std::string> states;
@@ -157,6 +194,11 @@ int main(int argc, char ** argv) {
         throw std::runtime_error("Cannot write " + temporary.string());
     std::fprintf(json,
         "{\n"
+        "  \"rss_baseline_bytes\": %s,\n"
+        "  \"rss_after_read_bytes\": %s,\n"
+        "  \"rss_after_setup_bytes\": %s,\n"
+        "  \"peak_rss_setup_bytes\": %s,\n"
+        "  \"peak_rss_simulate_bytes\": %s,\n"
         "  \"status\": \"ok\",\n"
         "  \"engine\": \"epiworld\",\n"
         "  \"engine_version\": \"%s\",\n"
@@ -182,6 +224,9 @@ int main(int argc, char ** argv) {
         "  \"fingerprint\": \"%s\",\n"
         "  \"timestamp_utc\": \"%s\"\n"
         "}\n",
+        json_bytes(memory_baseline.rss).c_str(), json_bytes(memory_after_read.rss).c_str(),
+        json_bytes(memory_after_setup.rss).c_str(), json_bytes(memory_after_setup.peak).c_str(),
+        json_bytes(peak_reset ? memory_simulate.peak : -1).c_str(),
         args.at("engine_version").c_str(), n, days, integer("replicate"), integer("seed"),
         args.at("network_sha256").c_str(), integer("network_edges"), mean_degree, target_r0,
         number("transmission_multiplier"), read_seconds, total_seconds - simulate_seconds, simulate_seconds,

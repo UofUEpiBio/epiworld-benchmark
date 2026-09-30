@@ -4,11 +4,10 @@
 from __future__ import annotations
 
 import argparse
-from time import perf_counter
 
 import numpy as np
 
-from runner_common import main
+from runner_common import main, start_simulate, stop_simulate
 
 
 def discrete_transmission_probability(target_r0: float, degree: float, recovery: float) -> float:
@@ -64,9 +63,9 @@ def run_epiworldpy(args: argparse.Namespace, source: np.ndarray, target: np.ndar
     model.add_tool(vaccine)
     model.agents_from_edgelist(source.tolist(), target.tolist(), args.n, False)
     model.verbose_off()
-    started = perf_counter()
+    started = start_simulate()
     model.run(args.days, args.seed)
-    elapsed = perf_counter() - started
+    elapsed = stop_simulate(started)
     today = model.get_db().get_today_total()
     final = dict(zip(today["states"]["values"][today["states"]["indexes"]], today["counts"].tolist()))
     history = model.get_db().get_hist_total()

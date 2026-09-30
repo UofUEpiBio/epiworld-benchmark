@@ -4,11 +4,10 @@
 from __future__ import annotations
 
 import argparse
-from time import perf_counter
 
 import numpy as np
 
-from runner_common import main
+from runner_common import main, start_simulate, stop_simulate
 
 
 def discrete_transmission_probability(target_r0: float, degree: float, recovery: float) -> float:
@@ -89,7 +88,7 @@ def run_starsim(args: argparse.Namespace, source: np.ndarray, target: np.ndarray
     # A Sim runs once, so every replicate builds a new one: everything from
     # here to the end of the run is timed as simulation, as epiworld's run()
     # re-initializes its model.
-    started = perf_counter()
+    started = start_simulate()
     # Exactly initial_infected seed cases. Starsim's SEIR seeds them Exposed,
     # as the epiworld family does.
     seeds = np.random.default_rng(args.seed).choice(
@@ -123,7 +122,7 @@ def run_starsim(args: argparse.Namespace, source: np.ndarray, target: np.ndarray
     )
     sim.init()
     sim.run()
-    elapsed = perf_counter() - started
+    elapsed = stop_simulate(started)
     disease = sim.diseases.seirh
     return {
         "simulate_seconds": elapsed,

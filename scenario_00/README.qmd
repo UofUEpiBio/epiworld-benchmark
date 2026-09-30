@@ -217,6 +217,28 @@ compares the two wrappers with the C++ runner, replicate by replicate.
 table_speedup(bench, reference = "epiworld", engines = c("epiworldR", "epiworldpy"))
 ```
 
+### Memory
+
+Resident memory (RSS) of each run, in MiB, as median [Q1, Q3] across
+replicates. *Simulation memory* is the peak during the simulate timer less
+the memory held when it started: the extra memory one replicate needs.
+*Model footprint* is what building the reusable model adds after the edge
+list is read, and *baseline* is the runtime after its imports. FRED runs as
+a child process, so only its overall peak is known. See "Memory" under "What
+is measured" in the [overview](../README.md#memory).
+
+```{r}
+#| label: memory
+table_memory(bench)
+```
+
+```{r}
+#| label: memory-plot
+#| fig-width: 10
+#| fig-height: 9
+plot_memory(bench)
+```
+
 ### Epidemiological sanity checks
 
 Speed is interpretable only if the simulations produce plausible epidemics.

@@ -152,7 +152,10 @@ Results are cached at `cache/results/<scenario>/<engine>/n<n>/`. A scenario's
 fingerprint covers `config.toml`, `run.py`, `scripts/`, its own
 `scenario.toml`, and its own `runners/`. Editing one scenario's runners
 therefore never invalidates another scenario's results. Editing `run.py`,
-`config.toml`, or `scripts/` invalidates all of them.
+`config.toml`, or `scripts/` invalidates all of them. Every record also
+carries the orchestrator's `format_version`, and a record in an older format
+is never reused, even when a scenario accepts published results; bump
+`RUNNER_FORMAT_VERSION` in `run.py` when the contents of a record change.
 
 Where a scenario's results were produced is recorded separately, in
 `results/environments/<scenario>.json`, and by an `environment_id` in each
