@@ -23,7 +23,7 @@ import tempfile
 import tomllib
 from typing import Any, NamedTuple
 
-from scripts.environment import RUNNER_ENV, collect_environment
+from scripts.environment import RUNNER_ENV, collect_environment, pins
 from scripts.generate_network import ensure_network_from_config
 
 
@@ -214,6 +214,15 @@ def engines_for_scenario(config: dict[str, Any], scenario_config: dict[str, Any]
     return list(scenario_config.get("design", {}).get("engines", config["study"]["engines"]))
 
 
+# Engines built from a pinned commit whose version number does not change
+# with it; the commit is appended so that moving a pin changes the fingerprint.
+PIN_OF = {"epiworldR": "EPIWORLDR_SHA"}
+
+
+def with_commit(version: str, commit: str | None) -> str:
+    return f"{version}+g{commit[:7]}" if commit else version
+
+
 def engine_versions(engines: list[str], scenarios: list[str]) -> dict[str, str]:
     versions: dict[str, str] = {}
     for engine in engines:
@@ -229,7 +238,7 @@ def engine_versions(engines: list[str], scenarios: list[str]) -> dict[str, str]:
                 text=True,
                 capture_output=True,
             )
-            versions[engine] = completed.stdout.strip()
+            versions[engine] = with_commit(completed.stdout.strip(), pins().get(PIN_OF.get(engine)))
         elif engine == "ixa":
             found = {ixa_version(scenario) for scenario in scenarios}
             if len(found) != 1:
@@ -248,7 +257,7 @@ def engine_versions(engines: list[str], scenarios: list[str]) -> dict[str, str]:
                 raise SystemExit(
                     f"Scenarios were built with different epiworld versions: {sorted(found)}"
                 )
-            versions[engine] = found.pop()
+            versions[engine] = with_commit(found.pop(), pins()["EPIWORLD_SHA"])
         elif engine == "Agents.jl":
             versions[engine] = subprocess.run(
                 [

@@ -1,6 +1,6 @@
 # Scenario 03: SEIRH baseline at 1,000,000 agents
 
-2026-09-29
+2026-09-30
 
 - [Model](#model)
 - [Results](#results)
@@ -9,6 +9,7 @@
   - [Time to a first result](#time-to-a-first-result)
   - [The epiworld family](#the-epiworld-family)
   - [Growth with the population](#growth-with-the-population)
+  - [Memory](#memory)
   - [Epidemiological sanity checks](#epidemiological-sanity-checks)
 - [Interpretation](#interpretation)
   - [How time grows with the
@@ -56,26 +57,38 @@ that the engines stay aligned.
 >
 > The complete 220-run design for this scenario is available.
 
-| Field               | Value                                                 |
-|:--------------------|:------------------------------------------------------|
-| Platform            | Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39 |
-| Python              | 3.12.11                                               |
-| Workers             | 1                                                     |
-| Latest run failures | 0                                                     |
+| Field | Value |
+|:---|:---|
+| CPU | Apple M3 Pro (container sees: Apple (model not reported)) |
+| Cores | 10 logical, 10 physical |
+| Memory | 12.7 GiB |
+| OS | Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39 |
+| Kernel | 6.12.13-200.fc41.aarch64 |
+| Container image | 6ab6f982c445 |
+| Python | 3.12.11 |
+| R | R version 4.5.1 (2025-06-13) – “Great Square Root” |
+| Julia | julia version 1.13.1 |
+| Rust | rustc 1.98.0 (88d9e12ae 2026-08-18) |
+| C++ compiler | c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0 |
+| Quarto | 1.10.18 |
+| Repository commit | 467d650 |
+| Workers | 1 |
+| Run dates | 2026-09-30 to 2026-10-01 |
+| Latest run | 220 executed, 0 cached, 0 failed |
 
 | Engine     |  Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:-----------|--------:|-----:|----------------------:|-------:|-------:|
-| epiworldR  | 1000000 |   20 |                 0.024 |  0.023 |  0.026 |
-| epiworldpy | 1000000 |   20 |                 0.028 |  0.027 |  0.030 |
-| epiworld   | 1000000 |   20 |                 0.028 |  0.027 |  0.029 |
-| individual | 1000000 |   20 |                 0.316 |  0.280 |  0.352 |
-| ixa        | 1000000 |   20 |                 0.460 |  0.408 |  0.473 |
-| Agents.jl  | 1000000 |   20 |                 0.693 |  0.660 |  0.755 |
-| EoN        | 1000000 |   20 |                 2.606 |  2.526 |  2.832 |
-| covasim    | 1000000 |   20 |                 3.544 |  3.319 |  3.644 |
-| starsim    | 1000000 |   20 |                11.884 | 11.416 | 12.909 |
-| epydemic   | 1000000 |   20 |                16.569 | 15.535 | 18.218 |
-| FRED       | 1000000 |   20 |                25.162 | 21.312 | 28.673 |
+| epiworldR  | 1000000 |   20 |                 0.024 |  0.023 |  0.024 |
+| epiworld   | 1000000 |   20 |                 0.026 |  0.025 |  0.027 |
+| epiworldpy | 1000000 |   20 |                 0.027 |  0.026 |  0.028 |
+| individual | 1000000 |   20 |                 0.272 |  0.270 |  0.273 |
+| ixa        | 1000000 |   20 |                 0.373 |  0.359 |  0.390 |
+| Agents.jl  | 1000000 |   20 |                 0.727 |  0.688 |  0.802 |
+| EoN        | 1000000 |   20 |                 2.266 |  2.243 |  2.298 |
+| covasim    | 1000000 |   20 |                 3.144 |  3.088 |  3.241 |
+| FRED       | 1000000 |   20 |                 7.204 |  6.811 |  7.757 |
+| starsim    | 1000000 |   20 |                10.962 | 10.780 | 11.119 |
+| epydemic   | 1000000 |   20 |                13.333 | 13.246 | 13.499 |
 
 ### Simulation time
 
@@ -90,18 +103,18 @@ panel.
 Ratios are matched by replicate seed. Values above one mean that
 epiworldR completed the simulation call faster.
 
-| Engine     |  Agents | Median time / epiworldR |     Q1 |      Q3 |
-|:-----------|--------:|------------------------:|-------:|--------:|
-| epiworld   | 1000000 |                    1.12 |   1.08 |    1.19 |
-| epiworldpy | 1000000 |                    1.15 |   1.09 |    1.27 |
-| covasim    | 1000000 |                  143.54 | 134.41 |  149.27 |
-| starsim    | 1000000 |                  489.53 | 459.55 |  528.88 |
-| EoN        | 1000000 |                  111.60 | 100.07 |  114.87 |
-| epydemic   | 1000000 |                  661.15 | 634.63 |  774.48 |
-| ixa        | 1000000 |                   17.87 |  16.54 |   19.93 |
-| individual | 1000000 |                   13.17 |  11.33 |   13.95 |
-| FRED       | 1000000 |                 1018.89 | 786.12 | 1134.98 |
-| Agents.jl  | 1000000 |                   29.55 |  26.05 |   32.47 |
+| Engine     |  Agents | Median time / epiworldR |     Q1 |     Q3 |
+|:-----------|--------:|------------------------:|-------:|-------:|
+| epiworld   | 1000000 |                    1.10 |   1.03 |   1.15 |
+| epiworldpy | 1000000 |                    1.15 |   1.10 |   1.21 |
+| covasim    | 1000000 |                  134.64 | 131.19 | 139.52 |
+| starsim    | 1000000 |                  471.29 | 453.60 | 484.84 |
+| EoN        | 1000000 |                   96.08 |  94.65 |  98.69 |
+| epydemic   | 1000000 |                  571.62 | 552.84 | 587.43 |
+| ixa        | 1000000 |                   16.08 |  15.31 |  16.51 |
+| individual | 1000000 |                   11.62 |  11.25 |  11.84 |
+| FRED       | 1000000 |                  309.84 | 291.92 | 325.40 |
+| Agents.jl  | 1000000 |                   31.18 |  28.49 |  34.17 |
 
 ### Time to a first result
 
@@ -116,24 +129,24 @@ parsing rather than on the engine.
 
 | Engine     |  Agents | Read edges (s) | Build (s) | Simulate (s) | Build + simulate (s) |
 |:-----------|--------:|---------------:|----------:|-------------:|---------------------:|
-| epiworld   | 1000000 |          0.509 |     0.138 |        0.028 |                0.168 |
-| epiworldR  | 1000000 |          0.844 |     0.180 |        0.024 |                0.204 |
-| epiworldpy | 1000000 |          1.612 |     0.418 |        0.028 |                0.446 |
-| ixa        | 1000000 |          0.306 |     0.003 |        0.460 |                0.464 |
-| individual | 1000000 |          0.994 |     0.320 |        0.316 |                0.638 |
-| Agents.jl  | 1000000 |          1.866 |     0.185 |        0.693 |                0.889 |
-| covasim    | 1000000 |          1.798 |     0.082 |        3.544 |                3.635 |
-| EoN        | 1000000 |          1.697 |     4.290 |        2.606 |                6.829 |
-| starsim    | 1000000 |          1.680 |     0.002 |       11.884 |               11.886 |
-| epydemic   | 1000000 |          1.772 |     4.339 |       16.569 |               20.774 |
-| FRED       | 1000000 |         34.667 |    10.704 |       25.162 |               35.455 |
+| epiworld   | 1000000 |          0.492 |     0.127 |        0.026 |                0.153 |
+| epiworldR  | 1000000 |          0.815 |     0.155 |        0.024 |                0.178 |
+| ixa        | 1000000 |          0.288 |     0.003 |        0.373 |                0.376 |
+| epiworldpy | 1000000 |          1.531 |     0.365 |        0.027 |                0.392 |
+| individual | 1000000 |          0.823 |     0.263 |        0.272 |                0.534 |
+| Agents.jl  | 1000000 |          1.808 |     0.170 |        0.727 |                0.905 |
+| covasim    | 1000000 |          1.553 |     0.047 |        3.144 |                3.191 |
+| EoN        | 1000000 |          1.543 |     3.607 |        2.266 |                5.866 |
+| starsim    | 1000000 |          1.523 |     0.001 |       10.962 |               10.963 |
+| FRED       | 1000000 |         28.374 |     9.367 |        7.204 |               16.803 |
+| epydemic   | 1000000 |          1.492 |     3.558 |       13.333 |               16.948 |
 
 ### The epiworld family
 
 | Engine     |  Agents | Median time / epiworld |   Q1 |   Q3 |
 |:-----------|--------:|-----------------------:|-----:|-----:|
-| epiworldR  | 1000000 |                   0.89 | 0.84 | 0.93 |
-| epiworldpy | 1000000 |                   1.03 | 0.94 | 1.09 |
+| epiworldR  | 1000000 |                   0.91 | 0.87 | 0.97 |
+| epiworldpy | 1000000 |                   1.06 | 1.03 | 1.07 |
 
 ### Growth with the population
 
@@ -145,17 +158,44 @@ not part of the simulation time (see [Building once](#building-once)).
 
 | Engine | 10,000 agents (s) | 100,000 agents (s) | 1,000,000 agents (s) | Time at 1,000,000 / at 100,000 | Median build at 1,000,000 (s) |
 |:---|---:|---:|---:|---:|---:|
-| epiworldR | 0.005 | 0.008 | 0.024 | 3.1 | 0.180 |
-| epiworldpy | 0.004 | 0.008 | 0.028 | 3.7 | 0.418 |
-| epiworld | 0.005 | 0.008 | 0.028 | 3.4 | 0.138 |
-| individual | 0.026 | 0.060 | 0.316 | 5.3 | 0.320 |
-| ixa | 0.007 | 0.038 | 0.460 | 12.0 | 0.003 |
-| Agents.jl | 0.021 | 0.042 | 0.693 | 16.6 | 0.185 |
-| EoN | 0.079 | 0.306 | 2.606 | 8.5 | 4.290 |
-| covasim | 0.065 | 0.329 | 3.544 | 10.8 | 0.082 |
-| starsim | 0.174 | 0.938 | 11.884 | 12.7 | 0.002 |
-| epydemic | 0.509 | 1.854 | 16.569 | 8.9 | 4.339 |
-| FRED | 0.072 | 0.544 | 25.162 | 46.3 | 10.704 |
+| epiworldR | 0.004 | 0.008 | 0.024 | 2.9 | 0.155 |
+| epiworld | 0.004 | 0.008 | 0.026 | 3.3 | 0.127 |
+| epiworldpy | 0.004 | 0.007 | 0.027 | 3.7 | 0.365 |
+| individual | 0.024 | 0.053 | 0.272 | 5.1 | 0.263 |
+| ixa | 0.007 | 0.033 | 0.373 | 11.2 | 0.003 |
+| Agents.jl | 0.020 | 0.037 | 0.727 | 19.8 | 0.170 |
+| EoN | 0.076 | 0.285 | 2.266 | 8.0 | 3.607 |
+| covasim | 0.062 | 0.324 | 3.144 | 9.7 | 0.047 |
+| FRED | 0.066 | 0.485 | 7.204 | 14.9 | 9.367 |
+| starsim | 0.165 | 0.905 | 10.962 | 12.1 | 0.001 |
+| epydemic | 0.489 | 1.706 | 13.333 | 7.8 | 3.558 |
+
+### Memory
+
+Resident memory (RSS) of each run, in MiB, as median \[Q1, Q3\] across
+replicates. *Simulation memory* is the peak during the simulate timer
+less the memory held when it started: the extra memory one replicate
+needs. *Model footprint* is what building the reusable model adds after
+the edge list is read, and *baseline* is the runtime after its imports.
+FRED runs as a child process, so only its overall peak is known. See
+“Memory” under “What is measured” in the
+[overview](../README.md#memory).
+
+| Engine | Agents | Baseline (MiB) | Model footprint (MiB) | Simulation memory (MiB) | Overall peak (MiB) |
+|:---|:---|---:|---:|---:|---:|
+| individual | 1000000 | 74.8 \[74.8, 74.8\] | 7.0 \[7.0, 7.0\] | 125.7 \[125.3, 125.8\] | 282.3 \[282.3, 282.3\] |
+| epiworld | 1000000 | 3.0 \[3.0, 3.0\] | 233.9 \[233.9, 233.9\] | 28.9 \[28.9, 28.9\] | 351.8 \[351.8, 351.8\] |
+| ixa | 1000000 | 2.2 \[2.2, 2.2\] | 0.0 \[0.0, 0.0\] | 329.9 \[329.9, 329.9\] | 408.7 \[408.7, 408.7\] |
+| epiworldR | 1000000 | 72.1 \[72.1, 72.1\] | 210.5 \[210.5, 210.5\] | 0.0 \[0.0, 0.0\] | 478.6 \[478.5, 478.6\] |
+| covasim | 1000000 | 225.1 \[225.1, 225.1\] | 16.2 \[16.1, 16.3\] | 288.8 \[288.6, 288.8\] | 684.5 \[684.5, 684.8\] |
+| epiworldpy | 1000000 | 46.6 \[46.6, 46.6\] | 218.6 \[218.5, 218.6\] | 43.4 \[43.4, 43.4\] | 854.3 \[854.2, 854.3\] |
+| starsim | 1000000 | 260.9 \[260.9, 260.9\] | 0.0 \[0.0, 0.0\] | 565.7 \[565.2, 566.0\] | 905.1 \[905.1, 905.2\] |
+| Agents.jl | 1000000 | 481.9 \[481.7, 482.1\] | 34.0 \[30.2, 41.9\] | 8.4 \[8.4, 8.7\] | 970.7 \[955.8, 975.0\] |
+| EoN | 1000000 | 120.3 \[120.3, 120.3\] | 1182.4 \[1182.4, 1182.5\] | 290.0 \[290.0, 290.0\] | 1670.8 \[1670.8, 1670.8\] |
+| epydemic | 1000000 | 117.2 \[117.2, 117.2\] | 1181.0 \[1181.0, 1181.7\] | 1642.8 \[1642.8, 1642.8\] | 3020.0 \[3020.0, 3020.0\] |
+| FRED | 1000000 |  |  |  | 5846.8 \[5846.7, 5846.8\] |
+
+![](README_files/figure-commonmark/memory-plot-1.png)
 
 ### Epidemiological sanity checks
 
@@ -179,51 +219,51 @@ not part of the simulation time (see [Building once](#building-once)).
 
 ### How time grows with the population
 
-- **The epiworld runners** grow by 3.4 (C++), 3.1 (epiworldR), and 3.7
+- **The epiworld runners** grow by 3.3 (C++), 2.9 (epiworldR), and 3.7
   (epiworldpy) times. Their daily work follows the outbreak, which
   barely grew. What does grow is `reset()` at the start of `run()`,
   which re-initializes every agent; at this size it is nearly half of
   the run.
-- **individual** grows by 5.3 times. Its infection process visits the
+- **individual** grows by 5.1 times. Its infection process visits the
   infectious agents’ neighbours, but it also tabulates contacts and
   intersects bitsets over the whole population every day.
-- **ixa** grows by 12.0 times. Its `execute()` follows the outbreak, but
+- **ixa** grows by 11.2 times. Its `execute()` follows the outbreak, but
   every replicate first rebuilds the context (a million entities, five
   million edges, and the index), which grows with the population and is
   now most of its time.
-- **EoN** (8.5 times) and **epydemic** (8.9) follow the outbreak in
+- **EoN** (8.0 times) and **epydemic** (7.8) follow the outbreak in
   their event handling, but set up state for every node of the network,
   in Python, at the start of each run.
-- **Covasim** (10.8 times) and **Starsim** (12.7) update every agent’s
+- **Covasim** (9.7 times) and **Starsim** (12.1) update every agent’s
   arrays every day, and Starsim also draws transmission on every edge,
   so they grow about as fast as the population.
-- **Agents.jl** grows by 16.6 times. Its daily step visits only the
+- **Agents.jl** grows by 19.8 times. Its daily step visits only the
   infectious agents’ neighbours, but it loops over every agent to find
   them and counts the hospitalized agents over the whole population
   every day.
-- **FRED** grows by 46.3 times, faster than the population. Its
+- **FRED** grows by 14.9 times, faster than the population. Its
   simulation time includes building its places, the million-person
   population, and the five-million-edge network for every replicate,
-  which is most of it at this size, and it also spends 35 seconds per
+  which is most of it at this size, and it also spends 28 seconds per
   replicate parsing its model and population files.
 
-At 1,000,000 agents, FRED takes about 25 seconds per replicate, epydemic
-17, and Starsim 12, against 0.028 for the C++ runner and 0.46 for ixa.
-[analysis.md](../analysis.md) measures where epiworld’s and ixa’s time
-goes.
+At 1,000,000 agents, FRED takes about 7.2 seconds per replicate,
+epydemic 13, and Starsim 11, against 0.026 for the C++ runner and 0.37
+for ixa. [analysis.md](../analysis.md) measures where epiworld’s and
+ixa’s time goes.
 
 ### Building once
 
 Building the model from the edge list, which a user does once per
-network, takes the epiworld runners 0.14 (C++), 0.18 (epiworldR), and
-0.42 (epiworldpy) seconds: several times longer than a 100-day run, but
-paid once however many replicates follow. EoN spends 4.3 seconds and
-epydemic 4.3 building their NetworkX graphs, which they also reuse, and
-Agents.jl 0.19 building its agents and adjacency list. FRED’s 11 seconds
-are its runner writing FRED’s model file, with every edge, and its
-synthetic population files. ixa and Starsim have almost nothing to build
-once, because they rebuild their whole model for every replicate, and
-that time is in their simulation time above.
+network, takes the epiworld runners 0.13 (C++), 0.15 (epiworldR), and
+0.36 (epiworldpy) seconds: several times longer than a 100-day run, but
+paid once however many replicates follow. EoN spends 3.6 seconds and
+epydemic 3.6 building their NetworkX graphs, which they also reuse, and
+Agents.jl 0.17 building its agents and adjacency list. FRED’s 9.4
+seconds are its runner writing FRED’s model file, with every edge, and
+its synthetic population files. ixa and Starsim have almost nothing to
+build once, because they rebuild their whole model for every replicate,
+and that time is in their simulation time above.
 
 ### Why this scenario enforces one replicate at a time
 
@@ -243,9 +283,9 @@ way.
 | Agents.jl  | 7.0.4              |
 | covasim    | 3.1.8              |
 | EoN        | 1.92               |
-| epiworld   | 0.17.0             |
-| epiworldpy | 0.17.0-1+g0733151  |
-| epiworldR  | 0.17.0.0           |
+| epiworld   | 0.17.1+g04c4ad8    |
+| epiworldpy | 0.17.1-0+gc24b4f9  |
+| epiworldR  | 0.17.1.0+gfca60f3  |
 | epydemic   | 1.14.1             |
 | FRED       | PUB.5.7.0+gbd25f04 |
 | individual | 0.1.19             |

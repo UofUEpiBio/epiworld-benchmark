@@ -336,7 +336,7 @@ Prevention, Center for Forecasting; Outbreak Analytics, released.
 <div id="ref-vegayonEpiworld2026" class="csl-entry">
 
 Vega Yon, George G. 2026. *<span class="nocase">epiworld</span>: A
-Flexible and General Agent-Based Model Engine*. V. 0.17.0. Released.
+Flexible and General Agent-Based Model Engine*. V. 0.17.1. Released.
 <https://github.com/UofUEpiBio/epiworld>.
 
 </div>
@@ -345,7 +345,7 @@ Flexible and General Agent-Based Model Engine*. V. 0.17.0. Released.
 
 Vega Yon, George G., and Olivia Banks. 2026.
 *<span class="nocase">epiworldpy</span>: Python Bindings for Epiworld*.
-V. 0.17.0-1. Released. <https://github.com/UofUEpiBio/epiworldpy>.
+V. 0.17.1-0. Released. <https://github.com/UofUEpiBio/epiworldpy>.
 
 </div>
 

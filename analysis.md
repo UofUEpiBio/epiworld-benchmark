@@ -2,6 +2,12 @@
 
 [Back to the project overview](README.md)
 
+The measurements below were taken at epiworld `a1ff20a` (0.17.0). The
+benchmark now pins 0.17.1, which revised how epiworld chooses between pushing
+and pulling transmission
+([UofUEpiBio/epiworld#281](https://github.com/UofUEpiBio/epiworld/pull/281))
+and sped up the pull scan; this note has not been remeasured since.
+
 epiworld (in C++, R, or Python) and ixa are the two fastest engines in every
 scenario. This note measures where each spends its time, to explain how the
 two compare. The explanation is the same in every scenario; the last section

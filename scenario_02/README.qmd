@@ -366,9 +366,8 @@ to the transmission log, and the daily database update costs time in
 proportion to the number of states and tools, not agents. ixa adds the same
 bookkeeping here at little cost, and the two engines compare as they do in
 scenario 01. What separates them has other causes, the same in every
-scenario: ixa rebuilds its context for every replicate, while epiworld looks
-up the transmission probability by name for every contact it tries,
-re-initializes the whole population at the start of every run, and, with the
+scenario: ixa rebuilds its context for every replicate, while epiworld
+re-initializes the whole population at the start of every run and, with the
 vaccine, clones the tool for every agent it protects.
 [analysis.md](../analysis.md) measures each.
 

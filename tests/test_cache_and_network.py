@@ -322,3 +322,24 @@ def test_every_scenario_runs_every_engine() -> None:
         runners = ROOT / scenario / "runners"
         assert (runners / "run_FRED.py").is_file(), scenario
         assert (runners / "agents.jl").is_file(), scenario
+
+
+def test_moving_an_epiworld_pin_changes_the_recorded_version(monkeypatch) -> None:
+    """epiworld and epiworldR report only 0.17.1 whatever their commit, so the
+    commit is appended; otherwise a new pin would reuse published results."""
+    def fake(command, **kwargs):
+        stdout = "0.17.1.0" if command[0] == "Rscript" else "0.17.1\n"
+        return run.subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(run.subprocess, "run", fake)
+    monkeypatch.setattr(run, "pins", lambda: {"EPIWORLD_SHA": "04c4ad8" + "0" * 33,
+                                              "EPIWORLDR_SHA": "fca60f3" + "0" * 33})
+    versions = run.engine_versions(["epiworld", "epiworldR", "individual"], ["scenario_00"])
+    assert versions == {
+        "epiworld": "0.17.1+g04c4ad8", "epiworldR": "0.17.1.0+gfca60f3", "individual": "0.17.1.0",
+    }
+    # Without a known commit (epiworldR natively), the version stands alone.
+    monkeypatch.setattr(run, "pins", lambda: {"EPIWORLD_SHA": None, "EPIWORLDR_SHA": None})
+    assert run.engine_versions(["epiworld", "epiworldR"], ["scenario_00"]) == {
+        "epiworld": "0.17.1", "epiworldR": "0.17.1.0",
+    }

@@ -88,27 +88,27 @@ RUN Rscript -e 'install.packages(c("R6", "Rcpp", "testthat"), Ncpus = parallel::
     && Rscript -e 'stopifnot(packageVersion("individual") == "0.1.19")'
 
 # The epiworld family last, as it changes most often. All three are pinned to
-# commits: epiworld's master and epiworldR's main after the counting-sort
-# network build (UofUEpiBio/epiworld#274), which still report version 0.17.0.
-# epiworldpy is pinned in pyproject.toml above.
-ARG EPIWORLDR_SHA=dc3758c9212baca629eaa007775fd973345e8957
+# commits on their default branches at epiworld 0.17.1: epiworld's master and
+# epiworldR's main here, epiworldpy in pyproject.toml above.
+ARG EPIWORLDR_SHA=fca60f3010d5a018a11059bdf61a7ce21f4c42ca
 ENV EPIWORLDR_SHA=${EPIWORLDR_SHA}
 RUN curl -fsSL "https://github.com/UofUEpiBio/epiworldR/archive/${EPIWORLDR_SHA}.tar.gz" -o /tmp/epiworldR.tar.gz \
     && R CMD INSTALL /tmp/epiworldR.tar.gz \
     && rm /tmp/epiworldR.tar.gz \
-    && Rscript -e 'stopifnot(packageVersion("epiworldR") == "0.17.0.0")'
+    && Rscript -e 'stopifnot(packageVersion("epiworldR") == "0.17.1.0")'
 
 # epiworld's C++ headers, for the epiworld (C++) runner. The library is
 # header-only; each scenario's runner is compiled by `make setup`. Keep the
 # commit in step with EPIWORLD_REF in the Makefile.
-ARG EPIWORLD_SHA=a1ff20a2e347169bb260440c4a9c26918efda7e0
+ARG EPIWORLD_SHA=04c4ad866b1866ca88332a888d941b395c96b8a0
 ENV EPIWORLD_SHA=${EPIWORLD_SHA} \
     EPIWORLD_INCLUDE=/opt/epiworld/include \
     EPIWORLD_BUILD_DIR=/opt/epiworld-build
 RUN mkdir -p /opt/epiworld \
     && curl -fsSL "https://github.com/UofUEpiBio/epiworld/archive/${EPIWORLD_SHA}.tar.gz" \
         | tar -xz -C /opt/epiworld --strip-components=1 \
-    && grep -q 'EPIWORLD_VERSION_MINOR 17' /opt/epiworld/include/epiworld/epiworld.hpp
+    && grep -q 'EPIWORLD_VERSION_MINOR 17' /opt/epiworld/include/epiworld/epiworld.hpp \
+    && grep -q 'EPIWORLD_VERSION_PATCH 1' /opt/epiworld/include/epiworld/epiworld.hpp
 
 # FRED, for every scenario's FRED runner. Unlike epiworld, it
 # takes no bind-mounted scenario inputs (the runner drives it entirely via a
