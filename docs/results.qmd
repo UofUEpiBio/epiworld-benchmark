@@ -1,0 +1,295 @@
+---
+title: "Results"
+subtitle: "Network epidemic ABM speed benchmark"
+format:
+  gfm:
+    toc: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+source("../report/common.R")
+all <- load_all()
+med <- function(engine, scenario, n, column = "simulate_seconds") {
+  cell_median(all, engine, scenario, n, column)
+}
+secs <- function(x) formatC(x, digits = 2, format = "fg")
+mib <- function(x) formatC(x, digits = 0, format = "f", big.mark = ",")
+times <- function(x) sprintf("%.1f", x)
+max_family_ratio <- local({
+  rows <- all$rows
+  a <- rows[rows$engine %in% c("epiworldR", "epiworldpy"), c("engine", "scenario", "n", "seed", "simulate_seconds")]
+  b <- rows[rows$engine == "epiworld", c("scenario", "n", "seed", "simulate_seconds")]
+  p <- merge(a, b, by = c("scenario", "n", "seed"), suffixes = c("", "_cpp"))
+  max(aggregate(simulate_seconds / simulate_seconds_cpp ~ engine + scenario + n, p, median)[[4]])
+})
+growth <- growth_factors(all)
+attack <- function(scenario, n) {
+  sprintf("%.3f", median(all$rows$attack_rate[all$rows$engine == "epiworldR" &
+                                                all$rows$scenario == scenario & all$rows$n == n]))
+}
+```
+
+[Back to the project overview](../README.md) ·
+[Methods](methods.md)
+
+The results across every scenario, from `results/results.csv`. The
+[methods](methods.md) define each measure; each scenario's report has its
+full tables, including interquartile ranges.
+
+## Run time
+
+### Where the time goes
+
+The median time of each phase of a replicate: reading the shared edge list,
+building what the engine reuses across replicates, and simulating, which
+includes everything the engine redoes for each replicate (see
+[Timing](methods.md#timing)). Panels are scenarios at each population size.
+
+```{r}
+#| label: decomposition
+#| fig-width: 12
+#| fig-height: 9
+plot_runtime_decomposition(all)
+```
+
+Simulation time is the measure every report ranks engines by. Its median in
+seconds, in every scenario and size:
+
+```{r}
+#| label: simulation-time
+table_by_cell(all, "simulate_seconds", 4)
+```
+
+### The language layer
+
+The three epiworld runners build the same model on the same C++ core. The
+wrappers' simulation time relative to the C++ runner, matched by seed:
+
+```{r}
+#| label: family
+table_family_ratios(all)
+```
+
+In the simulation itself the language layer costs nothing measurable:
+neither wrapper is ever more than
+`r sprintf("%.0f%%", 100 * (max_family_ratio - 1))` slower than the C++
+runner, and epiworldpy is often faster. Where the C++ runner is slowest, in
+scenarios 01 and 02 at 100,000 agents, the cause is memory allocation in the
+C++ runner, not the wrappers (see scenario 01's report). Outside the
+simulation the wrappers cost something: at 100,000 agents, building the
+model takes the C++ runner `r secs(med("epiworld", "scenario_00", 1e5, "build_seconds"))`
+seconds, against `r secs(med("epiworldR", "scenario_00", 1e5, "build_seconds"))`
+for epiworldR and `r secs(med("epiworldpy", "scenario_00", 1e5, "build_seconds"))`
+for epiworldpy, which first convert the edge list into their own types.
+
+### Why the two fastest engines differ
+
+In scenarios 00 to 02, epiworld and ixa are the two fastest engines, and
+epiworld is faster per replicate: in scenario 00, ixa takes
+`r times(med("ixa", "scenario_00", 1e4) / med("epiworld", "scenario_00", 1e4))`
+and `r times(med("ixa", "scenario_00", 1e5) / med("epiworld", "scenario_00", 1e5))`
+times as long as the C++ runner at 10,000 and 100,000 agents. Both engines'
+daily work follows the outbreak, through push-based transmission in epiworld
+(since 0.16.1, with the push/pull choice revised in 0.17.1,
+[UofUEpiBio/epiworld#281](https://github.com/UofUEpiBio/epiworld/pull/281)),
+and their epidemic computations are close. The difference is what each
+redoes per replicate. ixa's `execute()` runs a context only once, so every
+replicate rebuilds the population, network, and index, which grows with the
+population. epiworld builds its model once and re-initializes every agent at
+the start of every `run()`, about twenty times cheaper; with a vaccine, it
+also clones the tool for every agent it protects. Bookkeeping does not
+separate them: epiworld records its outputs in every scenario, and ixa adds
+the same records in scenario 02 at little cost.
+[The epiworld and ixa note](epiworld-ixa.md) measures each of these.
+
+The order changes elsewhere. At 1,000,000 agents (scenario 03), individual
+is faster than ixa. On scenario 04's network, Agents.jl, individual, ixa, and
+the epiworld family finish within about 20% of each other
+(`r secs(med("Agents.jl", "scenario_04", 165865))` to
+`r secs(med("epiworldR", "scenario_04", 165865))` seconds). Its outbreak
+infects `r attack("scenario_04", 165865)` of the population, against
+`r attack("scenario_00", 1e5)` in scenario 00 at 100,000 agents, so the
+engines whose work follows the outbreak do far more of it.
+
+## Scaling
+
+The scenario 00 model at 10,000 and 100,000 agents and, in scenario 03, at
+1,000,000, on the same kind of network. With 100 seed cases and the same
+per-contact risk, the outbreak stays about the same size in absolute terms,
+so an engine whose work follows the outbreak should barely slow down, and one
+that touches every agent every day should slow down about tenfold per
+decade.
+
+```{r}
+#| label: scaling
+#| fig-width: 8
+#| fig-height: 5
+plot_scaling(all)
+```
+
+From 100,000 to 1,000,000 agents:
+
+- **The epiworld runners** grow by `r times(growth[["epiworld"]])` (C++),
+  `r times(growth[["epiworldR"]])` (epiworldR), and
+  `r times(growth[["epiworldpy"]])` (epiworldpy) times. Their daily work
+  follows the outbreak; what grows is `reset()`, which re-initializes every
+  agent at the start of `run()`.
+- **individual** grows by `r times(growth[["individual"]])` times. Its
+  infection process visits the infectious agents' neighbours, but it also
+  tabulates contacts and intersects bitsets over the whole population every
+  day.
+- **EoN** (`r times(growth[["EoN"]])` times) and **epydemic**
+  (`r times(growth[["epydemic"]])`) follow the outbreak in their event
+  handling, but set up state for every node, in Python, at the start of each
+  run.
+- **Covasim** (`r times(growth[["covasim"]])` times) and **Starsim**
+  (`r times(growth[["starsim"]])`) update every agent's arrays every day, and
+  Starsim also draws transmission on every edge, so they grow about as fast
+  as the population.
+- **ixa** grows by `r times(growth[["ixa"]])` times: its per-replicate
+  rebuild of a million entities, five million edges, and the index is most of
+  its time at this size.
+- **FRED** grows by `r times(growth[["FRED"]])` times, faster than the
+  population: it rebuilds its places, population, and network for every
+  replicate.
+- **Agents.jl** grows by `r times(growth[["Agents.jl"]])` times. Its daily
+  step visits only the infectious agents' neighbours, but it loops over every
+  agent to find them and counts the hospitalized agents over the whole
+  population every day.
+
+Building the model once from the edge list, which a user pays once per
+network however many replicates follow, takes the C++ runner
+`r secs(med("epiworld", "scenario_03", 1e6, "build_seconds"))` seconds at
+1,000,000 agents, several times one of its replicates, and EoN and epydemic
+`r secs(med("EoN", "scenario_03", 1e6, "build_seconds"))` and
+`r secs(med("epydemic", "scenario_03", 1e6, "build_seconds"))` seconds for
+their NetworkX graphs.
+
+## Cost of added features
+
+Scenario 01 adds a vaccine to scenario 00, and scenario 02 adds four outputs
+to scenario 01. The median ratio of each replicate's simulation time to the
+one with the same engine, size, and seed in the simpler scenario:
+
+```{r}
+#| label: complexity
+table_complexity_cost(all)
+```
+
+**The vaccine.** A ratio below one does not mean the vaccine is free. The
+vaccine cuts the median attack rate from `r attack("scenario_00", 1e4)` to
+`r attack("scenario_01", 1e4)` at 10,000 agents and from
+`r attack("scenario_00", 1e5)` to `r attack("scenario_01", 1e5)` at 100,000,
+so engines whose work follows the outbreak (EoN, epydemic, the epiworld
+family, and ixa) get faster for that reason alone. Covasim's vectorized daily
+update touches every agent regardless, and Starsim draws transmission on
+every edge every day, so their times barely move; individual sits in
+between. A ratio above one means the feature itself is expensive.
+
+**The outputs.** Both scenarios run the same epidemics, so a ratio above one
+is the cost of recording the outputs during the run. The epiworld family
+already records all four in every scenario, and Covasim keeps its infection
+log in every run, so they pay nothing extra; most engines that had to add
+recording absorbed it too. The exceptions are EoN, whose
+`return_full_data=True` appends to every node's status history in Python at
+every event; individual, whose runner compares full-population bitsets every
+day to count transitions; and FRED, which writes a line to its health
+records for every exposure and state change. Reading the outputs out of the
+engine after the run is not in these times; scenario 02's report shows it.
+
+## Memory
+
+Overall peak resident memory of every replicate (see
+[Memory](methods.md#memory)):
+
+```{r}
+#| label: memory
+#| fig-width: 12
+#| fig-height: 9
+plot_memory_all(all)
+```
+
+Median simulation memory, the extra memory one more replicate needs, in MiB:
+
+```{r}
+#| label: simulation-memory
+table_by_cell(all, "simulation_mib", 0)
+```
+
+At 1,000,000 agents, FRED peaks at
+`r mib(med("FRED", "scenario_03", 1e6, "peak_mib"))` MiB, epydemic at
+`r mib(med("epydemic", "scenario_03", 1e6, "peak_mib"))`, and EoN at
+`r mib(med("EoN", "scenario_03", 1e6, "peak_mib"))`, against
+`r mib(med("epiworld", "scenario_03", 1e6, "peak_mib"))` for the C++
+epiworld runner, `r mib(med("ixa", "scenario_03", 1e6, "peak_mib"))` for
+ixa, and `r mib(med("individual", "scenario_03", 1e6, "peak_mib"))` for
+individual. At small sizes the runtime itself can dominate: Agents.jl uses
+`r mib(med("Agents.jl", "scenario_00", 1e4, "rss_baseline_bytes") / 2^20)` MiB
+before it reads the edge list. At large sizes, most of EoN's memory is its
+NetworkX graph (model footprint), epydemic adds about as much again during
+the run, and most of ixa's and Starsim's is their per-replicate rebuild
+(simulation memory).
+
+## Epidemiological agreement
+
+Median final attack rate by engine, with each engine's difference from
+epiworldR's in parentheses:
+
+```{r}
+#| label: agreement
+table_agreement(all)
+```
+
+In scenarios 00 to 03, every engine's median stays within about 0.01 of
+epiworldR's. Scenario 04 is uncalibrated (see its report): Covasim sits
+`r sprintf("%.3f", med("covasim", "scenario_04", 165865, "attack_rate") - med("epiworldR", "scenario_04", 165865, "attack_rate"))`
+above, and every other engine within about 0.01. Each report also shows the peak hospitalization load, and scenario 02's
+checks every engine's outputs against its own final counts.
+
+## Sensitivity and validity
+
+- **Outbreak size.** Run time depends on the epidemic as well as on the
+  population: the vaccine (scenario 01) shrinks the outbreak and speeds up
+  the engines whose work follows it, scenario 03 grows the population ten
+  times with an outbreak that hardly grows, and scenario 04's outbreak
+  reaches most of its population. Ranking engines by one scenario alone
+  would mislead.
+- **Concurrency.** Running replicates side by side changes timings unevenly
+  across engines, so every published run is sequential
+  ([Execution protocol](methods.md#execution-protocol)).
+- **Environment.** Every scenario's replicates ran in one recorded
+  environment ([Environment](methods.md#environment)); a report warns when
+  its replicates mix environments.
+- **Validity checks.** Every runner checks that its five compartments sum
+  to the population, and scenario 02 checks the outputs against the final
+  counts in every run.
+- **Not yet covered.** An alternate transmission intensity or outbreak size,
+  and prespecified equivalence thresholds for the epidemiological outcomes
+  ([#10](https://github.com/UofUEpiBio/epiworld-benchmark/issues/10)).
+
+## Implementation size
+
+Model lines of every engine in every scenario (see
+[Implementation size](methods.md#implementation-size)). Scenarios 03 and 04
+reuse scenario 00's runners.
+
+```{r}
+#| label: code-size
+table_code_size(all)
+```
+
+## Completion
+
+Completed replicates against each scenario's design, and the failures each
+scenario's latest run recorded. Every engine expresses and completes every
+scenario.
+
+```{r}
+#| label: completion
+table_completion(all)
+```

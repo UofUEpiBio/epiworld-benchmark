@@ -1,0 +1,386 @@
+---
+title: "Methods"
+subtitle: "Network epidemic ABM speed benchmark"
+format:
+  gfm:
+    toc: true
+bibliography: ../references.bib
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+source("../report/common.R")
+all <- load_all()
+```
+
+[Back to the project overview](../README.md) ·
+[Results](results.md)
+
+This document describes how the benchmark is built and run: the engines,
+the common model, the networks, calibration, the execution protocol, and
+what each run measures. The [results](results.md) compare the engines across
+scenarios, and each scenario's report covers what that scenario adds.
+
+## Engines
+
+Eleven engines run every scenario. Each runner is a short program in the
+engine's own language that reads the shared edge list, builds the model with
+the engine's own tools, runs one replicate, and writes one result record.
+
+```{r}
+#| label: engines
+engines <- data.frame(
+  engine = c("epiworld", "epiworldR", "epiworldpy", "covasim", "starsim", "EoN",
+             "epydemic", "ixa", "individual", "FRED", "Agents.jl"),
+  name = c("epiworld [@vegayonEpiworld2026]", "epiworldR [@meyerEpiworldRFastAgentBased2023]",
+           "epiworldpy [@vegayonEpiworldpy2026]", "Covasim [@kerrCovasimAgentbasedModel2021]",
+           "Starsim [@kerrStarsim2025]", "EoN [@millerEoNEpidemicsNetworks2019]",
+           "epydemic [@dobson2022epydemic]", "ixa [@ixa2026]",
+           "individual [@charlesIndividual2021]", "FRED [@grefenstetteFRED2013]",
+           "Agents.jl [@datserisAgentsjl2024]"),
+  language = c("C++", "R (C++ core)", "Python (C++ core)", "Python", "Python", "Python",
+               "Python", "Rust", "R (C++ core)", "C++, driven by its own model language from Python",
+               "Julia"),
+  features = c(
+    "Custom model from `add_state()` and the update-function factories",
+    "The same model through the R wrapper (`update_fun_susceptible()`, `update_fun_rate()`)",
+    "The same model through the Python wrapper (`UpdateFun.susceptible()`, `UpdateFun.rate()`)",
+    "Native disease progression, restricted to SEIRH; severe state as the hospitalization proxy",
+    "Built-in `ss.SEIR`, subclassed to add a hospital state; network module over the edge list",
+    "Rate graphs run with the event-driven `fast_simple_contagion`",
+    "`CompartmentedModel` under `SynchronousDynamics`",
+    "One plan per day, the built-in contact network, an indexed disease-status property",
+    "`CategoricalVariable` and built-in transition processes; infection process written for the benchmark",
+    "A FRED condition per compartment over a `Network` group type loaded with the edges",
+    "`StandardABM` with a daily `model_step!` over an adjacency list written for the benchmark"),
+  time = c("Synchronous daily", "Synchronous daily", "Synchronous daily",
+           "Daily, native", "Daily; durations sampled on entry", "Continuous time (exact)",
+           "Synchronous daily", "Synchronous daily", "Synchronous daily",
+           "Daily; transitions before transmission", "Synchronous daily")
+)
+versions <- unique(all$rows[c("engine", "engine_version")])
+engines$version <- versions$engine_version[match(engines$engine, versions$engine)]
+knitr::kable(engines[c("name", "language", "version", "features", "time")],
+  col.names = c("Engine", "Language", "Recorded version", "Model as implemented", "Time"),
+  row.names = FALSE)
+```
+
+The recorded version is the one each result record carries. Versions built
+from a pinned commit end in that commit (`+g…`), so moving a pin
+invalidates the engine's published results.
+
+Implementation details that matter for interpreting results:
+
+- **The epiworld family.** The three runners build the same model on the same
+  C++ core, so their differences in the simulation come from the language
+  layer. The C++ runner is compiled with the flags R uses for epiworldR
+  (`-O2 -DNDEBUG`, double precision); epiworldpy compiles epiworld with its
+  default single-precision `float`. epiworldpy's `UpdateFun` factories were
+  added for this benchmark
+  ([UofUEpiBio/epiworldpy#17](https://github.com/UofUEpiBio/epiworldpy/pull/17)).
+  Before, a custom model's states needed Python callbacks for every agent
+  every day.
+- **Covasim** runs with waning off and individual transmissibility and viral
+  load fixed to one, so recovered people are permanently removed. Its
+  remaining symptom and severity bookkeeping has no public switch.
+- **Starsim** draws transmission on every edge every day with a daily
+  probability (`ss.probperday`), and samples exponential latent, infectious,
+  and hospital durations when an agent enters a state.
+- **ixa**'s competing infectious transitions reuse epiworld's roulette rule;
+  it samples each infectious contact independently.
+- **individual** has no contact networks. Its infection process, written for
+  the benchmark over an adjacency list, infects a susceptible agent with $k$
+  infectious neighbours with probability $1 - (1 - \beta)^k$, as epiworld
+  does. Updates queued during a day apply at its end.
+- **FRED** has no edge-list network primitive. Its runner writes a synthetic
+  population of single-person households, so FRED's household mixing adds no
+  contacts, and loads the edges verbatim as `Contact.add_edge` properties on
+  FRED's `Network` group type, with transmission restricted to it. Each day an
+  infectious agent draws about `transmissibility` × degree contacts without
+  replacement among its neighbours, so each neighbour is reached with the
+  per-day probability of the synchronous engines. Stays are whole days with
+  the configured means. FRED's `days` counts day 0, which only places the seed
+  cases, so the runner asks for one more day. The image patches an upstream
+  off-by-one in `Date::setup_dates()` that corrupts the heap at large
+  populations (see the [Dockerfile](../.devcontainer/Dockerfile)). An agent
+  that becomes infectious at the start of a day transmits that same day,
+  where a synchronous engine's new case first transmits on the next step.
+- **Agents.jl** has no built-in epidemic model or contact network; the
+  adjacency list and transmission are written for the benchmark. Before any
+  timer starts, the runner steps a throwaway two-agent model so that Julia
+  compiles its methods; otherwise about 0.1 seconds of compilation would land
+  in the first simulation.
+
+### Inclusion and exclusion
+
+The engines included so far share what the common design needs: each runs
+the common model over an arbitrary undirected edge list, from a script, with
+a seed, and reports the five compartment counts. **MEmilio** was evaluated and excluded for now. Its ABM
+has no edge-list network primitive: agents interact only through shared
+locations (household, work, school, ...), so scenario 04's network alone
+would need on the order of 376,000 synthetic two-person locations, of
+unproven performance. Its disease model is an 8-compartment, viral-load-driven
+simulation with no simple mapping onto the common SEIRH model. See
+[issue #11](https://github.com/UofUEpiBio/epiworld-benchmark/issues/11).
+
+## Common model
+
+Every scenario starts from the same SEIRH model: susceptible →
+exposed → infectious → recovered, with a competing infectious →
+hospitalized → recovered branch. Its parameters are in each scenario's
+`scenario.toml`:
+
+| Parameter | Value | Meaning |
+|:----------|------:|:--------|
+| `target_r0` | 2.0 | Early-outbreak $R_0$ used by the transmission mapping |
+| `initial_infected` | 100 | Seed cases (10 in the smoke profile) |
+| `latent_days` | 4.0 | Mean exposed period |
+| `infectious_days` | 7.0 | Mean infectious period |
+| `hospitalization_probability` | 0.05 | Lifetime probability that an infectious agent is hospitalized |
+| `hospital_days` | 7.0 | Mean hospital stay |
+
+**Transmission mapping.** With mean degree $k$ and recovery rate
+$\gamma = 1/\text{infectious\_days}$, every engine starts from the per-contact
+transmissibility $T = \min(0.999,\ R_0 / \max(1, k - 1))$. The daily engines
+convert it into a per-day, per-edge probability through geometric competing
+risks, $\beta = T\gamma / (1 - T(1 - \gamma))$, and the daily hospitalization
+probability likewise, $h = p\gamma / (1 - p(1 - \gamma))$. EoN, in continuous
+time, uses the rate $\tau = T\gamma / (1 - T)$ and hospitalization rate
+$p\gamma / (1 - p)$. The mapping divides by the mean degree minus one, which
+is exact only for a network with near-constant degree; scenario 04's report
+discusses what that means on its heterogeneous network. A scenario's
+calibration factors multiply $\beta$ (see [Calibration](#calibration)).
+
+**Seed cases.** epiworldR's API seeds a custom model's initial cases only in
+the state new infections enter, so they start exposed there, and the C++ and
+Python runners do the same so that all three build exactly the same model.
+Starsim's SEIR and FRED's import also start seed cases exposed. Every other
+engine seeds them infectious.
+
+**Equivalence.** The engines share the network, the parameters, and the
+transmission mapping, not their time semantics: synchronous daily steps,
+continuous time, sampled durations, or Covasim's native bookkeeping. The
+benchmark therefore measures representative throughput under aligned
+network and disease targets, checked by the outcomes in every report, and
+does not claim bit-for-bit epidemiological equivalence.
+
+## Networks
+
+**Watts–Strogatz.** Scenarios 00 to 03 use a Watts–Strogatz graph with mean
+degree 10 and rewiring probability 0.05 (`[network]` in `config.toml`),
+generated once per population size with NetworkX and seed 20260907 plus the
+size's index. Mean degree is held fixed rather than graph density, which
+keeps the edge count, run time, and memory from growing quadratically with
+the population.
+
+**GeoPops.** Scenario 04 uses a contact network collapsed from GeoPops'
+Spartanburg County, South Carolina synthetic population: four contact layers
+(household, workplace, school, group quarters) restricted to the first
+200,000 people, unioned into one undirected, unweighted graph, with people
+who have no contacts among them dropped. Its report gives the construction,
+provenance, and the resulting graph's structure.
+
+Every engine reads the same gzipped, tab-separated edge list at a given size
+and treats it as undirected. A network's identity is the SHA-256 of its
+decompressed edge list, so it does not depend on the compressor; it is part
+of every replicate's fingerprint.
+
+## Calibration
+
+The shared mapping gives different realized attack rates in engines with
+different time semantics. Calibration aligns them with one protocol:
+
+1. Run every engine uncalibrated at each population size of the scenario,
+   with the full replicate count.
+2. Compare each engine's median final attack rate with epiworldR's, whose
+   uncalibrated medians match EoN's exact continuous-time results.
+3. For an engine that differs, choose a size-specific multiplier on $\beta$
+   (`<engine>_transmission_multiplier_<n>` in `scenario.toml`) whose median
+   attack rate over 100 replicates per candidate factor matches epiworldR's.
+   Candidate runs are separate from the timed runs.
+4. Rerun every replicate of each adjusted cell with its factor.
+
+The factors are empirical and size-specific: they align outcomes, but no
+calibrated engine has a strictly analytic $R_0$ of 2. They are part of every
+replicate's fingerprint. Each scenario's report states which factors it
+uses and why.
+
+## Execution protocol
+
+- **Container.** Published results run inside the image built from
+  [`.devcontainer/Dockerfile`](../.devcontainer/Dockerfile), which pins every
+  engine and toolchain (see [Environment](#environment)).
+- **One replicate at a time.** Replicates run sequentially, each in a fresh
+  process, so no state leaks between replicates and a failure affects only
+  its own record. Native math libraries are pinned to one thread
+  (`OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`, `MKL_NUM_THREADS`,
+  `VECLIB_MAXIMUM_THREADS`, `NUMEXPR_NUM_THREADS`, `NUMBA_NUM_THREADS`, and
+  `RCPP_PARALLEL_NUM_THREADS` set to 1), and `PYTHONHASHSEED` is fixed.
+- **Seeds.** Replicate $r$ at the population size with index $i$ uses seed
+  $8675309 + 100000\,i + r$. Seeds do not depend on the scenario, so two
+  scenarios can be compared replicate by replicate.
+- **Replicates.** 100 replicates of 100 days per engine and size, at 10,000
+  and 100,000 agents (`[study]` in `config.toml`). A scenario's `[design]`
+  table can replace the sizes and the count: scenarios 03 and 04 run 20
+  replicates, at 1,000,000 and 165,865 agents.
+- **Excluded from timing.** Interpreter and package startup, network
+  generation, and Julia's compilation, which the warm-up absorbs.
+
+**Why sequential.** Replicates running side by side contend for memory
+bandwidth and, on hybrid CPUs, for performance cores, and the penalty
+differs by engine, which biases the comparison rather than adding noise. In
+the container (a podman VM with 10 vCPUs on an M3 Pro), a probe ran 24
+replicates of each engine one, two, and four at a time at 100,000 agents,
+the way the benchmark schedules them. Median `simulate_seconds` relative to
+one at a time:
+
+| Engine | Scenario 00, 2 workers | Scenario 00, 4 workers | Scenario 01, 2 workers | Scenario 01, 4 workers |
+|:---|---:|---:|---:|---:|
+| epiworld (C++) | 1.07 | 1.26 | 1.14 | 1.20 |
+| epiworldR | 1.00 | 1.06 | 1.11 | 1.56 |
+| ixa | 1.30 | 1.08 | 1.25 | 1.22 |
+| Covasim | 1.00 | 1.07 | 1.06 | 1.11 |
+| epydemic | 1.05 | 1.12 | 1.15 | 1.69 |
+
+Even two workers slowed some engines by up to 30%, unevenly. A 6-worker run
+of the full design inflated epiworldR's median at 100,000 agents about 2.8
+times and ixa's 1.2 to 1.4 times. At 1,000,000 agents, four concurrent
+processes also competed for memory and more than tripled epydemic's time (57 to 67
+seconds per replicate, against about 17 alone). An earlier native probe on
+the same machine (11 cores: 5 performance, 6 efficiency) found up to three
+workers free but six to eight inflating times 1.1 to 2.2 times, the fastest
+engine the most. Epidemiological outputs are unaffected; only timings are.
+
+## Measures
+
+### Timing
+
+Each runner times its own phases:
+
+- `simulate_seconds`, the primary measure: everything the engine has to redo
+  to produce another replicate on the same network. That is its simulation
+  call, including any initialization done inside it, plus whatever cannot be
+  reused between runs:
+  - setting up each run's initial conditions (seeding the infections and,
+    where there is one, distributing a vaccine), which differ from run to
+    run and which epiworld does inside `run()`; EoN's timer covers building
+    its initial status dictionary and individual's its state variable;
+  - for ixa, building the context (population, network, and index), because
+    `execute()` runs a context only once;
+  - for Starsim, building the disease, network, and `Sim` objects and
+    `sim.init()`, because a `Sim` also runs only once;
+  - for FRED, which runs one replicate per process, building its places,
+    population, and network.
+
+  epiworld's `run()` re-initializes its whole population for the same reason,
+  so every engine pays for starting a fresh run. Bookkeeping an engine does
+  while it simulates is included; reading results out of the engine
+  afterwards is not (scenario 02 times it separately as `extract_seconds`).
+- `read_seconds`: reading and parsing the shared edge list, which depends on
+  each language's file handling rather than on the engine. FRED's parsing of
+  its generated model file (which holds every edge) and population files,
+  taken from FRED's own lap timers, counts here.
+- `setup_seconds`: reading plus building what the engine reuses across
+  replicates, such as epiworld's model or EoN's graph. Reports show the
+  building part, `setup_seconds - read_seconds`, as *build*, and
+  build + simulate as the time to a first result once the edge list is in
+  memory.
+- `total_seconds`: setup plus simulation inside the runner process.
+
+### Memory
+
+Each runner reads its resident memory (RSS, from `/proc/self/status`) at the
+same boundaries as the timings:
+
+- `rss_baseline_bytes`: after the runtime and the engine are loaded, before
+  the edge list is read;
+- `rss_after_read_bytes`: after the edge list is parsed;
+- `rss_after_setup_bytes`: after the reusable model is built, just before
+  the simulate timer starts;
+- `peak_rss_setup_bytes`: the high-water mark (`VmHWM`) at that point;
+- `peak_rss_simulate_bytes`: the high-water mark at the end of the simulate
+  timer. The runner resets it (by writing `5` to `/proc/self/clear_refs`)
+  just before the timer starts, so it is the peak of the simulation alone;
+- `process_peak_rss_bytes`: the runner's `ru_maxrss` when it exits. On Linux,
+  `ru_maxrss` also counts the memory the parent held when it forked the
+  runner, so the orchestrator starts each runner through GNU `time`, whose
+  own image is under a megabyte. The kernel derives `ru_maxrss` from the same
+  high-water mark, so the reset lowers it too: it checks the simulation peak
+  and anything after it, not the whole run.
+
+From these, *simulation memory* (`peak_rss_simulate - rss_after_setup`) is
+the extra memory one more replicate needs; *model footprint*
+(`rss_after_setup - rss_after_read`) is what the reusable model holds; and
+*overall peak* is the largest of `peak_rss_setup`, `peak_rss_simulate`, and
+`process_peak_rss`. The phases follow the timings, so an engine that builds
+its model inside the simulate timer (ixa, Starsim) shows that model as
+simulation memory. R, Python, and Julia count garbage they have not collected
+yet as resident; no collection is forced before a reading, as that would
+change the timings. FRED runs as a child process of its Python runner, so
+only its whole-run peak is known, recorded as `peak_rss_simulate_bytes`.
+
+### Implementation size
+
+*Model lines* counts the non-blank, non-comment lines that build the
+population and network, define the disease and any interventions, and run
+the simulation. Argument parsing, edge-file reading, timing, and writing
+results are excluded, because every runner shares them. Each scenario's
+`code_regions.yml` lists the counted regions, and the counts are recomputed
+from the runner sources at every render. Each engine uses its own native
+tools, so the counts reflect what a user of that engine would write. They
+measure implementation size, not developer effort or usability.
+
+## Environment
+
+Each run that executes a scenario's replicates records where it ran in
+`results/environments/<scenario>.json`; [setup.md](../setup.md#environment-records)
+lists the fields. The published results:
+
+```{r}
+#| label: environment
+table_environments()
+```
+
+## Scenario ladder
+
+```{r}
+#| label: ladder
+ladder <- do.call(rbind, lapply(names(all$info), function(s) {
+  d <- all$design[all$design$scenario == s, ]
+  data.frame(
+    scenario = sprintf("[%s](../%s/README.md)", scenario_label(s), s),
+    description = all$info[[s]]$description,
+    agents = paste(format(d$n, big.mark = ",", scientific = FALSE, trim = TRUE), collapse = ", "),
+    replicates = paste(unique(d$replicates), collapse = ", ")
+  )
+}))
+knitr::kable(ladder, col.names = c("Scenario", "What it adds", "Agents", "Replicates per engine and size"),
+             row.names = FALSE)
+```
+
+## Reproducibility
+
+The image is about 4.8 GB. Built by CI, it is published as
+`ghcr.io/uofuepibio/epiworld-benchmark` and tagged with a hash of its inputs;
+[setup.md](../setup.md) covers building or pulling it, and running the
+benchmark natively. From a clone:
+
+```sh
+make container-image       # or pull the published image (see setup.md)
+make container-check       # tests, runner builds, R package check
+make container-smoke       # one tiny replicate of every engine in every scenario
+make container-benchmark   # the full design
+make container-report      # the overview, these documents, and every scenario report
+```
+
+The full design is 7,040 replicates. The published run took 3 h 12 min, one
+replicate at a time, on an Apple M3 Pro under podman. Every replicate's
+record is committed under `results/runs/` (about 14 MB), so a clone skips
+what is already published; the generated networks and GeoPops sources in
+`cache/` take about 33 MB and are rebuilt on demand.
+
+## References

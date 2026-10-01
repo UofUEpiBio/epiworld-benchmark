@@ -45,8 +45,8 @@ help:
 	@echo "  smoke           - Run a quick smoke test of the simulation"
 	@echo "  benchmark       - Run the full benchmark simulation"
 	@echo "  collect         - Rebuild results/*.csv from results/runs/ (e.g. after a git merge)"
-	@echo "  profile         - Side measurements of epiworld and ixa behind analysis.md"
-	@echo "  report          - Render the overview and every scenario report with Quarto"
+	@echo "  profile         - Side measurements behind docs/epiworld-ixa.md"
+	@echo "  report          - Render the overview, docs/, and every scenario report with Quarto"
 	@echo "  clean-cache     - Remove benchmark/cache manually if you really want to discard reusable runs."
 	@echo ""
 	@echo "smoke and benchmark run every scenario_* folder; set SCENARIOS to pick some,"
@@ -108,11 +108,10 @@ collect:
 profile:
 	PYTHON=$(PYTHON) bash analysis/profile.sh
 
-# Always re-render: every scenario report reads the shared results and its
-# own runner sources, which make cannot track cheaply.
+# Always re-render: every report reads the shared results, and the scenario
+# reports their own runner sources, which make cannot track cheaply.
 report:
-	quarto render README.qmd
-	for report in scenario_*/README.qmd; do \
+	for report in README.qmd docs/*.qmd scenario_*/README.qmd; do \
 		quarto render $$report || exit 1; \
 	done
 

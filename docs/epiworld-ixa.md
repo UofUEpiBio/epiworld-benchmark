@@ -1,6 +1,6 @@
 # epiworld and ixa: where the time goes
 
-[Back to the project overview](README.md)
+[Back to the project overview](../README.md)
 
 The measurements below were taken at epiworld `a1ff20a` (0.17.0). The
 benchmark now pins 0.17.1, which revised how epiworld chooses between pushing
@@ -18,7 +18,7 @@ In short:
 - **Per replicate, epiworld is now faster at every size**, including 10,000
   agents, where ixa used to be a little faster. The benchmark times what each
   engine has to redo for another replicate on the same network (see [what is
-  measured](README.md#run-time)). For ixa that includes building a new
+  measured](methods.md#timing)). For ixa that includes building a new
   context, the population, network, and index, because `execute()` runs a
   context only once. That takes about 2.6 ms at 10,000 agents, 29 ms at
   100,000, and 374 ms at 1,000,000. epiworld builds its model once and resets
@@ -47,7 +47,7 @@ In short:
 
 These are side measurements, not benchmark results. They time the
 scenarios' own runners, one process at a time as the benchmark does, in the
-benchmark's container, on the benchmark's networks and seeds. [`analysis/profile.sh`](analysis/profile.sh) reproduces
+benchmark's container, on the benchmark's networks and seeds. [`analysis/profile.sh`](../analysis/profile.sh) reproduces
 them:
 
 ```sh
@@ -71,7 +71,7 @@ It times each runner over nine seeds, and reports the median:
 
 It then runs the C++ runner once per size against a copy of epiworld's
 headers with a timer around each phase of `Model::run()`
-([`analysis/instrument_epiworld.py`](analysis/instrument_epiworld.py)).
+([`analysis/instrument_epiworld.py`](../analysis/instrument_epiworld.py)).
 
 ## Scenario 00, by size
 
@@ -178,7 +178,7 @@ model's first run the agents are already in their initial state, and drawing
 - **Bookkeeping.** epiworld records the transmission tree, the transition
   matrix, and daily counts in every run. Recording a day in the database
   (`next()`) takes well under a microsecond, and applying the day's events
-  under a millisecond per run at 100,000 agents. [Scenario 02](scenario_02/README.md),
+  under a millisecond per run at 100,000 agents. [Scenario 02](../scenario_02/README.md),
   where every engine has to record the same outputs, confirms it: ixa adds
   that bookkeeping at little cost, and the gap does not change.
 - **The daily loop's overhead.** In the runs with no transmission, 100 days
@@ -229,13 +229,13 @@ replicate at a time:
 
 | Scenario | Agents | epiworld (C++) | epiworldR | epiworldpy | ixa | ixa / epiworld (C++) |
 |:---|---:|---:|---:|---:|---:|---:|
-| [00](scenario_00/README.md) | 10,000 | 4.8 | 5.0 | 4.2 | 7.2 | 1.50 |
-| [00](scenario_00/README.md) | 100,000 | 8.4 | 8.0 | 7.5 | 38.5 | 4.60 |
-| [01](scenario_01/README.md) | 10,000 | 2.4 | 2.0 | 2.1 | 4.3 | 1.76 |
-| [01](scenario_01/README.md) | 100,000 | 7.6 | 7.0 | 6.1 | 33.3 | 4.38 |
-| [02](scenario_02/README.md) | 10,000 | 2.4 | 2.0 | 2.1 | 4.7 | 1.94 |
-| [02](scenario_02/README.md) | 100,000 | 7.4 | 7.0 | 6.1 | 32.7 | 4.45 |
-| [03](scenario_03/README.md) | 1,000,000 | 28.1 | 24.5 | 27.8 | 460.2 | 16.38 |
+| [00](../scenario_00/README.md) | 10,000 | 4.8 | 5.0 | 4.2 | 7.2 | 1.50 |
+| [00](../scenario_00/README.md) | 100,000 | 8.4 | 8.0 | 7.5 | 38.5 | 4.60 |
+| [01](../scenario_01/README.md) | 10,000 | 2.4 | 2.0 | 2.1 | 4.3 | 1.76 |
+| [01](../scenario_01/README.md) | 100,000 | 7.6 | 7.0 | 6.1 | 33.3 | 4.38 |
+| [02](../scenario_02/README.md) | 10,000 | 2.4 | 2.0 | 2.1 | 4.7 | 1.94 |
+| [02](../scenario_02/README.md) | 100,000 | 7.4 | 7.0 | 6.1 | 32.7 | 4.45 |
+| [03](../scenario_03/README.md) | 1,000,000 | 28.1 | 24.5 | 27.8 | 460.2 | 16.38 |
 
 Times are in milliseconds.
 
@@ -249,7 +249,7 @@ Times are in milliseconds.
   `run()`. The ratio is fairly stable across scenarios 00-02 (4.4 to 4.6),
   since the vaccine shrinks the outbreak but not the rebuild, and both sides
   of the ratio shrink together.
-- **At 1,000,000 agents ([scenario 03](scenario_03/README.md)) the rebuild
+- **At 1,000,000 agents ([scenario 03](../scenario_03/README.md)) the rebuild
   dominates.** ixa takes about 16 times as long as epiworld per replicate,
   although its `execute()` alone is still a little faster than epiworld's
   `run()`, of which `reset()` is now well over half.

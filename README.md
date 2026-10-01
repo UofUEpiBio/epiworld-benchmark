@@ -2,11 +2,7 @@
 
 
 - [Scenarios](#scenarios)
-- [Common design](#common-design)
-- [What is measured](#what-is-measured)
-  - [Run time](#run-time)
-  - [Memory](#memory)
-  - [Measuring implementation effort](#measuring-implementation-effort)
+- [Summary](#summary)
 - [Running the benchmark](#running-the-benchmark)
 - [Repository layout](#repository-layout)
 - [References](#references)
@@ -40,9 +36,19 @@ target="_blank">Agents.jl</a> (Datseris et al. 2024).
 
 The benchmark is organized as **scenarios** of increasing complexity.
 Each scenario adds a feature to an earlier one, so together they show
-how run time and implementation effort grow as the model grows. Each
-scenario has its own folder, and its own report with the specification,
-results, and interpretation.
+how run time, memory, and implementation size grow as the model grows.
+Every engine runs the same SEIRH model on the same contact network
+within each scenario, one replicate at a time, inside one container
+image.
+
+- [**Methods**](docs/methods.md): the engines, the common model,
+  networks, calibration, the execution protocol, and what is measured.
+- [**Results**](docs/results.md): run time, scaling, the cost of each
+  added feature, memory, epidemiological agreement, and implementation
+  size, across every scenario.
+- [**Running the benchmark**](setup.md): the container, commands, and
+  the published records. [scenarios.md](scenarios.md) explains how to
+  add a scenario.
 
 ## Scenarios
 
@@ -54,174 +60,50 @@ results, and interpretation.
 | 03 | Scenario 00 at 1,000,000 agents | [scenario_03/README.md](scenario_03/README.md) |
 | 04 | Scenario 00 on a real contact network collapsed from <a href="https://github.com/GeoPopsHub" target="_blank">GeoPops</a> | [scenario_04/README.md](scenario_04/README.md) |
 
-**MEmilio was evaluated and excluded for now.** Its ABM has no edge-list
-network primitive comparable to the other engines’ graphs — agents
-interact only through shared Locations (household, work, school, …), so
-matching scenario 04’s network would need on the order of 376,000
-synthetic two-person Locations, of unproven performance, and its disease
-model is an 8-compartment, viral-load-driven simulation with no simple
-mapping onto the common SEIRH model used everywhere else in this
-benchmark. Comparing it directly right now would need substantially more
-runner code than any other engine here and would be hard to calibrate
-fairly against the rest. See [issue
-\#11](https://github.com/UofUEpiBio/epiworld-benchmark/issues/11) for
-the design problem and a possible follow-up.
+## Summary
 
-[scenarios.md](scenarios.md) explains how to add a scenario.
+Medians across replicates, with each scenario at its largest population
+size (in parentheses). Scenarios 00 to 02 also run at 10,000 agents; the
+[results](docs/results.md) and each scenario’s report show every size,
+interquartile ranges, and the other phases of a run.
 
-## Common design
+**Simulation time** (seconds): everything an engine redoes for each
+replicate on the same network ([Timing](docs/methods.md#timing)).
 
-Every scenario shares the following design, set in `config.toml`.
+| Engine     | 00 (100k) | 01 (100k) | 02 (100k) | 03 (1M) | 04 (165,865) |
+|:-----------|----------:|----------:|----------:|--------:|-------------:|
+| epiworld   |   0.00772 |    0.0072 |   0.00714 |  0.0257 |        0.156 |
+| epiworldR  |     0.008 |     0.007 |     0.007 |  0.0235 |        0.157 |
+| epiworldpy |   0.00732 |   0.00597 |   0.00602 |  0.0271 |        0.152 |
+| covasim    |     0.324 |     0.334 |     0.334 |    3.14 |        0.562 |
+| starsim    |     0.905 |     0.908 |     0.715 |    11.0 |        0.822 |
+| EoN        |     0.285 |     0.211 |      0.45 |    2.27 |         3.53 |
+| epydemic   |      1.71 |      1.07 |      1.08 |    13.3 |         12.5 |
+| ixa        |    0.0334 |    0.0289 |    0.0284 |   0.373 |        0.149 |
+| individual |     0.053 |     0.049 |      0.07 |   0.272 |        0.136 |
+| FRED       |     0.485 |     0.587 |     0.706 |     7.2 |         2.66 |
+| Agents.jl  |    0.0366 |    0.0374 |    0.0366 |   0.727 |        0.133 |
 
-- **Population and network.** 10,000 and 100,000 agents, or 1,000,000 in
-  scenario 03, on a Watts–Strogatz contact network with mean degree 10
-  and rewiring probability 0.05. At each size, every engine reads the
-  exact same cached edge list and treats it as an undirected graph. The
-  network fixes mean degree rather than literal graph density, which
-  keeps the edge count, run time, and memory from growing quadratically
-  with population size.
-- **Replicates.** 100 independent replicates of 100 days per engine,
-  size, and scenario, and 20 in scenario 03, where the slowest engines
-  take tens of seconds per replicate. Replicate seeds do not depend on
-  the scenario, so two scenarios can be compared replicate by replicate.
-- **Transmission.** Each engine targets an early-outbreak $R_0 = 2$
-  through a shared analytic mapping from $R_0$, mean degree, and
-  infectious period to a per-contact transmission rate. The engines have
-  different transmission semantics (synchronous daily steps, continuous
-  time, or Covasim’s native model), so a scenario may set empirical,
-  size-specific transmission multipliers that align the engines’
-  realized attack rates. Each scenario’s report states and justifies its
-  factors.
-- **Engines.** The epiworld family, epydemic, ixa, individual, and
-  Agents.jl use synchronous daily transitions. FRED also steps daily,
-  but an agent that becomes infectious transmits the same day. The three
-  epiworld runners build the same model on the same C++ core; in
-  scenario 00 they produce identical epidemics for each seed, so their
-  run-time differences come from the language layer, not the model. EoN
-  uses continuous-time hazards simulated exactly with its event-driven
-  `fast_simple_contagion` algorithm. Covasim runs its native model,
-  restricted as far as its public API allows. Starsim runs its native
-  SEIR model with a hospital state added, stepping daily with sampled
-  (exponential) durations. The reports therefore measure representative
-  framework throughput under aligned network and disease targets, not
-  bit-for-bit epidemiological equivalence.
+**Memory** (MiB): the overall peak resident memory of a replicate’s
+process ([Memory](docs/methods.md#memory)).
 
-## What is measured
-
-### Run time
-
-Each replicate runs in a fresh process and records:
-
-- `simulate_seconds`, the primary measure: the wall-clock time of
-  everything an engine has to redo to produce another replicate on the
-  same network. That is the engine’s simulation call, including any
-  initialization it does inside that call, and anything else that cannot
-  be reused between runs:
-  - setting up each run’s initial conditions, which differ from run to
-    run (seeding the initial infections and, where there is one,
-    distributing a vaccine), since epiworld does it inside `run()`;
-  - for ixa, building the context (population, network, and index),
-    because `execute()` runs a context once;
-  - for Starsim, building and initializing the `Sim`, which can also run
-    only once;
-  - for FRED, which runs one replicate per process, building its places,
-    population, and network from its input files (parsing those files
-    counts as reading, like the other runners’ edge-list parsing).
-
-  epiworld’s `run()` re-initializes its population every time for the
-  same reason, so every engine pays for starting a fresh run. Any
-  bookkeeping an engine does while it simulates is included; reading
-  results out of the engine afterwards is not (scenario 02 records that
-  separately as `extract_seconds`);
-- `read_seconds`: reading and parsing the shared edge list, which
-  depends on each language’s file handling rather than on the engine;
-- `setup_seconds`: reading the edge list plus building what the engine
-  can reuse across replicates, such as epiworld’s model or EoN’s graph.
-  The reports show the building part (`setup_seconds - read_seconds`) as
-  *build*, and build + simulate as the time to a first result once the
-  edge list is in memory;
-- `total_seconds`: setup plus simulation inside the runner process.
-
-Interpreter and package startup and network generation are excluded.
-Published results are collected one replicate at a time, with native
-math libraries pinned to one thread, inside the container defined in
-`.devcontainer/`. Running replicates concurrently, even two at a time,
-slowed some engines by up to 30% and others not at all; see
-[setup.md](setup.md#resource-policy).
-
-### Memory
-
-Each runner also reads its resident memory (RSS, from
-`/proc/self/status`) at the same boundaries as the timings, so the
-memory phases line up with the time phases:
-
-- `rss_baseline_bytes`: after the runtime and the engine are loaded,
-  before the edge list is read, which is what the language and packages
-  cost;
-- `rss_after_read_bytes`: after the edge list is parsed;
-- `rss_after_setup_bytes`: after the reusable model is built, just
-  before the simulate timer starts;
-- `peak_rss_setup_bytes`: the high-water mark (`VmHWM`) at that point,
-  the peak through reading and building;
-- `peak_rss_simulate_bytes`: the high-water mark at the end of the
-  simulate timer. The runner resets it (by writing `5` to
-  `/proc/self/clear_refs`) just before the timer starts, so it is the
-  peak of the simulation alone;
-- `process_peak_rss_bytes`: the runner’s `ru_maxrss` as the operating
-  system reports it when the runner exits. On Linux, `ru_maxrss` also
-  counts the memory the parent held when it forked the runner, so the
-  orchestrator starts each runner through GNU `time`, whose own image is
-  under a megabyte, and records the peak it reports. Without GNU `time`
-  (off Linux, or on a host that lacks it) the field is null.
-
-The reports derive three measures from these. *Simulation memory*,
-`peak_rss_simulate - rss_after_setup`, is the extra memory one more
-replicate needs, and the main measure. *Model footprint*,
-`rss_after_setup - rss_after_read`, is what the reusable model holds.
-*Overall peak* is the largest of `peak_rss_setup`, `peak_rss_simulate`,
-and `process_peak_rss`. The kernel derives `ru_maxrss` from the same
-high-water mark, so resetting it lowers `process_peak_rss` as well; that
-value is an independent check of the simulation peak and of anything
-after it, not of the whole run.
-
-A few details affect how to read the numbers:
-
-- The phases follow the timings, so an engine that builds its model
-  inside the simulate timer (ixa, Starsim) shows that model as
-  simulation memory, not as footprint.
-- R, Python, and Julia count garbage they have not collected yet as
-  resident. No collection is forced before a reading, as that would
-  change the timings; the R runners’ existing collection before the
-  simulate timer stays.
-- Julia compiles code the first time it runs it. The runner’s warm-up
-  covers most of it, and whatever it misses counts toward simulation
-  memory.
-- FRED runs as a child process of its Python runner, which cannot read
-  FRED’s memory between phases. Its record holds only FRED’s whole-run
-  peak, from GNU `time` as above, as `peak_rss_simulate_bytes`, and the
-  phase fields are null.
-- Off Linux, where `/proc` does not exist, the phase fields are null.
-
-### Measuring implementation effort
-
-Each report also counts how much code each engine needs to express the
-scenario. *Model lines* counts non-blank, non-comment lines that build
-the population and network, define the disease and any interventions,
-and run the simulation. Argument parsing, edge-file reading, timing, and
-writing results are excluded because every runner shares them. *Files*
-counts the files a user writes, including build manifests. The counted
-regions of each runner are listed in the scenario’s `code_regions.yml`,
-and the counts are recomputed from the runner sources whenever a report
-is rendered.
-
-Each engine implements a scenario with its own native tools, such as
-built-in interventions, compartments, or agent properties, so the counts
-reflect what a user of that engine would write.
+| Engine     | 00 (100k) | 01 (100k) | 02 (100k) | 03 (1M) | 04 (165,865) |
+|:-----------|----------:|----------:|----------:|--------:|-------------:|
+| epiworld   |        38 |        43 |        43 |     352 |           90 |
+| epiworldR  |       113 |       113 |       113 |     479 |          150 |
+| epiworldpy |       127 |       132 |       132 |     854 |          137 |
+| covasim    |       272 |       281 |       281 |     684 |          307 |
+| starsim    |       339 |       339 |       341 |     905 |          331 |
+| EoN        |       284 |       286 |       313 |   1,671 |          350 |
+| epydemic   |       413 |       413 |       413 |   3,020 |          416 |
+| ixa        |        42 |        42 |        42 |     409 |           46 |
+| individual |       127 |       127 |       142 |     282 |          130 |
+| FRED       |       581 |       597 |       599 |   5,847 |          784 |
+| Agents.jl  |       574 |       585 |       586 |     971 |          569 |
 
 ## Running the benchmark
 
-The benchmark runs inside a container that pins every engine’s
-toolchain. The only host requirement is podman (or Docker, with
+The only host requirement is podman (or Docker, with
 `CONTAINER=docker`):
 
 ``` sh
@@ -229,26 +111,28 @@ make container-image
 make container-check
 make container-smoke
 make container-benchmark     # every scenario; SCENARIOS=scenario_01 for a subset
-make container-report        # renders every scenario's README.md
+make container-report        # this overview, docs/, and every scenario report
 ```
-
-Results are cached one replicate at a time, so an interrupted run
-resumes where it stopped. [setup.md](setup.md) covers the container,
-running natively, targeted runs, the cache, and the resource policy.
 
 ## Repository layout
 
     config.toml          shared study, network, resource, and smoke settings
-    run.py, scripts/     orchestration, network generation, result collection
-    report/common.R      tables and figures shared by the scenario reports
+    run.py, scripts/     orchestration, network generation, environment records
+    report/common.R      tables and figures shared by every report
+    docs/
+      methods.qmd        how the benchmark is built and run (rendered to .md)
+      results.qmd        results across scenarios (rendered to .md)
+      epiworld-ixa.md    where epiworld's and ixa's time goes
     scenario_NN/
       README.qmd         the scenario's report (rendered to README.md)
       scenario.toml      model parameters and calibration
       code_regions.yml   regions counted as model code
       runners/           one runner per engine
-    results/             collected results for every scenario
-    analysis.md          why ixa is faster than epiworld, across scenarios
-    analysis/            the side measurements behind analysis.md
+    results/
+      runs/              one record per replicate (the source of every table)
+      environments/      where each scenario's latest run ran
+      results.csv, daily.csv, scenarios.json   derived from runs/
+    analysis/            the side measurements behind docs/epiworld-ixa.md
 
 ## References
 

@@ -1,144 +1,84 @@
-# Scenario 04: SEIRH on a collapsed GeoPops network
+# Scenario 04: SEIRH on a GeoPops contact network
 
-2026-09-30
+2026-10-01
 
 - [Model](#model)
   - [The network](#the-network)
-  - [Calibration](#calibration)
-  - [Engine implementations](#engine-implementations)
+- [Engine notes](#engine-notes)
 - [Results](#results)
   - [Simulation time](#simulation-time)
   - [Speed relative to epiworldR](#speed-relative-to-epiworldr)
   - [Time to a first result](#time-to-a-first-result)
-  - [The epiworld family](#the-epiworld-family)
   - [Memory](#memory)
   - [Epidemiological sanity checks](#epidemiological-sanity-checks)
-  - [Code required to define the
-    model](#code-required-to-define-the-model)
-- [Recorded versions](#recorded-versions)
+  - [Model lines](#model-lines)
+- [Notes](#notes)
 
-[Back to the project overview](../README.md) · [Scenario 00
-report](../scenario_00/README.md)
+[Back to the project overview](../README.md) ·
+[Methods](../docs/methods.md) · [Results](../docs/results.md) ·
+[Scenario 00](../scenario_00/README.md)
 
 [Scenario 00](../scenario_00/README.md)’s model on a real contact
-network instead of the shared Watts–Strogatz graph: the model, its
+network instead of the shared Watts–Strogatz graph. The model, its
 parameters, the 100 seed cases, and the runners in [`runners/`](runners)
-are copies of scenario 00’s. FRED and Agents.jl were first added in this
-scenario and now run in every scenario. This scenario also asks a
-different question from scenario 00: does the picture change on a graph
-with real degree heterogeneity, rather than Watts–Strogatz’s
-near-constant degree?
+are scenario 00’s. It asks whether the picture changes on a graph with
+real degree heterogeneity rather than Watts–Strogatz’s near-constant
+degree.
 
 ## Model
 
-See [scenario 00](../scenario_00/README.md#model) for the disease model,
-its parameters, and the timing conventions.
-
 ### The network
 
-Every earlier scenario shares a synthetic Watts–Strogatz network (mean
-degree 10, rewiring probability 0.05, so nearly every agent has close to
-the same number of contacts). This scenario instead uses a network built
-from
+The network comes from
 <a href="https://github.com/GeoPopsHub" target="_blank">GeoPops</a>’
 <a href="https://github.com/GeoPopsHub/sc_spartanburg_measles"
 target="_blank">Spartanburg County, South Carolina synthetic
 population</a>: a real, degree-heterogeneous contact structure, at the
 cost of not being able to vary population size independently of the
 source data.
-
 [`scripts/generate_network.py`](../scripts/generate_network.py)
 downloads GeoPops’ four contact-layer adjacency matrices (household,
-workplace, school, and group-quarters, each a checksum-verified
+workplace, school, and group quarters, each a checksum-verified
 `MatrixMarket` file pinned to a commit), keeps the induced subgraph on
 the first 200,000 rows of each, and unions the four layers into one
 undirected, unweighted graph. Of those 200,000 people, 34,135 (17%) have
 no contacts among the others; they could never be infected, so they are
-dropped and the remaining 165,865 renumbered in row order. The result
-has 376,526 edges and mean degree 4.54. Layer identity, edge weights,
-demographic attributes, and contacts touching excluded rows are
-discarded; only which pairs of people are ever in contact survives.
-[`scenario.toml`](scenario.toml) records the exact commit and per-layer
-checksums.
+dropped and the remaining 165,865 renumbered in row order. Layer
+identity, edge weights, demographic attributes, and contacts touching
+excluded rows are discarded; only which pairs of people are ever in
+contact survives. [`scenario.toml`](scenario.toml) records the exact
+commit and per-layer checksums. This is a collapsed contact graph, not a
+reproduction of GeoPops’ multilayer, demographic model.
 
-The graph is still fragmented and heterogeneous. It splits into 17,128
-components, and the largest holds 127,291 agents (77%), which caps the
-attack rate. Degrees range from 1 to 25 (median 3). Because households
-form cliques and degrees vary, the shared analytic mapping, which
-divides $R_0$ by the mean degree minus one, does not give an $R_0$ of 2
-here: the mean excess degree is 6.9, not 3.5. The mapping is the same
-for every engine, so the comparison stays aligned, but the outbreaks are
-larger than the nominal $R_0$ suggests.
+| Property                             |                        Value |
+|:-------------------------------------|-----------------------------:|
+| Agents                               |                      165,865 |
+| Edges, after union and deduplication |                      376,526 |
+| Mean degree (observed)               |                         4.54 |
+| Degree range (median)                |                  1 to 25 (3) |
+| Components (largest)                 | 17,128 (127,291 agents, 77%) |
+| Replicates per engine                |                           20 |
 
-| Parameter (`scenario.toml`) | Value | Meaning |
-|:---|---:|:---|
-| Population | 165,865 | people with contacts among the first 200,000 GeoPops rows |
-| Edges | 376,526 | after union and dedup |
-| Mean degree | 4.54 | observed, not fixed |
-| Replicates | 20 | fewer than scenario 00; the slowest engines take seconds per replicate here |
+The largest component caps the attack rate. Because households form
+cliques and degrees vary, the shared transmission mapping, which divides
+$R_0$ by the mean degree minus one, does not give an $R_0$ of 2 here:
+the mean excess degree is 6.9, not 3.5. The mapping is the same for
+every engine, so the comparison stays aligned, but the outbreaks are
+larger than the nominal $R_0$ suggests. Like scenario 03, this scenario
+runs one replicate at a time (`workers = 1` in its `[design]` table).
 
-Like scenario 03, this scenario runs one replicate at a time
-(`workers = 1` in its `[design]` table), so its timings are comparable
-to every other scenario’s default sequential runs.
+| Parameter                     | Value |
+|:------------------------------|------:|
+| `hospital_days`               |     7 |
+| `hospitalization_probability` |  0.05 |
+| `infectious_days`             |     7 |
+| `initial_infected`            |   100 |
+| `latent_days`                 |     4 |
+| `target_r0`                   |     2 |
 
-### Calibration
+## Engine notes
 
-Scenario 00’s per-engine transmission multipliers were derived from full
-runs at 10,000 and 100,000 agents on the Watts–Strogatz network, and do
-not carry over to a different topology at a different size. Every engine
-therefore runs uncalibrated here (`transmission_multiplier` defaults to
-1.0) until a full run’s median attack rates give real factors to
-calibrate against; see [`scenario.toml`](scenario.toml).
-
-### Engine implementations
-
-The engines from [scenario
-00](../scenario_00/README.md#engine-implementations) run the same model
-unchanged, reading this scenario’s edge list instead. FRED and
-Agents.jl, which scenario 00 also describes, were added here first:
-
-- **FRED** (<a href="https://github.com/PublicHealthDynamicsLab/FRED"
-  target="_blank">PublicHealthDynamicsLab/FRED</a>): a compiled,
-  DSL-driven simulator with no edge-list network primitive comparable to
-  the other engines’ graphs. The runner
-  ([`run_FRED.py`](runners/run_FRED.py)) builds a synthetic population
-  of 165,865 single-person households (so FRED’s own household mixing
-  adds no contacts beyond the network) and loads the benchmark’s edges
-  verbatim as `Contact.add_edge` properties on FRED’s `Network` group
-  type, with transmission restricted to that network. Each day, an
-  infectious agent draws about `transmissibility` × degree contacts
-  without replacement among its neighbours, so every neighbour is
-  reached with that daily probability, and the runner uses the same
-  per-day mapping as the synchronous engines. Latent, infectious, and
-  hospital stays are whole days with the configured means. The build
-  patches an upstream off-by-one in `Date::setup_dates()` that corrupts
-  the heap at this population size (see the
-  [Dockerfile](../.devcontainer/Dockerfile)). FRED runs one replicate
-  per process and must reread and rebuild everything each time. Its
-  timings are split with FRED’s own lap timers: parsing the generated
-  model file (which holds every edge) and the population files counts as
-  reading, like the other runners’ edge-file parsing; building places,
-  the population, and the network, plus the days themselves, count as
-  simulation, as ixa’s and Starsim’s per-replicate builds do.
-- **Agents.jl** (<a href="https://github.com/JuliaDynamics/Agents.jl"
-  target="_blank">JuliaDynamics/Agents.jl</a>): a `StandardABM` with a
-  per-agent status and a per-day `model_step!` that scans each
-  infectious agent’s adjacency list, matching the synchronous daily
-  semantics of epiworldR, epydemic, and individual. The adjacency list
-  and transmission math are written for this benchmark, since Agents.jl
-  has no built-in epidemic model. Initial cases start infectious, as in
-  ixa and individual. Before any timer starts, the runner steps a
-  throwaway two-agent model so that Julia compiles its methods;
-  otherwise about 0.1 seconds of compilation lands in the first
-  simulation.
-
-**MEmilio is deliberately excluded.** Its ABM has no edge-list network
-primitive either — agents interact only through shared Locations
-(household, work, school, …) — so matching this network would need on
-the order of 376,000 synthetic two-person Locations, of unproven
-performance, on top of an 8-compartment, viral-load-driven disease model
-with no simple SEIRH mapping. See [issue
-\#11](https://github.com/UofUEpiBio/epiworld-benchmark/issues/11).
+None: every engine runs scenario 00’s runner on this edge list.
 
 ## Results
 
@@ -181,10 +121,6 @@ with no simple SEIRH mapping. See [issue
 
 ### Simulation time
 
-The primary measure is wall-clock time inside each engine’s simulation
-call. The logarithmic scale keeps fast and slow engines legible in one
-panel.
-
 ![](README_files/figure-commonmark/simulation-time-plot-1.png)
 
 ### Speed relative to epiworldR
@@ -207,12 +143,7 @@ epiworldR completed the simulation call faster.
 
 ### Time to a first result
 
-The simulation time above covers what an engine has to redo for every
-replicate on the same network (see [what is
-measured](../README.md#run-time)). *Build* is the rest of the setup:
-turning the edge list into the engine’s population and network, which a
-user does once per network. *Build + simulate* is the time to a first
-result once the edge list is in memory.
+[Timing](../docs/methods.md#timing) defines build and simulate.
 
 | Engine     | Agents | Read edges (s) | Build (s) | Simulate (s) | Build + simulate (s) |
 |:-----------|-------:|---------------:|----------:|-------------:|---------------------:|
@@ -228,23 +159,9 @@ result once the edge list is in memory.
 | EoN        | 165865 |          0.131 |     0.421 |        3.534 |                3.957 |
 | epydemic   | 165865 |          0.127 |     0.398 |       12.511 |               12.905 |
 
-### The epiworld family
-
-| Engine     | Agents | Median time / epiworld |   Q1 |   Q3 |
-|:-----------|-------:|-----------------------:|-----:|-----:|
-| epiworldR  | 165865 |                   1.00 | 0.99 | 1.01 |
-| epiworldpy | 165865 |                   0.97 | 0.97 | 0.98 |
-
 ### Memory
 
-Resident memory (RSS) of each run, in MiB, as median \[Q1, Q3\] across
-replicates. *Simulation memory* is the peak during the simulate timer
-less the memory held when it started: the extra memory one replicate
-needs. *Model footprint* is what building the reusable model adds after
-the edge list is read, and *baseline* is the runtime after its imports.
-FRED runs as a child process, so only its overall peak is known. See
-“Memory” under “What is measured” in the
-[overview](../README.md#memory).
+Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 
 | Engine | Agents | Baseline (MiB) | Model footprint (MiB) | Simulation memory (MiB) | Overall peak (MiB) |
 |:---|:---|---:|---:|---:|---:|
@@ -260,13 +177,7 @@ FRED runs as a child process, so only its overall peak is known. See
 | Agents.jl | 165865 | 482.3 \[482.3, 482.5\] | 2.8 \[2.8, 2.9\] | 10.3 \[10.2, 10.4\] | 568.6 \[567.7, 569.2\] |
 | FRED | 165865 |  |  |  | 784.4 \[784.4, 784.4\] |
 
-![](README_files/figure-commonmark/memory-plot-1.png)
-
 ### Epidemiological sanity checks
-
-Speed is interpretable only if the simulations produce plausible
-epidemics. These checks show the final attack rate and peak
-hospitalization load.
 
 | Engine     | Agents | Median final attack rate | Median peak hospitalized |
 |:-----------|-------:|-------------------------:|-------------------------:|
@@ -282,41 +193,17 @@ hospitalization load.
 | ixa        | 165865 |                    0.625 |                    851.5 |
 | starsim    | 165865 |                    0.612 |                    968.5 |
 
-![](README_files/figure-commonmark/outcomes-plot-1.png)
+### Model lines
 
-### Code required to define the model
+The runners are scenario 00’s, so are their model lines (see [scenario
+00](../scenario_00/README.md#model-lines)).
 
-A rough measure of effort: how much code each engine needs to express
-the model. The counting rules are described in the [project
-overview](../README.md#measuring-implementation-effort), and the counted
-regions are listed in [`code_regions.yml`](code_regions.yml).
+## Notes
 
-| Engine     | Language | Files | Model lines |
-|:-----------|:---------|------:|------------:|
-| epiworld   | C++      |     1 |          26 |
-| individual | R        |     1 |          32 |
-| epiworldpy | Python   |     1 |          35 |
-| EoN        | Python   |     1 |          38 |
-| epiworldR  | R        |     1 |          47 |
-| covasim    | Python   |     1 |          65 |
-| Agents.jl  | Julia    |     1 |          68 |
-| epydemic   | Python   |     1 |          71 |
-| starsim    | Python   |     1 |          84 |
-| FRED       | Python   |     1 |          92 |
-| ixa        | Rust     |     3 |         138 |
-
-## Recorded versions
-
-| Engine     | Recorded version   |
-|:-----------|:-------------------|
-| Agents.jl  | 7.0.4              |
-| covasim    | 3.1.8              |
-| EoN        | 1.92               |
-| epiworld   | 0.17.1+g04c4ad8    |
-| epiworldpy | 0.17.1-0+gc24b4f9  |
-| epiworldR  | 0.17.1.0+gfca60f3  |
-| epydemic   | 1.14.1             |
-| FRED       | PUB.5.7.0+gbd25f04 |
-| individual | 0.1.19             |
-| ixa        | 3.1.0              |
-| starsim    | 3.6.1              |
+**Calibration.** Every engine runs uncalibrated here (a transmission
+multiplier of 1): scenario 00’s factors were derived on the
+Watts–Strogatz network at other sizes and do not carry over to this
+topology. Most engines’ medians agree anyway; Covasim’s sits highest
+(see the [results](../docs/results.md#epidemiological-agreement)). A
+full run’s medians now exist to calibrate against, if aligned factors
+are wanted.
