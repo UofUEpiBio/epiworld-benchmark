@@ -68,23 +68,51 @@ replicate at a time, inside one container image.
 Medians across replicates, with each scenario at its largest population size
 (in parentheses). Scenarios 00 to 02 also run at 10,000 agents; the
 [results](docs/results.md) and each scenario's report show every size,
-interquartile ranges, and the other phases of a run.
+interquartile ranges, and the other phases of a run. Engines are ordered from
+fastest (or smallest) overall at the top; the axes are logarithmic, because
+the engines differ by orders of magnitude.
 
-**Simulation time** (seconds): everything an engine redoes for each replicate
-on the same network ([Timing](docs/methods.md#timing)).
+**Simulation time**: everything an engine redoes for each replicate on the
+same network ([Timing](docs/methods.md#timing)).
+
+```{r}
+#| label: summary-time-plot
+#| fig-width: 11
+#| fig-height: 4.2
+#| fig-cap: "Median simulation time per replicate (seconds, log scale), by engine and scenario."
+plot_summary_time(all)
+```
+
+<details>
+<summary>The same medians as a table (seconds)</summary>
 
 ```{r}
 #| label: summary-time
 table_summary_time(all)
 ```
 
-**Memory** (MiB): the overall peak resident memory of a replicate's process
+</details>
+
+**Memory**: the overall peak resident memory of a replicate's process
 ([Memory](docs/methods.md#memory)).
+
+```{r}
+#| label: summary-memory-plot
+#| fig-width: 11
+#| fig-height: 4.2
+#| fig-cap: "Median overall peak memory per replicate (MiB, log scale), by engine and scenario."
+plot_summary_memory(all)
+```
+
+<details>
+<summary>The same medians as a table (MiB)</summary>
 
 ```{r}
 #| label: summary-memory
 table_summary_memory(all)
 ```
+
+</details>
 
 ## Running the benchmark
 

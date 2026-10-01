@@ -65,41 +65,67 @@ image.
 Medians across replicates, with each scenario at its largest population
 size (in parentheses). Scenarios 00 to 02 also run at 10,000 agents; the
 [results](docs/results.md) and each scenario’s report show every size,
-interquartile ranges, and the other phases of a run.
+interquartile ranges, and the other phases of a run. Engines are ordered
+from fastest (or smallest) overall at the top; the axes are logarithmic,
+because the engines differ by orders of magnitude.
 
-**Simulation time** (seconds): everything an engine redoes for each
-replicate on the same network ([Timing](docs/methods.md#timing)).
+**Simulation time**: everything an engine redoes for each replicate on
+the same network ([Timing](docs/methods.md#timing)).
+
+![Median simulation time per replicate (seconds, log scale), by engine
+and scenario.](README_files/figure-commonmark/summary-time-plot-1.png)
+
+<details>
+
+<summary>
+
+The same medians as a table (seconds)
+</summary>
 
 | Engine     | 00 (100k) | 01 (100k) | 02 (100k) | 03 (1M) | 04 (165,865) |
 |:-----------|----------:|----------:|----------:|--------:|-------------:|
-| epiworld   |   0.00772 |    0.0072 |   0.00714 |  0.0257 |        0.156 |
-| epiworldR  |     0.008 |     0.007 |     0.007 |  0.0235 |        0.157 |
 | epiworldpy |   0.00732 |   0.00597 |   0.00602 |  0.0271 |        0.152 |
-| covasim    |     0.324 |     0.334 |     0.334 |    3.14 |        0.562 |
-| starsim    |     0.905 |     0.908 |     0.715 |    11.0 |        0.822 |
-| EoN        |     0.285 |     0.211 |      0.45 |    2.27 |         3.53 |
-| epydemic   |      1.71 |      1.07 |      1.08 |    13.3 |         12.5 |
+| epiworldR  |     0.008 |     0.007 |     0.007 |  0.0235 |        0.157 |
+| epiworld   |   0.00772 |    0.0072 |   0.00714 |  0.0257 |        0.156 |
 | ixa        |    0.0334 |    0.0289 |    0.0284 |   0.373 |        0.149 |
-| individual |     0.053 |     0.049 |      0.07 |   0.272 |        0.136 |
-| FRED       |     0.485 |     0.587 |     0.706 |     7.2 |         2.66 |
 | Agents.jl  |    0.0366 |    0.0374 |    0.0366 |   0.727 |        0.133 |
+| individual |     0.053 |     0.049 |      0.07 |   0.272 |        0.136 |
+| covasim    |     0.324 |     0.334 |     0.334 |    3.14 |        0.562 |
+| EoN        |     0.285 |     0.211 |      0.45 |    2.27 |         3.53 |
+| FRED       |     0.485 |     0.587 |     0.706 |     7.2 |         2.66 |
+| starsim    |     0.905 |     0.908 |     0.715 |    11.0 |        0.822 |
+| epydemic   |      1.71 |      1.07 |      1.08 |    13.3 |         12.5 |
 
-**Memory** (MiB): the overall peak resident memory of a replicate’s
-process ([Memory](docs/methods.md#memory)).
+</details>
+
+**Memory**: the overall peak resident memory of a replicate’s process
+([Memory](docs/methods.md#memory)).
+
+![Median overall peak memory per replicate (MiB, log scale), by engine
+and scenario.](README_files/figure-commonmark/summary-memory-plot-1.png)
+
+<details>
+
+<summary>
+
+The same medians as a table (MiB)
+</summary>
 
 | Engine     | 00 (100k) | 01 (100k) | 02 (100k) | 03 (1M) | 04 (165,865) |
 |:-----------|----------:|----------:|----------:|--------:|-------------:|
+| ixa        |        42 |        42 |        42 |     409 |           46 |
 | epiworld   |        38 |        43 |        43 |     352 |           90 |
+| individual |       127 |       127 |       142 |     282 |          130 |
 | epiworldR  |       113 |       113 |       113 |     479 |          150 |
 | epiworldpy |       127 |       132 |       132 |     854 |          137 |
 | covasim    |       272 |       281 |       281 |     684 |          307 |
 | starsim    |       339 |       339 |       341 |     905 |          331 |
 | EoN        |       284 |       286 |       313 |   1,671 |          350 |
 | epydemic   |       413 |       413 |       413 |   3,020 |          416 |
-| ixa        |        42 |        42 |        42 |     409 |           46 |
-| individual |       127 |       127 |       142 |     282 |          130 |
-| FRED       |       581 |       597 |       599 |   5,847 |          784 |
 | Agents.jl  |       574 |       585 |       586 |     971 |          569 |
+| FRED       |       581 |       597 |       599 |   5,847 |          784 |
+
+</details>
 
 ## Running the benchmark
 

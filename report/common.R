@@ -527,7 +527,8 @@ summary_by_scenario <- function(all, column, format) {
   largest <- tapply(all$design$n, all$design$scenario, max)
   rows <- rows[rows$n == largest[rows$scenario], ]
   medians <- tapply(rows[[column]], list(rows$engine, rows$scenario), median)
-  engines <- engine_levels[engine_levels %in% rownames(medians)]
+  # The same order as plot_summary(): by geometric mean across scenarios.
+  engines <- names(sort(rowMeans(log(medians), na.rm = TRUE)))
   medians <- medians[engines, , drop = FALSE]
   cells <- apply(medians, c(1, 2), function(x) if (is.na(x)) "" else format(x))
   out <- data.frame(Engine = engines, cells, check.names = FALSE, row.names = NULL)
@@ -779,4 +780,58 @@ table_parameters <- function(bench) {
   knitr::kable(data.frame(Parameter = paste0("`", names(p), "`"),
                           Value = vapply(p, function(x) format(x, scientific = FALSE), "")),
                row.names = FALSE, align = "lr")
+}
+
+#' The overview's summary figures: the median of `column` for every engine
+#' (rows, fastest or smallest overall at the top) in each scenario at its
+#' largest size (panels), as dots on one shared log axis, each labelled with
+#' its value. Medians span several orders of magnitude, so bars, which need a
+#' zero baseline, would mislead on the log scale.
+plot_summary <- function(all, column, label, value_label) {
+  rows <- all$rows
+  if (!nrow(rows) || !column %in% names(rows)) return(NULL)
+  largest <- tapply(all$design$n, all$design$scenario, max)
+  rows <- rows[rows$n == largest[rows$scenario], ]
+  m <- aggregate(rows[[column]], rows[c("engine", "scenario")], median)
+  names(m)[3] <- "value"
+  # Order engines by their geometric mean across scenarios.
+  overall <- tapply(log(m$value), m$engine, mean)
+  m$engine <- factor(m$engine, levels = names(sort(overall, decreasing = TRUE)))
+  m$panel <- factor(paste0(scenario_label(m$scenario), " (", size_label(largest[m$scenario]), ")"),
+                    levels = paste0(scenario_label(names(largest)), " (", size_label(largest), ")"))
+  m$text <- vapply(m$value, value_label, "")
+  ink <- "#0b0b0b"; muted <- "#52514e"; grid <- "#e6e5e1"; surface <- "#fcfcfb"
+  ggplot2::ggplot(m, ggplot2::aes(value, engine)) +
+    ggplot2::geom_point(colour = "#2a78d6", size = 2.6) +
+    # Nudged in log10 units, scaled to the axis's span in decades, so every
+    # label sits the same distance from its dot in both figures.
+    ggplot2::geom_text(ggplot2::aes(label = text), colour = muted, size = 2.9,
+                       hjust = 0, vjust = 0.4,
+                       nudge_x = 0.03 + 0.05 * diff(log10(range(m$value)))) +
+    ggplot2::facet_wrap(~ panel, nrow = 1) +
+    ggplot2::scale_x_log10(expand = ggplot2::expansion(mult = c(0.06, 0.3)),
+                           labels = function(x) format(x, big.mark = ",", scientific = FALSE,
+                                                       drop0trailing = TRUE, trim = TRUE)) +
+    ggplot2::labs(x = label, y = NULL) +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(
+      plot.background = ggplot2::element_rect(fill = surface, colour = NA),
+      panel.grid.major.y = ggplot2::element_line(colour = grid, linewidth = 0.3),
+      panel.grid.major.x = ggplot2::element_line(colour = grid, linewidth = 0.3),
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.spacing.x = ggplot2::unit(10, "pt"),
+      strip.text = ggplot2::element_text(colour = ink, face = "bold", hjust = 0),
+      axis.text = ggplot2::element_text(colour = muted),
+      axis.title.x = ggplot2::element_text(colour = muted, margin = ggplot2::margin(t = 6))
+    )
+}
+
+plot_summary_time <- function(all) {
+  plot_summary(all, "simulate_seconds", "Median simulation time per replicate (seconds, log scale)",
+               function(x) if (x >= 10) sprintf("%.1f", x) else formatC(x, digits = 2, format = "fg"))
+}
+
+plot_summary_memory <- function(all) {
+  plot_summary(all, "peak_mib", "Median overall peak memory (MiB, log scale)",
+               function(x) formatC(x, digits = 0, format = "f", big.mark = ","))
 }
