@@ -15,140 +15,31 @@ execute:
 #| label: setup
 source("../report/common.R")
 bench <- load_benchmark("scenario_00")
-full <- bench$full
-median_of <- function(engine, n, column = "simulate_seconds") {
-  d <- full[full$engine == engine & full$n == n, ]
-  if (!nrow(d)) return(NA)
-  if (column == "build_seconds") median(d$setup_seconds - d$read_seconds) else median(d[[column]])
-}
-s3 <- function(x) if (is.na(x)) "?" else sprintf("%.3f", x)
-ratio <- function(a, b, n) sprintf("%.1f", median_of(a, n) / median_of(b, n))
 ```
 
-[Back to the project overview](../README.md)
+[Back to the project overview](../README.md) ·
+[Methods](../docs/methods.md) · [Results](../docs/results.md)
 
-The reference model for the benchmark. Every later scenario adds complexity
-to it, and each later scenario's report compares its run time and model code
-against this one.
+The reference model for the benchmark. Every later scenario adds complexity to
+it, and the [results](../docs/results.md) compare each later scenario with this
+one.
 
 ## Model
 
-Susceptible $\rightarrow$ exposed $\rightarrow$ infectious $\rightarrow$
-recovered, with a competing infectious $\rightarrow$ hospitalized
-$\rightarrow$ recovered branch. Transmission happens along the shared
-Watts–Strogatz contact network (mean degree 10, rewiring probability 0.05).
-There are no interventions.
+The [common model](../docs/methods.md#common-model) with no interventions, on
+the shared Watts–Strogatz network (mean degree 10, rewiring probability 0.05)
+at 10,000 and 100,000 agents, with 100 replicates per engine and size.
 
-| Parameter (`scenario.toml`)   | Value | Meaning                                          |
-|:------------------------------|------:|:-------------------------------------------------|
-| `target_r0`                   |   2.0 | Early-outbreak $R_0$ used by the analytic mapping |
-| `initial_infected`            |   100 | Seed cases (10 in the smoke profile)             |
-| `latent_days`                 |   4.0 | Mean exposed period                              |
-| `infectious_days`             |   7.0 | Mean infectious period                           |
-| `hospitalization_probability` |  0.05 | Lifetime probability that an infectious agent is hospitalized |
-| `hospital_days`               |   7.0 | Mean hospital stay                               |
+```{r}
+#| label: parameters
+table_parameters(bench)
+```
 
-Initial cases start infectious in every engine except the epiworld family,
-Starsim, and FRED. epiworldR's API cannot seed a custom model's initial cases
-in any state other than the one new infections enter, so they start exposed
-there. The C++ and Python runners do the same, so that all three epiworld
-runners build exactly the same model. Starsim's SEIR puts its seed cases where
-new infections go, which is also exposed, and so does FRED's import.
+## Engine notes
 
-The simulation time covers everything an engine has to redo for another
-replicate on the same network (see
-[what is measured](../README.md#run-time)). Seeding the initial cases is
-part of it in every runner, because the seeds differ in every run and
-epiworld places them inside `run()`, which also re-initializes the whole
-population. EoN's timer covers building its initial status dictionary,
-individual's covers building its state variable, and the other engines seed
-inside their simulation call. ixa's `execute()` runs a context only once, so
-its timer also covers building the context: the population, the network, and
-the index on disease status; it then seeds in a plan at time 0. Starsim's
-`Sim` also runs only once, so its timer covers building the disease, network,
-and `Sim` objects and `sim.init()`, which builds the agent and network arrays
-and seeds the initial cases. FRED runs one replicate per process and rebuilds
-everything each time; its timer covers building its places, population, and
-network as well as the days (see its engine description below).
-
-[Scenario 03](../scenario_03/README.md) runs this model at 1,000,000
-agents.
-
-### Engine implementations
-
-- **epiworld** (C++): a custom model built from `add_state()` and the
-  library's update-function factories, `sampler::make_update_susceptible()` and
-  `new_state_update_transition()`. New infections enter Exposed. It is
-  compiled with the flags R uses for epiworldR (`-O2 -DNDEBUG`, double
-  precision).
-- **epiworldR**: the same model through the R wrapper, with
-  `update_fun_susceptible()` and `update_fun_rate()`.
-- **epiworldpy**: the same model through the Python wrapper, with
-  `UpdateFun.susceptible()` and `UpdateFun.rate()`. These were added for this
-  benchmark in
-  [UofUEpiBio/epiworldpy#17](https://github.com/UofUEpiBio/epiworldpy/pull/17).
-  Before, a custom model's other states needed Python callbacks, which
-  epiworld calls for every agent every day. epiworldpy compiles epiworld with
-  its default single-precision `float`, and with the same seed it still gives
-  the same epidemics as the other two.
-- **Covasim**: native disease progression restricted to SEIRH. Waning is off,
-  and individual transmissibility and viral load are fixed. The severe state
-  serves as the hospitalization proxy.
-- **Starsim**: its built-in `ss.SEIR` disease, subclassed to add a hospital
-  state, on a network module holding the shared edge list. Transmission is
-  Starsim's own per-edge, per-day draw with a daily probability
-  (`ss.probperday`). Durations are sampled when an agent enters a state:
-  exponential latent, infectious, and hospital periods, with hospitalization
-  decided by a Bernoulli draw with the lifetime probability.
-- **EoN**: a continuous-time rate graph run with its event-driven
-  `fast_simple_contagion` algorithm.
-- **epydemic**: a `CompartmentedModel` under `SynchronousDynamics`.
-- **ixa**: one plan per day, ixa's built-in contact network, and an indexed
-  disease-status property. The competing infectious transitions reuse
-  epiworldR's roulette rule.
-- **individual**: a `CategoricalVariable` for the disease state, the built-in
-  `bernoulli_process()` for E $\rightarrow$ I and H $\rightarrow$ R, and
-  `fixed_probability_multinomial_process()` for leaving I, to H with the
-  lifetime hospitalization probability and otherwise to R. individual has no
-  contact networks, so infection is a process written for this benchmark over
-  an adjacency list built from the edge list: a susceptible agent with $k$
-  infectious neighbours is infected with probability $1 - (1 - \beta)^k$, as
-  in epiworld. Updates queued during a day apply at its end, so the steps are
-  synchronous.
-- **FRED** ([PublicHealthDynamicsLab/FRED](https://github.com/PublicHealthDynamicsLab/FRED){target="_blank"}):
-  a compiled simulator driven by its own model language, with no edge-list
-  network primitive comparable to the other engines' graphs. The runner
-  ([`run_FRED.py`](runners/run_FRED.py)) writes a synthetic population of
-  single-person households (so FRED's own household mixing adds no contacts
-  beyond the network) and loads the benchmark's edges verbatim as
-  `Contact.add_edge` properties on FRED's `Network` group type, with
-  transmission restricted to that network. The disease is a FRED condition
-  with one state per compartment, and FRED's `import_count()` exposes the
-  seed cases on day 0. Each day, an infectious agent draws about
-  `transmissibility` × degree contacts without replacement among its
-  neighbours, so every neighbour is reached with that daily probability, and
-  the runner uses the same per-day mapping as the synchronous engines.
-  Latent, infectious, and hospital stays are whole days with the configured
-  means. FRED's `days` counts day 0, which here only places the seed cases,
-  so the runner asks for one more day than the other engines run. The build
-  patches an upstream off-by-one in `Date::setup_dates()` that corrupts the
-  heap at large populations (see the
-  [Dockerfile](../.devcontainer/Dockerfile)). FRED runs one replicate per
-  process and must reread and rebuild everything each time. Its timings are
-  split with FRED's own lap timers: parsing the generated model file (which
-  holds every edge) and the population files counts as reading, like the
-  other runners' edge-file parsing; building places, the population, and
-  the network, plus the days themselves, count as simulation, as ixa's and
-  Starsim's per-replicate builds do.
-- **Agents.jl** ([JuliaDynamics/Agents.jl](https://github.com/JuliaDynamics/Agents.jl){target="_blank"}):
-  a `StandardABM` with a per-agent status and a per-day `model_step!` that
-  scans each infectious agent's adjacency list, matching the synchronous
-  daily semantics of epiworldR, epydemic, and individual. The adjacency list
-  and transmission math are written for this benchmark, since Agents.jl has
-  no built-in epidemic model or contact network. Before any timer starts, the
-  runner steps a throwaway two-agent model so that Julia compiles its
-  methods; otherwise about 0.1 seconds of compilation lands in the first
-  simulation.
+Every engine runs its baseline implementation, described in
+[Engines](../docs/methods.md#engines). The three epiworld runners build the
+same model and, in this scenario, produce identical epidemics for every seed.
 
 ## Results
 
@@ -170,9 +61,6 @@ table_summary(bench)
 
 ### Simulation time
 
-The primary measure is wall-clock time inside each engine's simulation call.
-The logarithmic scale keeps fast and slow engines legible in one panel.
-
 ```{r}
 #| label: simulation-time-plot
 #| fig-width: 10
@@ -192,192 +80,60 @@ table_speedup(bench)
 
 ### Time to a first result
 
-The simulation time above covers what an engine has to redo for every
-replicate on the same network (see
-[what is measured](../README.md#run-time)). *Build* is the rest of the
-setup: turning the edge list into the engine's population and network, which
-a user does once per network. *Build + simulate* is the time to a first
-result once the edge list is in memory. Reading the edge file is shown but
-left out of it, because its cost depends on each language's file parsing
-rather than on the engine.
+*Build* turns the edge list into the engine's model, once per network;
+*build + simulate* is the time to a first result once the edge list is in
+memory ([Timing](../docs/methods.md#timing)).
 
 ```{r}
 #| label: phases
 table_phases(bench)
 ```
 
-### The epiworld family
-
-The three epiworld runners build the same model on the same C++ core, and
-in this scenario they produce identical epidemics for every seed. This table
-compares the two wrappers with the C++ runner, replicate by replicate.
-
-```{r}
-#| label: epiworld-family
-table_speedup(bench, reference = "epiworld", engines = c("epiworldR", "epiworldpy"))
-```
-
 ### Memory
 
-Resident memory (RSS) of each run, in MiB, as median [Q1, Q3] across
-replicates. *Simulation memory* is the peak during the simulate timer less
-the memory held when it started: the extra memory one replicate needs.
-*Model footprint* is what building the reusable model adds after the edge
-list is read, and *baseline* is the runtime after its imports. FRED runs as
-a child process, so only its overall peak is known. See "Memory" under "What
-is measured" in the [overview](../README.md#memory).
+Median [Q1, Q3] in MiB ([Memory](../docs/methods.md#memory)).
 
 ```{r}
 #| label: memory
 table_memory(bench)
 ```
 
-```{r}
-#| label: memory-plot
-#| fig-width: 10
-#| fig-height: 9
-plot_memory(bench)
-```
-
 ### Epidemiological sanity checks
-
-Speed is interpretable only if the simulations produce plausible epidemics.
-These checks show the final attack rate and peak hospitalization load.
-Differences also expose the engines' non-identical time semantics and
-Covasim's native symptom/severe bookkeeping.
 
 ```{r}
 #| label: outcomes-table
 table_outcomes(bench)
 ```
 
-```{r}
-#| label: outcomes-plot
-#| fig-width: 9
-#| fig-height: 5
-if (bench$has_full) {
-  print(plot_outcomes(bench, "The calibrated outcomes are closely aligned within each population size"))
-}
-```
+### Model lines
 
-### Code required to define the model
-
-A rough measure of effort: how much code each engine needs to express the
-model. The counting rules are described in the
-[project overview](../README.md#measuring-implementation-effort), and the
-counted regions are listed in [`code_regions.yml`](code_regions.yml).
+Counted as described in
+[Implementation size](../docs/methods.md#implementation-size), over the
+regions in [`code_regions.yml`](code_regions.yml).
 
 ```{r}
 #| label: code-effort
 table_code_effort(bench)
 ```
 
-Model lines vary with how much of the model an engine provides built in. For
-example, EoN describes transitions as rate graphs, Covasim needs its native
-parameters overridden to restrict it to SEIRH, Starsim needs a subclass of
-its SEIR to add the hospital state, and the ixa runner writes its daily step
-by hand, as the individual and Agents.jl runners write their infection
-processes. The FRED runner writes FRED's model file and synthetic population
-from Python, so its lines are the Python that generates them. ixa needs a
-Cargo project that is compiled before it runs, and FRED a compiled binary.
+## Notes
 
-## Interpretation
+**Calibration.** epiworldR, its two siblings, EoN, epydemic, and Starsim run
+uncalibrated: their medians already agree. The others use size-specific
+factors at 10,000 and 100,000 agents (in [`scenario.toml`](scenario.toml)):
+Covasim 0.715 and 0.710, ixa 0.983 and 0.988, individual 0.951 at both, FRED
+0.911 and 0.898, and Agents.jl 0.981 and 0.982. Their uncalibrated medians sat
+above the target: ixa's, individual's (0.441 and 0.074), and Agents.jl's
+(0.414 and 0.065) because they seed the initial cases infectious, individual's
+also because its infectious period averages the full seven days, where the
+epiworld family's competing hospitalization rate shortens it; FRED's (0.519
+and 0.095) because each of its generations is about a day shorter. Covasim's
+were calibrated after restricting it to fixed transmission and permanent
+immunity.
 
-### Calibration
-
-The shared analytic transmission mapping produced different realized attack
-rates across frameworks. Calibration therefore selected size-specific factors
-for restricted Covasim (0.715 at 10,000 agents and 0.710 at 100,000), ixa
-(0.983 and 0.988), individual (0.951 at both), FRED (0.911 and 0.898), and
-Agents.jl (0.981 and 0.982). epiworldR needs none: its
-uncalibrated median attack rates match EoN's exact continuous-time results,
-and so do epiworld's and epiworldpy's, which run the same model. Starsim
-needs none either (uncalibrated medians 0.387 and 0.060). All 100 replicates
-in each adjusted cell were then rerun. These empirical corrections are intentionally
-population-specific; they align benchmark outcomes but mean that none of the
-calibrated engines has a strictly analytic $R_0$ of 2. The values live in
-[`scenario.toml`](scenario.toml) and participate in the cache fingerprint.
-
-Covasim's factors were calibrated after restricting it to fixed transmission
-and permanent immunity. ixa shares the synchronous daily semantics of
-epiworldR and epydemic, but its uncalibrated attack rates sat above the other
-engines: it seeds the initial cases as infectious and samples each infectious
-contact independently rather than with epiworld's roulette. individual's
-sat higher still (0.441 and 0.074). It too seeds the initial cases as
-infectious, and its infectious period averages the full seven days, where the
-epiworld family's competing daily hospitalization rate shortens it slightly.
-Agents.jl seeds the initial cases as infectious too, and its uncalibrated
-medians (0.414 and 0.065) sat slightly above the target, like ixa's. FRED's
-sat far above (0.519 and 0.095). Its contact draw reaches each neighbour with
-the same daily probability as the synchronous engines, but an agent that
-becomes infectious at the start of a day transmits that same day, where a
-synchronous engine's new case first transmits on the next step. Each
-generation is therefore about a day shorter, and within 100 days the outbreak
-grows further. FRED and Agents.jl were calibrated against epiworldR's
-medians over 100 replicates per candidate factor, outside the timed runs.
-
-### The language layer costs nothing measurable in the simulation
-
-The three epiworld runners build the same model and run the same epidemics,
-and they take the same time within noise at both sizes (see the table
-above). Earlier versions of this report found the C++ runner slower than
-the wrappers at 100,000 agents. That came from how epiworld built the
-network, not from the language layer, and it went away with the
-counting-sort network build
-([UofUEpiBio/epiworld#274](https://github.com/UofUEpiBio/epiworld/issues/274)).
-
-Outside the simulation, the wrappers cost something. At 100,000 agents,
-building the model from the edge list takes the C++ runner
-`r s3(median_of("epiworld", 1e5, "build_seconds"))` seconds, against
-`r s3(median_of("epiworldR", 1e5, "build_seconds"))` for epiworldR and
-`r s3(median_of("epiworldpy", 1e5, "build_seconds"))` for epiworldpy, which
-first convert the edge list into their own types. Reading the edge file also
-differs by language, but that is the benchmark's plumbing rather than the
-engine's, so the time-to-first-result table leaves it out.
-
-### Why the two fastest engines differ
-
-epiworld 0.16.1 made network transmission push-based when that is cheaper:
-infectious agents push infection to their neighbours instead of every queued
-susceptible agent scanning all of its neighbours for infectious ones (the
-change proposed in
-[UofUEpiBio/epiworld#264](https://github.com/UofUEpiBio/epiworld/issues/264)).
-Together with the other changes through 0.17.0, this made epiworldR about
-four times faster here than 0.15.1.0 was at 100,000 agents. 0.17.1 revised
-the cost model that chooses between pushing and pulling
-([UofUEpiBio/epiworld#281](https://github.com/UofUEpiBio/epiworld/pull/281)),
-which mattered most around the epidemic peak on scenario 04's network. Both
-engines' daily work now follows the outbreak rather than the population.
-
-Per replicate, epiworld is faster at both sizes: ixa takes
-`r ratio("ixa", "epiworld", 1e4)` and `r ratio("ixa", "epiworld", 1e5)` times
-as long as the C++ runner. ixa's `execute()` can run a context only once, so
-every replicate rebuilds the population, network, and index, which grows with
-the population. epiworld builds its model once and resets it at the start of
-every `run()`, which is about twenty times cheaper. On the epidemic
-computation itself the two are close. [analysis.md](../analysis.md) measures
-each of these, and shows how they map onto every scenario.
-
-### Equivalence across engines
-
-epiworldR, epydemic, ixa, individual, and Agents.jl use synchronous daily
-transitions, while EoN uses continuous-time hazards, simulated exactly. FRED
-steps daily too, but applies each day's transitions before that day's
-transmission, as described above. Starsim also steps
-daily, but samples each agent's time in a state when it enters it, and
-applies transitions before transmission within a step. Covasim retains its native
-exposed, infectious, symptomatic, and severe bookkeeping, with severe
-prevalence used as the hospitalization proxy. Its runner disables waning
-immunity and fixes individual transmissibility and viral load to one, making
-recovered people permanently removed and removing those sources of
-heterogeneity. Covasim does not expose a public switch to remove the
-remaining symptom/severity bookkeeping. Thus this report measures restricted,
-representative framework throughput under aligned network and disease
-targets; it does not claim bit-for-bit epidemiological equivalence.
-
-## Recorded versions
-
-```{r}
-#| label: versions
-table_versions(bench)
-```
+**Model lines.** They vary with how much of the model an engine provides.
+EoN describes transitions as rate graphs, Covasim overrides its native
+parameters to restrict itself to SEIRH, Starsim subclasses its SEIR for the
+hospital state, and the ixa, individual, and Agents.jl runners write their
+daily step or infection process by hand. The FRED runner's lines are the
+Python that writes FRED's model file and population.

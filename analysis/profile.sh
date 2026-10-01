@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Side measurements behind analysis.md: where epiworld's and ixa's simulation
+# Side measurements behind docs/epiworld-ixa.md: where epiworld's and ixa's simulation
 # time goes. Run inside the container, after a full benchmark has generated
 # the networks, with nothing else running:
 #

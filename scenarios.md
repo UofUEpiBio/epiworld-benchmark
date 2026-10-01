@@ -104,14 +104,22 @@ complete model. The report leaves that shared plumbing out of the line counts.
    cache fingerprint, so you can adjust it after a run without rerunning
    anything.
 
-6. **Write the report, `README.qmd`.** Start from the previous scenario's
-   report. It should describe the model change, include a parameter table,
-   state the output convention, and have one bullet per engine describing how
-   it is implemented. The tables and figures come from `report/common.R`:
-   call `load_benchmark("scenario_04")`, then the `table_*` and `plot_*`
-   helpers. To compare with an earlier scenario, pass it to
-   `table_time_versus()` and `table_code_effort()`. Write the interpretation
-   specific to the scenario, and add a row for it to the scenario table in
+6. **Write the report, `README.qmd`.** Copy an existing scenario's report;
+   every report follows the same template, at most about 180 lines:
+   - links back to the overview, the methods, the results, and the scenario
+     it builds on;
+   - **Model**: only what the scenario adds, and `table_parameters(bench)`;
+   - **Engine notes**: only how each engine implements what the scenario
+     adds (the baseline implementations are in `docs/methods.qmd`);
+   - **Results**: the `table_*` and `plot_*` helpers from `report/common.R`
+     after `load_benchmark("scenario_NN")`; pass the earlier scenario to
+     `table_code_effort()` to show what this one added;
+   - **Notes**: at most about three short paragraphs of findings specific to
+     this scenario, including its calibration.
+
+   A methodological statement belongs in `docs/methods.qmd` only, and a
+   comparison across scenarios in `docs/results.qmd`; link to them rather
+   than repeating them. Add a row for the scenario to the scenario table in
    the top-level `README.qmd`.
 
 7. **Check correctness before timing anything.**
@@ -143,8 +151,9 @@ complete model. The report leaves that shared plumbing out of the line counts.
    `[study]` sizes, in scenario order.
    Leave `N_THREADS` unset (one replicate at a time), as the published
    results do, so the new scenario's timings match the others'. `make report`
-   renders the overview and every `scenario_*/README.qmd`. Check that the
-   prose in the new report still matches its numbers.
+   renders the overview, `docs/methods.qmd`, `docs/results.qmd`, and every
+   `scenario_*/README.qmd`. Check that the prose in the new report, and in
+   `docs/results.qmd`, still matches the numbers.
 
 ## Caching
 

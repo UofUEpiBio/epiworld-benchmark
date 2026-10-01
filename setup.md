@@ -1,68 +1,17 @@
-# Network epidemic ABM speed benchmark
+# Running the benchmark
 
-This folder contains a reproducible, resumable benchmark of eleven epidemic
-simulation engines across several scenarios of increasing complexity:
+[Back to the project overview](README.md)
 
-- **epiworld 0.17.1** (C++), the header-only library, using a custom
-  discrete-time SEIRH model built from its state update functions;
-- **epiworldR 0.17.1** (R wrapper of epiworld), building the same model;
-- **epiworldpy 0.17.1** (Python wrapper of epiworld), building the same
-  model;
-- **Covasim 3.1.8** (Python), using its native disease progression and severe
-  state as the hospitalization proxy;
-- **Starsim 3.6.1** (Python), Covasim's successor, using its native SEIR
-  disease with a hospital state added;
-- **EoN 1.92** (Python), using a continuous-time SEIRH model run with the
-  event-driven `fast_simple_contagion` algorithm;
-- **epydemic 1.14.1** (Python), using a custom synchronous SEIRH model;
-- **ixa 3.1.0** (Rust), using a custom synchronous SEIRH model driven by one
-  plan per day on ixa's plan queue, its built-in contact network, and an
-  indexed disease-status property;
-- **individual 0.1.19** (R, from mrc-ide), using a categorical state variable,
-  its built-in transition processes, and an infection process over the
-  network written for the benchmark. individual is not on CRAN, so the
-  container installs the v0.1.19 release from GitHub;
-- **FRED 5.7.0** (C++, driven by its own model language), pinned to commit
-  `bd25f04` and built into the container, loading the shared edge list as a
-  FRED `Network` over a synthetic population of single-person households; and
-- **Agents.jl 7.0.4** (Julia), using a `StandardABM` with a daily step over
-  an adjacency list written for the benchmark.
-
-The three epiworld packages are pinned to commits on their default branches at
-epiworld 0.17.1, which no release includes yet: epiworld `04c4ad8` on master,
-epiworldR `fca60f3` on main (in `.devcontainer/Dockerfile`), and epiworldpy
-`c24b4f9` on main (in `pyproject.toml`). Each engine's recorded version ends
-in the commit it was built from (for example `0.17.1+g04c4ad8`), so moving a
-pin invalidates that engine's results even when the version number stays the
-same. Natively, epiworldR's commit is unknown and its version is recorded
-without it.
-
-Each scenario lives in its own `scenario_NN/` folder with its report
-(`README.qmd`, rendered to `README.md`), its parameters (`scenario.toml`), and
-one runner per engine (`runners/`). Scenario 00 is the SEIRH baseline,
-scenario 01 adds an all-or-nothing vaccine, scenario 02 adds epidemiological
-outputs, scenario 03 runs scenario 00 at 1,000,000 agents, and scenario 04
-runs it on a contact network collapsed from GeoPops.
-[scenarios.md](scenarios.md) explains how to add another.
-
-The full design runs 100 replicates for 100 days at 10,000 and 100,000 agents
-(`[study]` in `config.toml`). A scenario can replace those sizes and the
-replicate count in the `[design]` table of its `scenario.toml`: scenario 03
-runs 20 replicates at 1,000,000 agents.
-Every engine receives the exact same cached Watts--Strogatz edge list at a
-given population size. The graph has mean degree 10 and rewiring probability
-0.05. Here “average density” is interpreted as the usual sparse-network
-quantity, average degree: literal graph density would force degree (and memory)
-to grow linearly with population size.
+How to build, run, and report the benchmark. The [methods](docs/methods.md)
+explain what it measures and why it runs the way it does.
 
 ## Quick start
 
 The benchmark is meant to run inside the container defined in
-`.devcontainer/`. It pins R 4.5.1 with epiworldR 0.17.1 and individual
-0.1.19, epiworld's 0.17.1 headers (both epiworld pins at the commits above),
-Python 3.12 via uv (with epiworldpy and Starsim), Rust 1.98.0,
-and Quarto 1.10.18, so every engine is built and timed on the same
-toolchain. The only host prerequisite is [podman](https://podman.io/) (or
+`.devcontainer/`. It pins R 4.5.1, Python 3.12 via uv, Rust 1.98.0, Julia
+1.13.1, and Quarto 1.10.18, with every engine at the version in
+[Engines](docs/methods.md#engines), so every engine is built and timed on the
+same toolchain. The only host prerequisite is [podman](https://podman.io/) (or
 Docker: pass `CONTAINER=docker`). From this folder:
 
 ```sh
@@ -106,10 +55,10 @@ for each run's process peak memory, GNU `time` (Linux only)
 headers into `.deps/`. Cache records carry the host OS and architecture in
 their fingerprint, so native and container timings are never mixed.
 
-The report target renders the data-free project overview (`README.md`) and
-one GitHub-flavored report per scenario (`scenario_NN/README.md`, with PNG
-figures in `scenario_NN/README_files/`), so the rendered results stay readable
-directly in a pull request.
+The report target renders the overview (`README.md`), the methods and results
+(`docs/methods.md`, `docs/results.md`), and one report per scenario
+(`scenario_NN/README.md`), as GitHub-flavored Markdown with PNG figures, so
+the rendered results stay readable directly in a pull request.
 
 The smoke profile is deliberately tiny (1,000 agents, 10 days, one replicate)
 and tests all eleven integrations in every scenario. `make benchmark` launches
@@ -156,6 +105,21 @@ replicate count) are not removed automatically; delete them from
 `results/runs/` before collecting. The report filters the results to the
 full-profile sizes and 100 days; `results/scenarios.json` records each
 scenario's sizes and replicate counts.
+
+## Pins
+
+Every engine is pinned. The epiworld family is pinned to commits on its
+default branches: epiworld (`EPIWORLD_SHA` in
+[`.devcontainer/Dockerfile`](.devcontainer/Dockerfile), kept in step with
+`EPIWORLD_REF` in the [Makefile](Makefile)), epiworldR (`EPIWORLDR_SHA` in the
+Dockerfile), and epiworldpy (in [`pyproject.toml`](pyproject.toml) and
+`uv.lock`). FRED (`FRED_SHA`) and individual (`INDIVIDUAL_SHA`) are pinned in
+the Dockerfile, the Python engines in `uv.lock`, Agents.jl in
+`julia/Manifest.toml`, and ixa in each runner's `Cargo.lock`. Each engine's
+recorded version ends in the commit it was built from where the version
+number does not change with it (for example `0.17.1+g04c4ad8`), so moving a
+pin invalidates that engine's published results. Natively, epiworldR's
+commit is unknown and its version is recorded without it.
 
 ## Environment records
 
@@ -209,94 +173,20 @@ run of one scenario never touches another's. `results/run-manifest.json` remains
 the log of the latest invocation (profile, requested scenarios and engines,
 counts, workers, Python version).
 
-## Resource policy
+## Concurrency
 
-The default is intentionally conservative: one simulation subprocess at a
-time, with OpenMP, BLAS, MKL, Accelerate, NumExpr, Numba, and Rcpp thread-count
-variables all set to one. Network generation occurs once per size and is
-excluded from engine timings.
-
-Concurrency is opt-in through the `N_THREADS` environment variable, capped by
-`resources.max_workers` in `config.toml` and by the host core count:
+Replicates run one at a time by default, with native math libraries pinned to
+one thread; published results must be collected this way (see
+[Execution protocol](docs/methods.md#execution-protocol) for why).
+Concurrency is opt-in for smoke and exploratory runs, through the `N_THREADS`
+environment variable, capped by `resources.max_workers` in `config.toml` and
+by the host core count:
 
 ```sh
 N_THREADS=3 make container-benchmark
 ```
 
 `--workers` overrides `N_THREADS` when both are given. `N_THREADS` is not part
-of the cache fingerprint, so changing it does not invalidate cached results.
-
-Replicates running side by side contend for memory bandwidth and, on hybrid
-CPUs, for performance cores, and the penalty differs by engine. Median
-`simulate_seconds` at 100,000 agents, relative to a sequential run, measured
-natively (before the container workflow and before ixa was added) on an 11-core
-M3 Pro (5 performance + 6 efficiency), 12 replicates per cell:
-
-| workers | epiworldR   | covasim     | EoN         |
-|--------:|------------:|------------:|------------:|
-| 2       | 0.98x       | 1.03x       | 1.00x       |
-| 3       | 1.01x       | 1.20x       | 0.99x       |
-| 4       | 1.06-1.30x  | 1.04-1.07x  | 0.97-0.99x  |
-| 6       | 1.62x       | 1.42x       | 1.09x       |
-| 8       | 1.42-2.17x  | 1.36-1.46x  | 1.13-1.27x  |
-
-Ranges span repeated probes; cells without a range were measured once, and the
-spread at four and eight workers shows these figures are sensitive to other
-load on the host. The pattern is stable even so: up to three workers is free,
-and beyond that the fastest engine degrades the most, because it is the one
-most sensitive to being scheduled onto an efficiency core. That biases the
-cross-engine comparison rather than just adding noise.
-
-The container, which is how the published results are collected, shows no
-free level of concurrency. A 6-worker run of the full design in the podman VM
-(10 vCPUs) inflated median epiworldR `simulate_seconds` at 100,000 agents
-about 2.8x relative to a sequential run, and ixa only 1.2-1.4x. A later probe
-ran 24 replicates of each engine one, two, and four at a time, as the
-benchmark schedules them (replicates of one engine side by side), at 100,000
-agents. Median `simulate_seconds` relative to one at a time:
-
-| Engine | Scenario 00, 2 workers | Scenario 00, 4 workers | Scenario 01, 2 workers | Scenario 01, 4 workers |
-|:---|---:|---:|---:|---:|
-| epiworld (C++) | 1.07x | 1.26x | 1.14x | 1.20x |
-| epiworldR | 1.00x | 1.06x | 1.11x | 1.56x |
-| ixa | 1.30x | 1.08x | 1.25x | 1.22x |
-| Covasim | 1.00x | 1.07x | 1.06x | 1.11x |
-| epydemic | 1.05x | 1.12x | 1.15x | 1.69x |
-
-Even two workers slowed some engines by up to 30%, unevenly, and not always
-less than four did. At 1,000,000 agents, four concurrent processes also
-competed for memory and doubled epydemic's time. The published results are
-therefore collected one replicate at a time (the default; leave `N_THREADS`
-unset). Scenario 03 also sets `workers = 1` in its `[design]` table, so it
-runs sequentially whatever `N_THREADS` says. Concurrency remains useful for
-smoke runs and exploratory runs whose timings will not be published.
-
-Epidemiological outputs are unaffected by concurrency; only the timings are.
-
-## What is timed
-
-Each runner records:
-
-- `read_seconds`: reading and parsing the shared edge list;
-- `setup_seconds`: reading the edge list plus building what the engine can
-  reuse across replicates on that network;
-- `simulate_seconds`: everything the engine has to redo for each replicate,
-  which is its simulation call plus, for ixa and Starsim, building a new
-  context or `Sim` (neither can be run twice); and
-- `total_seconds`: setup plus simulation inside the runner process.
-
-Interpreter/package startup and shared graph generation are excluded. The
-reports treat `simulate_seconds` as the primary outcome. They also show
-build time (`setup_seconds - read_seconds`) and build + simulate, the time to
-a first result once the edge list is in memory. Reading the file is left out
-of both, because its cost depends on each language's file parsing rather than
-on the engine. Each replicate runs in a fresh process, avoiding state
-leakage and making failures independently resumable.
-
-
-Relevant upstream documentation: [Covasim](https://docs.covasim.org/),
-[Starsim](https://docs.starsim.org/),
-[individual](https://mrc-ide.github.io/individual/),
-[EoN generalized contagion](https://epidemicsonnetworks.readthedocs.io/en/latest/functions/EoN.fast_simple_contagion.html),
-[epydemic synchronous dynamics](https://pyepydemic.readthedocs.io/en/latest/synchronousdynamics.html),
-and [ixa](https://ixa.rs/).
+of the fingerprint, so changing it does not invalidate published results. A
+scenario's `[design]` table can set `workers = 1`, as scenarios 03 and 04 do,
+to stay sequential whatever `N_THREADS` says.

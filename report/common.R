@@ -228,8 +228,8 @@ memory_fields <- c(
   "peak_rss_setup_bytes", "peak_rss_simulate_bytes", "process_peak_rss_bytes"
 )
 
-#' Memory measures of each run, in MiB (see "What is measured" in the
-#' overview). The overall peak is the largest of the runner's high-water mark
+#' Memory measures of each run, in MiB (see "Memory" in docs/methods.md).
+#' The overall peak is the largest of the runner's high-water mark
 #' before the simulation, the one during it, and the orchestrator's process
 #' peak: the runners reset their high-water mark when the simulate timer starts,
 #' which lowers the process peak too.
@@ -273,26 +273,6 @@ table_memory <- function(bench) {
     "Engine", "Agents", "Baseline (MiB)", "Model footprint (MiB)",
     "Simulation memory (MiB)", "Overall peak (MiB)"
   ), row.names = FALSE, align = "llrrrr")
-}
-
-plot_memory <- function(bench) {
-  measures <- memory_measures(bench$full)
-  if (!nrow(measures)) return(NULL)
-  # Reversed so the first engine_levels entry lands at the top row.
-  measures$engine <- factor(measures$engine, levels = rev(engine_levels))
-  measures$agents <- agents_factor(measures$n)
-  ggplot2::ggplot(measures, ggplot2::aes(peak, engine, fill = engine)) +
-    ggplot2::geom_boxplot(outlier.shape = NA, alpha = 0.7, width = 0.6) +
-    ggplot2::geom_jitter(width = 0, height = 0.15, alpha = 0.4, size = 1) +
-    ggplot2::facet_wrap(~ agents, ncol = 1) +
-    ggplot2::scale_x_log10() +
-    ggplot2::labs(
-      x = "Overall peak resident memory (MiB, log scale)",
-      y = NULL,
-      caption = "Note: dots show individual replicates"
-    ) +
-    ggplot2::theme_minimal(base_size = 14) +
-    ggplot2::theme(legend.position = "none")
 }
 
 #' Median time of each phase of a run. Reading the edge list is benchmark
@@ -372,76 +352,6 @@ table_outcomes <- function(bench) {
   knitr::kable(rows[columns], digits = 3, col.names = names, row.names = FALSE)
 }
 
-plot_outcomes <- function(bench, subtitle) {
-  rows <- outcome_medians(bench$full)
-  if (!nrow(rows)) return(NULL)
-  rows$engine <- factor(rows$engine, levels = engine_levels)
-  rows$agents <- agents_factor(rows$n, suffix = "")
-  ggplot2::ggplot(rows, ggplot2::aes(engine, attack_rate, fill = engine)) +
-    ggplot2::geom_col(width = 0.65) +
-    ggplot2::facet_wrap(~ agents, scales = "free_y") +
-    ggplot2::scale_y_continuous(limits = c(0, NA)) +
-    ggplot2::labs(x = NULL, y = "Median final attack rate", subtitle = subtitle) +
-    ggplot2::theme_minimal(base_size = 12) +
-    ggplot2::theme(legend.position = "none")
-}
-
-#' Paired simulate-time ratio of this scenario against `baseline`, matched by
-#' engine, size, and seed (seeds do not depend on the scenario).
-table_time_versus <- function(bench, baseline) {
-  every <- bench$every
-  if (!nrow(bench$full) || !any(every$scenario == baseline)) return(NULL)
-  base <- every[every$scenario == baseline, c("engine", "n", "seed", "simulate_seconds")]
-  names(base)[4] <- "baseline_seconds"
-  paired <- merge(bench$full, base, by = c("engine", "n", "seed"))
-  paired$ratio <- paired$simulate_seconds / paired$baseline_seconds
-  rows <- do.call(rbind, lapply(split(paired, list(paired$engine, paired$n), drop = TRUE),
-    function(d) data.frame(
-      engine = d$engine[[1]],
-      agents = d$n[[1]],
-      baseline = median(d$baseline_seconds),
-      this = median(d$simulate_seconds),
-      median = median(d$ratio),
-      q25 = q(d$ratio, .25),
-      q75 = q(d$ratio, .75)
-    )))
-  rows <- rows[order(rows$agents, rows$median), ]
-  label <- sub("scenario_", "scenario ", baseline)
-  this <- sub("scenario_", "scenario ", bench$scenario)
-  knitr::kable(rows, digits = c(0, 0, 3, 3, 2, 2, 2),
-    col.names = c("Engine", "Agents", paste("Median", label, "(s)"),
-                  paste("Median", this, "(s)"), paste("Median time /", label), "Q1", "Q3"),
-    row.names = FALSE)
-}
-
-#' Median simulation time at every size of this scenario and `baseline`, which
-#' runs the same model at other sizes, with the growth from the baseline's
-#' largest size to this scenario's smallest, and this scenario's build time
-#' (setup without reading the edge list).
-table_scaling <- function(bench, baseline) {
-  if (!nrow(bench$full)) return(NULL)
-  every <- bench$every[bench$every$scenario %in% c(baseline, bench$scenario), ]
-  medians <- tapply(every$simulate_seconds, list(every$engine, every$n), median)
-  sizes <- as.numeric(colnames(medians))
-  before <- max(sizes[sizes < min(bench$full$n)])
-  after <- min(bench$full$n)
-  setup <- tapply(bench$full$setup_seconds - bench$full$read_seconds, bench$full$engine, median)
-  rows <- data.frame(
-    engine = rownames(medians),
-    medians,
-    growth = medians[, as.character(after)] / medians[, as.character(before)],
-    setup = setup[rownames(medians)],
-    check.names = FALSE
-  )
-  rows <- rows[order(rows[[as.character(after)]]), ]
-  size_label <- function(n) format(n, big.mark = ",", scientific = FALSE, trim = TRUE)
-  knitr::kable(rows, digits = c(0, rep(3, length(sizes)), 1, 3), row.names = FALSE, col.names = c(
-    "Engine", paste(size_label(sizes), "agents (s)"),
-    paste0("Time at ", size_label(after), " / at ", size_label(before)),
-    paste0("Median build at ", size_label(after), " (s)")
-  ))
-}
-
 #' Count the model lines of one engine's runner. Each region runs from the
 #' first line matching `from` to the next line matching `to` (both inclusive).
 count_model_lines <- function(spec, scenario_dir) {
@@ -490,13 +400,6 @@ table_code_effort <- function(bench, baseline = NULL) {
   }
   effort <- effort[order(effort$model_lines), ]
   knitr::kable(effort, col.names = names, row.names = FALSE)
-}
-
-table_versions <- function(bench) {
-  if (!nrow(bench$full)) return(NULL)
-  versions <- unique(bench$full[c("engine", "engine_version")])
-  knitr::kable(versions[order(versions$engine), ],
-               col.names = c("Engine", "Recorded version"), row.names = FALSE)
 }
 
 #' Median daily incidence and reproductive number across replicates, from
@@ -576,4 +479,359 @@ plot_daily <- function(bench) {
                   subtitle = "Medians across replicates") +
     ggplot2::theme_minimal(base_size = 12) +
     ggplot2::theme(legend.position = "bottom", strip.placement = "outside")
+}
+
+
+# ---------------------------------------------------------------------------
+# Across scenarios: the overview's summary tables and docs/results.qmd.
+# ---------------------------------------------------------------------------
+
+#' Every scenario's full-design rows (100 days, at its design's sizes), with
+#' the derived measures the cross-scenario tables use.
+load_all <- function(root = "..") {
+  path <- file.path(root, "results", "results.csv")
+  info <- jsonlite::read_json(file.path(root, "results", "scenarios.json"))
+  if (!file.exists(path)) return(list(rows = data.frame(), info = info, root = root))
+  rows <- read.csv(path, stringsAsFactors = FALSE)
+  design <- do.call(rbind, lapply(names(info), function(s) data.frame(
+    scenario = s,
+    n = vapply(info[[s]]$design, `[[`, 0, "n"),
+    replicates = vapply(info[[s]]$design, `[[`, 0, "replicates")
+  )))
+  rows <- merge(rows[rows$days == full_days, ], design[c("scenario", "n")])
+  rows$build_seconds <- rows$setup_seconds - rows$read_seconds
+  rows$attack_rate <- 1 - rows$final_susceptible / rows$n
+  measures <- memory_measures(rows)
+  if (nrow(measures)) {
+    rows$peak_mib <- measures$peak
+    rows$simulation_mib <- measures$simulation
+  }
+  list(rows = rows, info = info, design = design, root = root)
+}
+
+#' "00", "01", ... from "scenario_00".
+scenario_label <- function(scenario) sub("scenario_", "", scenario)
+
+#' Population sizes as "10k", "165,865", "1M".
+size_label <- function(n) {
+  ifelse(n %% 1e6 == 0, paste0(n / 1e6, "M"),
+    ifelse(n %% 1e3 == 0, paste0(n / 1e3, "k"),
+      format(n, big.mark = ",", scientific = FALSE, trim = TRUE)))
+}
+
+#' Median of `column` by engine for each scenario at its largest size, as an
+#' engine x scenario table: the overview's summary tables.
+summary_by_scenario <- function(all, column, format) {
+  rows <- all$rows
+  if (!nrow(rows) || !column %in% names(rows)) return(NULL)
+  largest <- tapply(all$design$n, all$design$scenario, max)
+  rows <- rows[rows$n == largest[rows$scenario], ]
+  medians <- tapply(rows[[column]], list(rows$engine, rows$scenario), median)
+  # The same order as plot_summary(): by geometric mean across scenarios.
+  engines <- names(sort(rowMeans(log(medians), na.rm = TRUE)))
+  medians <- medians[engines, , drop = FALSE]
+  cells <- apply(medians, c(1, 2), function(x) if (is.na(x)) "" else format(x))
+  out <- data.frame(Engine = engines, cells, check.names = FALSE, row.names = NULL)
+  names(out)[-1] <- paste0(scenario_label(colnames(medians)), " (",
+                           size_label(largest[colnames(medians)]), ")")
+  knitr::kable(out, align = c("l", rep("r", ncol(medians))))
+}
+
+#' Median simulation time in seconds, three significant digits.
+table_summary_time <- function(all) {
+  summary_by_scenario(all, "simulate_seconds", function(x) {
+    if (x >= 10) sprintf("%.1f", x) else formatC(x, digits = 3, format = "fg")
+  })
+}
+
+#' Median overall peak resident memory in MiB.
+table_summary_memory <- function(all) {
+  summary_by_scenario(all, "peak_mib", function(x) formatC(x, digits = 0, format = "f", big.mark = ","))
+}
+
+#' "00 (100k)" style facet labels, in scenario then size order.
+cell_factor <- function(scenario, n) {
+  labels <- paste0(scenario_label(scenario), " (", size_label(n), ")")
+  order <- unique(labels[order(scenario, n)])
+  factor(labels, levels = order)
+}
+
+#' (a) Median read, build, and simulation time of each engine in each
+#' scenario and size, on one log scale.
+plot_runtime_decomposition <- function(all) {
+  rows <- all$rows
+  if (!nrow(rows)) return(NULL)
+  long <- do.call(rbind, lapply(c(read = "read_seconds", build = "build_seconds",
+                                  simulate = "simulate_seconds"), function(column) {
+    m <- aggregate(rows[[column]], rows[c("scenario", "n", "engine")], median)
+    data.frame(m[c("scenario", "n", "engine")], seconds = m$x,
+               phase = c(read_seconds = "Read edges", build_seconds = "Build",
+                         simulate_seconds = "Simulate")[[column]])
+  }))
+  long <- long[long$seconds > 0, ]
+  long$cell <- cell_factor(long$scenario, long$n)
+  long$engine <- factor(long$engine, levels = rev(engine_levels))
+  long$phase <- factor(long$phase, levels = c("Read edges", "Build", "Simulate"))
+  ggplot2::ggplot(long, ggplot2::aes(seconds, engine, colour = phase, shape = phase)) +
+    ggplot2::geom_point(size = 2.4) +
+    ggplot2::facet_wrap(~ cell, ncol = 4) +
+    ggplot2::scale_x_log10(labels = function(x) format(x, scientific = FALSE, drop0trailing = TRUE)) +
+    ggplot2::labs(x = "Median seconds (log scale)", y = NULL, colour = NULL, shape = NULL) +
+    ggplot2::theme_minimal(base_size = 12) +
+    ggplot2::theme(legend.position = "bottom")
+}
+
+#' (b) Median simulation time against population size for the scenario 00
+#' model, on the Watts-Strogatz network: scenario 00 at its sizes and
+#' scenario 03 at 1,000,000.
+plot_scaling <- function(all, scenarios = c("scenario_00", "scenario_03")) {
+  rows <- all$rows[all$rows$scenario %in% scenarios, ]
+  if (!nrow(rows)) return(NULL)
+  m <- aggregate(simulate_seconds ~ engine + n, rows, median)
+  m$engine <- factor(m$engine, levels = engine_levels)
+  sizes <- sort(unique(m$n))
+  ggplot2::ggplot(m, ggplot2::aes(n, simulate_seconds, colour = engine)) +
+    # Slope one: time proportional to the population.
+    ggplot2::geom_line(linewidth = 0.8) +
+    ggplot2::geom_point(size = 2) +
+    ggplot2::scale_x_log10(breaks = sizes, labels = size_label(sizes)) +
+    ggplot2::scale_y_log10() +
+    ggplot2::labs(x = "Agents (log scale)", y = "Median simulation seconds (log scale)",
+                  colour = NULL) +
+    ggplot2::theme_minimal(base_size = 12)
+}
+
+#' Growth of median simulation time from `from` agents to `to` agents.
+growth_factors <- function(all, from = 1e5, to = 1e6,
+                           scenarios = c("scenario_00", "scenario_03")) {
+  rows <- all$rows[all$rows$scenario %in% scenarios, ]
+  m <- tapply(rows$simulate_seconds, list(rows$engine, rows$n), median)
+  m[, as.character(to)] / m[, as.character(from)]
+}
+
+#' Paired ratio of simulation time, `scenario` over `baseline`, matched by
+#' engine, size, and seed; median by engine and size.
+paired_ratios <- function(all, scenario, baseline) {
+  rows <- all$rows
+  a <- rows[rows$scenario == scenario, c("engine", "n", "seed", "simulate_seconds")]
+  b <- rows[rows$scenario == baseline, c("engine", "n", "seed", "simulate_seconds")]
+  p <- merge(a, b, by = c("engine", "n", "seed"), suffixes = c("", "_baseline"))
+  if (!nrow(p)) return(NULL)
+  p$ratio <- p$simulate_seconds / p$simulate_seconds_baseline
+  aggregate(ratio ~ engine + n, p, median)
+}
+
+#' (c) The cost of each added feature: scenario 01 over 00 (the vaccine) and
+#' 02 over 01 (the outputs), as engine x size tables of median paired ratios.
+table_complexity_cost <- function(all) {
+  steps <- list(c("scenario_01", "scenario_00", "Vaccine (01 / 00)"),
+                c("scenario_02", "scenario_01", "Outputs (02 / 01)"))
+  parts <- lapply(steps, function(s) {
+    r <- paired_ratios(all, s[1], s[2])
+    if (is.null(r)) return(NULL)
+    r$column <- paste0(s[3], ", ", size_label(r$n))
+    r
+  })
+  parts <- do.call(rbind, parts)
+  if (is.null(parts)) return(NULL)
+  wide <- tapply(parts$ratio, list(parts$engine, parts$column), median)
+  wide <- wide[engine_levels[engine_levels %in% rownames(wide)], unique(parts$column), drop = FALSE]
+  knitr::kable(data.frame(Engine = rownames(wide), wide, check.names = FALSE, row.names = NULL),
+               digits = 2)
+}
+
+#' (d) Overall peak resident memory of every run, by engine, scenario, and size.
+plot_memory_all <- function(all) {
+  rows <- all$rows
+  if (!nrow(rows) || is.null(rows$peak_mib)) return(NULL)
+  rows$cell <- cell_factor(rows$scenario, rows$n)
+  rows$engine <- factor(rows$engine, levels = rev(engine_levels))
+  ggplot2::ggplot(rows, ggplot2::aes(peak_mib, engine)) +
+    ggplot2::geom_boxplot(outlier.shape = NA, width = 0.6, fill = "grey90") +
+    ggplot2::facet_wrap(~ cell, ncol = 4) +
+    ggplot2::scale_x_log10() +
+    ggplot2::labs(x = "Overall peak resident memory (MiB, log scale)", y = NULL) +
+    ggplot2::theme_minimal(base_size = 12)
+}
+
+#' Median of `column` as an engine x (scenario, size) table.
+table_by_cell <- function(all, column, digits) {
+  rows <- all$rows
+  if (!nrow(rows) || !column %in% names(rows)) return(NULL)
+  rows$cell <- cell_factor(rows$scenario, rows$n)
+  m <- tapply(rows[[column]], list(rows$engine, rows$cell), median)
+  m <- m[engine_levels[engine_levels %in% rownames(m)], , drop = FALSE]
+  knitr::kable(data.frame(Engine = rownames(m), m, check.names = FALSE, row.names = NULL),
+               digits = digits, format.args = list(big.mark = ","))
+}
+
+#' (e) Median final attack rate and its deviation from epiworldR's, by engine
+#' and (scenario, size).
+table_agreement <- function(all) {
+  rows <- all$rows
+  if (!nrow(rows)) return(NULL)
+  rows$cell <- cell_factor(rows$scenario, rows$n)
+  m <- tapply(rows$attack_rate, list(rows$engine, rows$cell), median)
+  m <- m[engine_levels[engine_levels %in% rownames(m)], , drop = FALSE]
+  reference <- m["epiworldR", ]
+  cells <- matrix(sprintf("%.3f", m), nrow(m), dimnames = dimnames(m))
+  for (i in rownames(m)) if (i != "epiworldR") {
+    cells[i, ] <- sprintf("%.3f (%+.3f)", m[i, ], m[i, ] - reference)
+  }
+  knitr::kable(data.frame(Engine = rownames(m), cells, check.names = FALSE, row.names = NULL),
+               align = c("l", rep("r", ncol(m))))
+}
+
+#' (f) Model lines of every engine in every scenario.
+table_code_size <- function(all) {
+  scenarios <- names(all$info)
+  effort <- do.call(rbind, lapply(scenarios, function(s) {
+    e <- code_effort(s, all$root)
+    data.frame(engine = e$engine, language = e$language, scenario = s, lines = e$model_lines)
+  }))
+  wide <- tapply(effort$lines, list(effort$engine, scenario_label(effort$scenario)), sum)
+  wide <- wide[engine_levels[engine_levels %in% rownames(wide)], , drop = FALSE]
+  language <- tapply(effort$language, effort$engine, `[`, 1)[rownames(wide)]
+  knitr::kable(data.frame(Engine = rownames(wide), Language = language, wide,
+                          check.names = FALSE, row.names = NULL))
+}
+
+#' (g) Completed runs against the design, by engine and scenario, with the
+#' failures each scenario's latest run recorded.
+table_completion <- function(all) {
+  rows <- all$rows
+  design <- aggregate(replicates ~ scenario, all$design, sum)
+  done <- table(factor(rows$engine, levels = engine_levels), rows$scenario)
+  engines <- engine_levels[engine_levels %in% rownames(done) & rowSums(done) > 0]
+  cells <- sapply(colnames(done), function(s) {
+    expected <- design$replicates[design$scenario == s]
+    ifelse(done[engines, s] >= expected, paste0("✓ ", done[engines, s]),
+           paste0(done[engines, s], " of ", expected))
+  })
+  failures <- vapply(colnames(done), function(s) {
+    path <- file.path(all$root, "results", "environments", paste0(s, ".json"))
+    if (!file.exists(path)) return(NA_real_)
+    as.numeric(jsonlite::read_json(path)$failures)
+  }, 0)
+  out <- data.frame(Engine = engines, cells, check.names = FALSE, row.names = NULL)
+  names(out)[-1] <- scenario_label(colnames(done))
+  out <- rbind(out, c("Failed runs, latest run", ifelse(is.na(failures), "", failures)))
+  knitr::kable(out, align = c("l", rep("r", ncol(out) - 1)))
+}
+
+#' The environment of the published runs, from every scenario's record: one
+#' table if they share an environment, with each scenario's run dates.
+table_environments <- function(root = "..") {
+  paths <- Sys.glob(file.path(root, "results", "environments", "*.json"))
+  if (!length(paths)) return(NULL)
+  records <- lapply(paths, jsonlite::read_json)
+  ids <- unique(vapply(records, function(r) r$environment_id, ""))
+  # The run dates and counts cover every scenario, not the first one.
+  combined <- records[[1]]
+  combined$started_utc <- min(vapply(records, function(r) r$started_utc, ""))
+  combined$finished_utc <- max(vapply(records, function(r) r$finished_utc, ""))
+  for (count in c("executed", "cached", "failures")) {
+    combined[[count]] <- sum(vapply(records, function(r) as.numeric(r[[count]]), 0))
+  }
+  bench <- list(environment = combined, info = list(workers = NULL),
+                full = data.frame(environment_id = ids))
+  table <- table_environment(bench)
+  note <- paste0("\n\nScenarios ", paste(scenario_label(sub("\\.json$", "", basename(paths))),
+                                         collapse = ", "),
+                 if (length(ids) == 1) " ran in this one environment." else
+                   paste0(" ran in ", length(ids), " environments; the table shows ",
+                          basename(paths[1]), "."), "\n")
+  knitr::asis_output(paste0(table, note))
+}
+
+#' The two epiworld wrappers' simulation time relative to the C++ runner,
+#' matched by seed: median paired ratio by (scenario, size).
+table_family_ratios <- function(all) {
+  parts <- lapply(c("epiworldR", "epiworldpy"), function(wrapper) {
+    rows <- all$rows
+    a <- rows[rows$engine == wrapper, c("scenario", "n", "seed", "simulate_seconds")]
+    b <- rows[rows$engine == "epiworld", c("scenario", "n", "seed", "simulate_seconds")]
+    p <- merge(a, b, by = c("scenario", "n", "seed"), suffixes = c("", "_cpp"))
+    if (!nrow(p)) return(NULL)
+    p$ratio <- p$simulate_seconds / p$simulate_seconds_cpp
+    m <- aggregate(ratio ~ scenario + n, p, median)
+    m$engine <- wrapper
+    m
+  })
+  parts <- do.call(rbind, parts)
+  if (is.null(parts)) return(NULL)
+  parts$cell <- cell_factor(parts$scenario, parts$n)
+  wide <- tapply(parts$ratio, list(parts$engine, parts$cell), median)
+  knitr::kable(data.frame(Wrapper = rownames(wide), wide, check.names = FALSE, row.names = NULL),
+               digits = 2)
+}
+
+#' Median of `column` for one engine in one scenario and size.
+cell_median <- function(all, engine, scenario, n, column = "simulate_seconds") {
+  rows <- all$rows
+  median(rows[[column]][rows$engine == engine & rows$scenario == scenario & rows$n == n])
+}
+
+#' The scenario's model parameters, as configured (see "Common model" in
+#' docs/methods.md for their meaning).
+table_parameters <- function(bench) {
+  p <- bench$info$parameters
+  if (!length(p)) return(NULL)
+  knitr::kable(data.frame(Parameter = paste0("`", names(p), "`"),
+                          Value = vapply(p, function(x) format(x, scientific = FALSE), "")),
+               row.names = FALSE, align = "lr")
+}
+
+#' The overview's summary figures: the median of `column` for every engine
+#' (rows, fastest or smallest overall at the top) in each scenario at its
+#' largest size (panels), as dots on one shared log axis, each labelled with
+#' its value. Medians span several orders of magnitude, so bars, which need a
+#' zero baseline, would mislead on the log scale.
+plot_summary <- function(all, column, label, value_label) {
+  rows <- all$rows
+  if (!nrow(rows) || !column %in% names(rows)) return(NULL)
+  largest <- tapply(all$design$n, all$design$scenario, max)
+  rows <- rows[rows$n == largest[rows$scenario], ]
+  m <- aggregate(rows[[column]], rows[c("engine", "scenario")], median)
+  names(m)[3] <- "value"
+  # Order engines by their geometric mean across scenarios.
+  overall <- tapply(log(m$value), m$engine, mean)
+  m$engine <- factor(m$engine, levels = names(sort(overall, decreasing = TRUE)))
+  m$panel <- factor(paste0(scenario_label(m$scenario), " (", size_label(largest[m$scenario]), ")"),
+                    levels = paste0(scenario_label(names(largest)), " (", size_label(largest), ")"))
+  m$text <- vapply(m$value, value_label, "")
+  ink <- "#0b0b0b"; muted <- "#52514e"; grid <- "#e6e5e1"; surface <- "#fcfcfb"
+  ggplot2::ggplot(m, ggplot2::aes(value, engine)) +
+    ggplot2::geom_point(colour = "#2a78d6", size = 2.6) +
+    # Nudged in log10 units, scaled to the axis's span in decades, so every
+    # label sits the same distance from its dot in both figures.
+    ggplot2::geom_text(ggplot2::aes(label = text), colour = muted, size = 2.9,
+                       hjust = 0, vjust = 0.4,
+                       nudge_x = 0.03 + 0.05 * diff(log10(range(m$value)))) +
+    ggplot2::facet_wrap(~ panel, nrow = 1) +
+    ggplot2::scale_x_log10(expand = ggplot2::expansion(mult = c(0.06, 0.3)),
+                           labels = function(x) format(x, big.mark = ",", scientific = FALSE,
+                                                       drop0trailing = TRUE, trim = TRUE)) +
+    ggplot2::labs(x = label, y = NULL) +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(
+      plot.background = ggplot2::element_rect(fill = surface, colour = NA),
+      panel.grid.major.y = ggplot2::element_line(colour = grid, linewidth = 0.3),
+      panel.grid.major.x = ggplot2::element_line(colour = grid, linewidth = 0.3),
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.spacing.x = ggplot2::unit(10, "pt"),
+      strip.text = ggplot2::element_text(colour = ink, face = "bold", hjust = 0),
+      axis.text = ggplot2::element_text(colour = muted),
+      axis.title.x = ggplot2::element_text(colour = muted, margin = ggplot2::margin(t = 6))
+    )
+}
+
+plot_summary_time <- function(all) {
+  plot_summary(all, "simulate_seconds", "Median simulation time per replicate (seconds, log scale)",
+               function(x) if (x >= 10) sprintf("%.1f", x) else formatC(x, digits = 2, format = "fg"))
+}
+
+plot_summary_memory <- function(all) {
+  plot_summary(all, "peak_mib", "Median overall peak memory (MiB, log scale)",
+               function(x) formatC(x, digits = 0, format = "f", big.mark = ","))
 }

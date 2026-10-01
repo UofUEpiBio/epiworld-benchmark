@@ -28,7 +28,8 @@ seed = 20260907
 # concurrency up to three workers left median simulate_seconds unchanged at
 # n=100000, while six to eight workers inflated it by 1.1x to 2.2x depending
 # on the engine. Because the distortion is uneven it biases the cross-engine
-# comparison rather than just adding noise. See setup.md for the measurements.
+# comparison rather than just adding noise. See "Execution protocol" in
+# docs/methods.md for the measurements.
 workers = 1
 max_workers = 8
 

@@ -1,12 +1,9 @@
-# Scenario 02: SEIRH + vaccination + epidemiological outputs
+# Scenario 02: vaccine plus epidemiological outputs
 
 2026-10-01
 
 - [Model](#model)
-  - [Outputs](#outputs)
-  - [Timing](#timing)
-  - [Result fields](#result-fields)
-  - [Engine implementations](#engine-implementations)
+- [Engine notes](#engine-notes)
 - [Results](#results)
   - [Simulation time](#simulation-time)
   - [Speed relative to epiworldR](#speed-relative-to-epiworldr)
@@ -14,169 +11,61 @@
   - [Extracting the outputs](#extracting-the-outputs)
   - [Memory](#memory)
   - [Epidemiological sanity checks](#epidemiological-sanity-checks)
-- [Cost of the outputs](#cost-of-the-outputs)
-  - [Run time compared with scenario
-    01](#run-time-compared-with-scenario-01)
-  - [Code required to define the
-    model](#code-required-to-define-the-model)
-- [Interpretation](#interpretation)
-  - [What recording the outputs
-    costs](#what-recording-the-outputs-costs)
-  - [Is bookkeeping what separates epiworld and
-    ixa?](#is-bookkeeping-what-separates-epiworld-and-ixa)
-  - [An implementation choice that mattered: epiworldR’s
-    reproductive-number
-    summary](#an-implementation-choice-that-mattered-epiworldrs-reproductive-number-summary)
-- [Recorded versions](#recorded-versions)
+  - [Model lines](#model-lines)
+- [Notes](#notes)
 
-[Back to the project overview](../README.md) · [Scenario 01
-report](../scenario_01/README.md)
+[Back to the project overview](../README.md) ·
+[Methods](../docs/methods.md) · [Results](../docs/results.md) ·
+[Scenario 01](../scenario_01/README.md)
 
 [Scenario 01](../scenario_01/README.md), unchanged, plus four outputs
-that every engine has to produce from each run: the transmission tree,
-daily incidence, the reproductive number, and the daily transition
-matrix.
-
-epiworld records all four during every run, in every scenario, whether
-or not anyone reads them. The other engines record less by default, so
-in scenarios 00 and 01 the epiworld family does bookkeeping that the
-others skip. Here every engine has to deliver the same information, so
-the comparison includes that bookkeeping for all of them.
-
-The model, network, seeds, run length, and calibration are those of
-scenario 01. For every engine but individual, the two scenarios run the
-same epidemic for a given size and replicate, and this report compares
-them replicate by replicate. individual’s runner picks each new case’s
-source with R’s global random numbers, which its disease processes also
-use, so from the first such draw its epidemic differs from scenario 01’s
-for the same seed. The two are still the same model, with the same
-distribution of outcomes; only the pairing by seed is lost.
+that every engine has to produce from each run, so the comparison
+includes for every engine the bookkeeping epiworld always does. The
+[results](../docs/results.md#cost-of-added-features) compare each
+replicate with scenario 01’s, which runs the same epidemic for every
+engine but individual: its runner picks each case’s source with R’s
+global random numbers, so only its distribution of outcomes matches.
 
 ## Model
-
-### Outputs
-
-Each runner produces the following from each run and holds them in
-memory in the engine’s own data structures. Nothing is written to disk.
 
 | Output | Definition |
 |:---|:---|
 | Transmission tree | The day, source, and target of every infection. Seed cases have no source. |
 | Daily incidence | New infections (S → E) on each day from 1 to 100. |
-| Reproductive number | epiworld’s definition: each case’s number of secondary infections, averaged over the cases infected on each day. Day 0 holds the seed cases. |
-| Transition matrix | The number of agents moving between each pair of S, E, I, H, and R on each day. |
+| Reproductive number | epiworld’s definition: each case’s number of secondary infections, averaged over the cases infected on each day (a *case* reproductive number, so it falls toward zero near day 100). Day 0 holds the seed cases. |
+| Transition matrix | The number of agents moving between each pair of S, E, I, H, and R on each day; day 0 is left out. |
 
-- The reproductive number is a *case* reproductive number: it is indexed
-  by the day the case was infected, not the day it transmitted. Cases
-  infected near day 100 have had little time to transmit, so the series
-  falls toward zero at the end of the run in every engine.
-- Where an engine’s own tools already give an output, the runner uses
-  them. Where they do not, the runner builds it from what the engine
-  does offer, the way a user of that engine would.
-- Transitions on day 0 put the seed cases in place and are left out of
-  the daily series and the totals below.
+Runners hold the outputs in memory, with the engine’s own tools where it
+has them. Recording during the run is part of `simulate_seconds`;
+reading the outputs out afterwards is `extract_seconds`. Records add
+`extract_seconds`, `transmissions`, the transition matrix summed over
+days 1 to 100 (`transitions_se`, …), and the daily series (medians in
+`results/daily.csv`).
 
-### Timing
+## Engine notes
 
-`simulate_seconds` covers the simulation call only, as in scenarios 00
-and 01. Any bookkeeping an engine does while it simulates, such as
-recording transmissions or transitions, is part of that call and is
-timed. Reading the outputs out of the engine afterwards is not: it is
-reported on its own as `extract_seconds` and left out of
-`simulate_seconds` and `setup_seconds`. As in scenario 01, distributing
-the vaccine is timed as simulation in every runner.
+- **The epiworld family**: nothing to add; the database already holds
+  all four outputs (`get_transmissions()`,
+  `get_hist_transition_matrix()`, and the reproductive-number getters).
+  The C++ and Python runners aggregate the raw vectors themselves.
+- **Covasim** reads its infection log; **Starsim** adds
+  `ss.infection_log`. Both runners count each agent’s dated transitions
+  within the run.
+- **EoN**: `return_full_data=True` records each node’s status history,
+  from which the runner builds the matrix, binning events into days.
+- **epydemic** and **Agents.jl**: the model’s event handlers or daily
+  step append each transmission and transition to lists.
+- **ixa**: a data plugin, written by the daily step and by a
+  `PropertyChangeEvent` subscription.
+- **individual**: the infection process picks each source among the
+  infectious neighbours; a second process compares the states on
+  consecutive days.
+- **FRED**: its health records log every exposure and state change
+  during the run; the runner parses them afterwards.
 
-This puts the line at the end of the run. An engine that records outputs
-as it goes pays for them in the timed call; an engine that reconstructs
-them afterwards (Covasim’s transition matrix, EoN’s matrix from its node
-histories) does that part untimed. The extraction table below shows how
-much that is.
-
-### Result fields
-
-Runners add these fields to each result record:
-
-- `extract_seconds`: the time taken to extract the outputs after the
-  run.
-- `transmissions`: the number of infections with a source, which is the
-  size of the transmission tree without the seed cases.
-- `transitions_se`, `transitions_ei`, `transitions_ih`,
-  `transitions_ir`, `transitions_hr`: the transition matrix summed over
-  days 1 to 100.
-- `daily_incidence` (days 1 to 100) and `reproductive_number` (days 0 to
-  100, `null` for a day with no cases): the daily series. They stay in
-  the cache; `results/daily.csv` holds their medians across replicates.
-
-The five final compartments still sum to `n`, and protected agents who
-are never infected are still counted as susceptible.
-
-### Engine implementations
-
-- **epiworldR**: nothing to add to the model. After the run,
-  `get_transmissions()` returns the tree and
-  `get_hist_transition_matrix()` the matrix.
-  `plot_incidence(plot = FALSE)` and
-  `plot(get_reproductive_number(), plot = FALSE)` return the daily
-  series. Four lines.
-- **epiworld** (C++): the same database, through `get_transmissions()`,
-  `get_hist_transition_matrix()`, and `get_reproductive_number()`. The
-  C++ API returns raw vectors and a map with one entry per case, so the
-  runner sums the matrix’s S → E entries and averages the reproductive
-  number by day itself.
-- **epiworldpy**: the same getters, returning NumPy arrays and
-  dictionaries. The runner aggregates them with NumPy.
-- **Covasim**: Covasim always keeps an infection log with the source,
-  target, and date of every infection, and reports daily new infections.
-  The runner reads the log directly: `sim.make_transtree()` wraps the
-  same log but also builds a per-case table, and it drops the cases
-  infected by agent 0. Covasim has no transition matrix, but it dates
-  each agent’s transitions (`date_exposed`, `date_infectious`,
-  `date_severe`, `date_recovered`, some of them in the future), and the
-  runner counts those that fall within the run.
-- **Starsim**: adding its `ss.infection_log` analyzer makes the disease
-  log the source and target of every infection, in a NetworkX graph, as
-  it happens; daily new infections are a standard result. Like Covasim,
-  Starsim has no transition matrix but keeps each agent’s transition
-  times, some of them scheduled in the future, and the runner counts
-  those that fall within the run.
-- **EoN**: `return_full_data=True` makes `fast_simple_contagion` record
-  each node’s status history and every transmission, and return them in
-  a `Simulation_Investigation`. The runner builds the matrix from the
-  node histories. EoN runs in continuous time, so events are binned into
-  days: day *d* covers the interval (*d* − 1, *d*\].
-- **epydemic**: no built-in record of individual events. The model’s
-  event handlers append each transmission and each transition to lists,
-  through a small `move()` helper that records a transition before
-  changing the compartment.
-- **ixa**: a data plugin holds the outputs. The daily step, which
-  already knows the infectious contact behind each exposure, records the
-  transmission when it applies it. A subscription to ixa’s
-  `PropertyChangeEvent` for the disease status counts every transition.
-  After the run, the runner derives incidence and the reproductive
-  number from the plugin.
-- **individual**: no built-in record of events or sources. The infection
-  process picks each new case’s source uniformly among its infectious
-  neighbours, as epiworld does, and records it with the day. A second
-  process compares the agents in each state at the start of consecutive
-  days to count the transitions. After the run, the runner derives the
-  reproductive number from the tree.
-- **FRED**: its health records, switched on for the disease condition in
-  every run (`enable_health_records`, `health_records_run = -1`), log
-  every exposure with its source and day and every state change, as FRED
-  simulates; writing them is part of the timed run. After the run, the
-  runner parses the log into the tree and the transition matrix. Daily
-  incidence is the new-exposure column of FRED’s own daily report.
-- **Agents.jl**: no built-in record of events. The model’s properties
-  hold two vectors, and the daily step, which already knows the
-  infectious contact behind each exposure, appends each transmission and
-  each transition as it applies them. After the run, the runner derives
-  the matrix, incidence, and reproductive number from them, in a
-  function the warm-up model compiles before any timer starts.
-
-The EoN, epydemic, Covasim, Starsim, ixa, individual, FRED, and
-Agents.jl runners use epiworld’s definition of the reproductive number.
-Each Python runner has its own copy of a small helper that computes it
-from the tree, and that helper counts as model code.
+The runners other than the epiworld family compute the reproductive
+number from the tree with epiworld’s definition, in a small helper
+counted as model code.
 
 ## Results
 
@@ -230,16 +119,12 @@ from the tree, and that helper counts as model code.
 
 ### Simulation time
 
-The primary measure is wall-clock time inside the simulation call,
-including any recording the engine does during it. The logarithmic scale
-keeps fast and slow engines legible in one panel.
-
 ![](README_files/figure-commonmark/simulation-time-plot-1.png)
 
 ### Speed relative to epiworldR
 
 Ratios are matched by population size and replicate seed. Values above
-one mean that epiworldR finished faster.
+one mean that epiworldR completed the simulation call faster.
 
 | Engine     | Agents | Median time / epiworldR |     Q1 |     Q3 |
 |:-----------|-------:|------------------------:|-------:|-------:|
@@ -266,14 +151,7 @@ one mean that epiworldR finished faster.
 
 ### Time to a first result
 
-The simulation time above covers what an engine has to redo for every
-replicate on the same network (see [what is
-measured](../README.md#run-time)). *Build* is the rest of the setup:
-turning the edge list into the engine’s population and network, which a
-user does once per network. *Build + simulate* is the time to a first
-result once the edge list is in memory. Reading the edge file is shown
-but left out of it, because its cost depends on each language’s file
-parsing rather than on the engine.
+[Timing](../docs/methods.md#timing) defines build and simulate.
 
 | Engine     | Agents | Read edges (s) | Build (s) | Simulate (s) | Build + simulate (s) |
 |:-----------|-------:|---------------:|----------:|-------------:|---------------------:|
@@ -302,8 +180,8 @@ parsing rather than on the engine.
 
 ### Extracting the outputs
 
-The time taken to read the four outputs out of each engine after the
-run. It is not part of the simulation times above.
+Time to read the four outputs out of each engine after the run, not part
+of the simulation time.
 
 | Engine | Agents | Median simulation (s) | Median extraction (s) | Median extraction / simulation |
 |:---|---:|---:|---:|---:|
@@ -332,14 +210,7 @@ run. It is not part of the simulation times above.
 
 ### Memory
 
-Resident memory (RSS) of each run, in MiB, as median \[Q1, Q3\] across
-replicates. *Simulation memory* is the peak during the simulate timer
-less the memory held when it started: the extra memory one replicate
-needs. *Model footprint* is what building the reusable model adds after
-the edge list is read, and *baseline* is the runtime after its imports.
-FRED runs as a child process, so only its overall peak is known. See
-“Memory” under “What is measured” in the
-[overview](../README.md#memory).
+Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 
 | Engine | Agents | Baseline (MiB) | Model footprint (MiB) | Simulation memory (MiB) | Overall peak (MiB) |
 |:---|:---|---:|---:|---:|---:|
@@ -365,8 +236,6 @@ FRED runs as a child process, so only its overall peak is known. See
 | epydemic | 100000 | 117.3 \[117.3, 117.3\] | 126.2 \[126.2, 126.2\] | 160.5 \[160.5, 160.5\] | 413.4 \[413.4, 413.4\] |
 | Agents.jl | 100000 | 507.1 \[506.7, 507.3\] | 1.4 \[1.4, 1.8\] | 2.2 \[2.1, 2.4\] | 585.6 \[584.4, 588.0\] |
 | FRED | 100000 |  |  |  | 598.5 \[598.5, 598.6\] |
-
-![](README_files/figure-commonmark/memory-plot-1.png)
 
 ### Epidemiological sanity checks
 
@@ -395,10 +264,9 @@ FRED runs as a child process, so only its overall peak is known. See
 | ixa | 100000 | 0.014 | 9 | 0.24 |
 | starsim | 100000 | 0.014 | 10 | 0.24 |
 
-The outputs have to agree with each engine’s own final counts. Every
-agent who left S is either a seed case or the target of a transmission;
-every transmission is an S → E transition; and every recovered agent
-came from I or H. The table shows the share of runs in which these hold.
+Share of runs whose outputs agree with their own final counts (every
+agent who left S is a seed or a transmission target, every transmission
+is an S → E transition, every recovered agent came from I or H):
 
 | Engine | Agents | Median transmissions | Share of runs: tree matches counts | Share of runs: matrix matches counts |
 |:---|---:|---:|---:|---:|
@@ -425,55 +293,18 @@ came from I or H. The table shows the share of runs in which these hold.
 | FRED | 100000 | 1115 | 1 | 1 |
 | Agents.jl | 100000 | 1250 | 1 | 1 |
 
-The daily series, as medians across replicates. The epiworld family
-seeds its initial cases as exposed, and so do Covasim and Starsim, so
-their incidence starts a few days later than that of the engines that
-seed them as infected.
+Daily series, as medians across replicates. Engines that seed their
+initial cases exposed (the epiworld family, Covasim, and Starsim) start
+their incidence a few days later.
 
 ![](README_files/figure-commonmark/daily-plot-1.png)
 
-## Cost of the outputs
+### Model lines
 
-### Run time compared with scenario 01
-
-Each replicate is paired with the scenario 01 replicate that has the
-same engine, population size, and seed. Both scenarios run the same
-epidemic (for individual, one from the same distribution), so a ratio
-above one is the cost of recording the outputs during the run.
-
-| Engine | Agents | Median scenario 01 (s) | Median scenario 02 (s) | Median time / scenario 01 | Q1 | Q3 |
-|:---|---:|---:|---:|---:|---:|---:|
-| Agents.jl | 10000 | 0.020 | 0.019 | 0.97 | 0.96 | 1.02 |
-| epiworld | 10000 | 0.002 | 0.002 | 1.00 | 0.98 | 1.02 |
-| epiworldpy | 10000 | 0.002 | 0.002 | 1.00 | 0.97 | 1.01 |
-| covasim | 10000 | 0.062 | 0.061 | 1.00 | 0.96 | 1.01 |
-| epydemic | 10000 | 0.203 | 0.203 | 1.00 | 0.95 | 1.01 |
-| epiworldR | 10000 | 0.002 | 0.002 | 1.00 | 1.00 | 1.00 |
-| starsim | 10000 | 0.169 | 0.171 | 1.01 | 0.95 | 1.03 |
-| ixa | 10000 | 0.004 | 0.004 | 1.05 | 1.03 | 1.07 |
-| FRED | 10000 | 0.054 | 0.069 | 1.26 | 1.24 | 1.28 |
-| EoN | 10000 | 0.034 | 0.056 | 1.63 | 1.60 | 1.66 |
-| individual | 10000 | 0.021 | 0.040 | 1.90 | 1.82 | 1.95 |
-| starsim | 100000 | 0.908 | 0.715 | 0.79 | 0.77 | 0.88 |
-| ixa | 100000 | 0.029 | 0.028 | 0.99 | 0.93 | 1.00 |
-| Agents.jl | 100000 | 0.037 | 0.037 | 0.99 | 0.96 | 1.02 |
-| epiworld | 100000 | 0.007 | 0.007 | 1.00 | 0.99 | 1.02 |
-| covasim | 100000 | 0.334 | 0.334 | 1.00 | 0.99 | 1.02 |
-| epiworldR | 100000 | 0.007 | 0.007 | 1.00 | 0.86 | 1.00 |
-| epiworldpy | 100000 | 0.006 | 0.006 | 1.00 | 0.97 | 1.04 |
-| epydemic | 100000 | 1.075 | 1.076 | 1.01 | 0.99 | 1.02 |
-| FRED | 100000 | 0.587 | 0.706 | 1.20 | 1.18 | 1.22 |
-| individual | 100000 | 0.049 | 0.070 | 1.43 | 1.38 | 1.49 |
-| EoN | 100000 | 0.211 | 0.450 | 2.15 | 2.08 | 2.22 |
-
-### Code required to define the model
-
-How much code each engine needs for this scenario, and how much the
-outputs added to scenario 01. The counting rules are described in the
-[project overview](../README.md#measuring-implementation-effort), and
-the counted regions are listed in
-[`code_regions.yml`](code_regions.yml). Code that only summarizes the
-outputs for the result record is not counted.
+Counted as described in [Implementation
+size](../docs/methods.md#implementation-size); the last column is what
+the outputs added to scenario 01. Code that only summarizes the outputs
+for the result record is not counted.
 
 | Engine | Language | Files | Lines, scenario 01 | Lines, scenario 02 | Added since scenario 01 |
 |:---|:---|---:|---:|---:|---:|
@@ -489,77 +320,15 @@ outputs for the result record is not counted.
 | FRED | Python | 1 | 123 | 165 | 42 |
 | ixa | Rust | 3 | 168 | 220 | 52 |
 
-## Interpretation
+## Notes
 
-### What recording the outputs costs
-
-For most engines, very little. The epiworld family already records all
-four outputs in scenario 01, so its simulation does not change: the C++
-runner takes 1.00 times as long as in scenario 01 at 100,000 agents,
-epiworldR 1.00 times, and epiworldpy 1.00 times. Covasim keeps its
-infection log in every run too (1.00 times). The engines that had to add
-recording mostly absorbed it as well. ixa’s event subscription and
-transmission log leave it at 0.99 times its scenario 01 time, and
-epydemic’s handlers at 1.01 times, where the list appends are small next
-to its Python event loop. Agents.jl’s vectors of transmissions and
-transitions leave it at 0.99 times. FRED, whose health records write a
-line to a file, and flush it, for every exposure and state change, takes
-1.20 times as long.
-
-The main exception is **EoN**, which takes 1.63 times as long at 10,000
-agents and 2.15 times at 100,000. With `return_full_data=True`,
-`fast_simple_contagion` appends to every node’s status history, in
-Python, at every event. **individual** also pays, taking 1.90 times as
-long at 10,000 agents and 1.43 times at 100,000. It has no record of
-transitions, so its runner compares the agents in each state at the
-start of consecutive days, which means working through full-population
-bitsets every day.
-
-Extraction after the run is small for every engine but epiworldR and
-FRED: at 100,000 agents it takes 26.0 ms for epiworldR and 94.6 ms for
-FRED, against 6.8 ms for EoN, 6.9 ms for Agents.jl, and under a
-millisecond for the others. Almost all of epiworldR’s is one call (see
-below); FRED’s is parsing its health records, which also log the day-0
-move of every agent into its initial state.
-
-### Is bookkeeping what separates epiworld and ixa?
-
-No. What epiworld records per event is small: each infection appends one
-row to the transmission log, and the daily database update costs time in
-proportion to the number of states and tools, not agents. ixa adds the
-same bookkeeping here at little cost, and the two engines compare as
-they do in scenario 01. What separates them has other causes, the same
-in every scenario: ixa rebuilds its context for every replicate, while
-epiworld re-initializes the whole population at the start of every run
-and, with the vaccine, clones the tool for every agent it protects.
-[analysis.md](../analysis.md) measures each.
-
-### An implementation choice that mattered: epiworldR’s reproductive-number summary
-
-The documented way to get the daily reproductive number in epiworldR is
-`plot(get_reproductive_number(model), plot = FALSE)`. The `plot()`
-method computes a mean, a standard deviation, and 2.5% and 97.5%
-quantiles for every day, and builds a data frame for each. That takes
-about 25 ms for 100 days, no matter how small the outbreak, against 0.4
-ms for a plain `tapply(rt, source_exposure_date, mean)` on the same data
-frame. `get_reproductive_number()` itself takes about 1 ms. The runner
-keeps the documented call, because that is what an epiworldR user would
-write. A vectorized summary in epiworldR would remove nearly all of the
-package’s extraction time. None of it counts toward the simulation
-times.
-
-## Recorded versions
-
-| Engine     | Recorded version   |
-|:-----------|:-------------------|
-| Agents.jl  | 7.0.4              |
-| covasim    | 3.1.8              |
-| EoN        | 1.92               |
-| epiworld   | 0.17.1+g04c4ad8    |
-| epiworldpy | 0.17.1-0+gc24b4f9  |
-| epiworldR  | 0.17.1.0+gfca60f3  |
-| epydemic   | 1.14.1             |
-| FRED       | PUB.5.7.0+gbd25f04 |
-| individual | 0.1.19             |
-| ixa        | 3.1.0              |
-| starsim    | 3.6.1              |
+**Extraction is small for every engine but epiworldR and FRED.** FRED’s
+is parsing its health records. Almost all of epiworldR’s is the
+documented `plot(get_reproductive_number(model), plot = FALSE)`, which
+computes a mean, a standard deviation, and two quantiles for every day
+and builds a data frame for each: about 25 ms for 100 days however small
+the outbreak, against 0.4 ms for a plain `tapply()` on the same data and
+about 1 ms for `get_reproductive_number()` itself. The runner keeps the
+documented call, as an epiworldR user would write it; a vectorized
+summary in epiworldR would remove nearly all of the package’s extraction
+time.
