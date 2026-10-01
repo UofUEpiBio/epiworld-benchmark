@@ -1,6 +1,6 @@
 # Scenario 04: SEIRH on a collapsed GeoPops network
 
-2026-09-29
+2026-09-30
 
 - [Model](#model)
   - [The network](#the-network)
@@ -11,6 +11,7 @@
   - [Speed relative to epiworldR](#speed-relative-to-epiworldr)
   - [Time to a first result](#time-to-a-first-result)
   - [The epiworld family](#the-epiworld-family)
+  - [Memory](#memory)
   - [Epidemiological sanity checks](#epidemiological-sanity-checks)
   - [Code required to define the
     model](#code-required-to-define-the-model)
@@ -145,26 +146,38 @@ with no simple SEIRH mapping. See [issue
 >
 > The complete 220-run design for this scenario is available.
 
-| Field               | Value                                                 |
-|:--------------------|:------------------------------------------------------|
-| Platform            | Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39 |
-| Python              | 3.12.11                                               |
-| Workers             | 1                                                     |
-| Latest run failures | 0                                                     |
+| Field | Value |
+|:---|:---|
+| CPU | Apple M3 Pro (container sees: Apple (model not reported)) |
+| Cores | 10 logical, 10 physical |
+| Memory | 12.7 GiB |
+| OS | Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39 |
+| Kernel | 6.12.13-200.fc41.aarch64 |
+| Container image | 6ab6f982c445 |
+| Python | 3.12.11 |
+| R | R version 4.5.1 (2025-06-13) – “Great Square Root” |
+| Julia | julia version 1.13.1 |
+| Rust | rustc 1.98.0 (88d9e12ae 2026-08-18) |
+| C++ compiler | c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0 |
+| Quarto | 1.10.18 |
+| Repository commit | 467d650 |
+| Workers | 1 |
+| Run dates | 2026-09-30 to 2026-09-30 |
+| Latest run | 220 executed, 0 cached, 0 failed |
 
 | Engine     | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:-----------|-------:|-----:|----------------------:|-------:|-------:|
-| individual | 165865 |   20 |                 0.148 |  0.144 |  0.154 |
-| ixa        | 165865 |   20 |                 0.170 |  0.162 |  0.174 |
-| Agents.jl  | 165865 |   20 |                 0.182 |  0.163 |  0.206 |
-| epiworld   | 165865 |   20 |                 0.204 |  0.202 |  0.208 |
-| epiworldpy | 165865 |   20 |                 0.205 |  0.199 |  0.217 |
-| epiworldR  | 165865 |   20 |                 0.216 |  0.211 |  0.242 |
-| covasim    | 165865 |   20 |                 0.597 |  0.580 |  0.612 |
-| starsim    | 165865 |   20 |                 0.943 |  0.882 |  1.012 |
-| FRED       | 165865 |   20 |                 3.025 |  2.940 |  3.104 |
-| EoN        | 165865 |   20 |                 4.058 |  3.935 |  4.329 |
-| epydemic   | 165865 |   20 |                13.764 | 13.633 | 14.053 |
+| Agents.jl  | 165865 |   20 |                 0.133 |  0.132 |  0.135 |
+| individual | 165865 |   20 |                 0.136 |  0.134 |  0.140 |
+| ixa        | 165865 |   20 |                 0.149 |  0.147 |  0.153 |
+| epiworldpy | 165865 |   20 |                 0.152 |  0.151 |  0.153 |
+| epiworld   | 165865 |   20 |                 0.156 |  0.155 |  0.157 |
+| epiworldR  | 165865 |   20 |                 0.157 |  0.155 |  0.158 |
+| covasim    | 165865 |   20 |                 0.562 |  0.548 |  0.609 |
+| starsim    | 165865 |   20 |                 0.822 |  0.814 |  0.830 |
+| FRED       | 165865 |   20 |                 2.658 |  2.579 |  2.710 |
+| EoN        | 165865 |   20 |                 3.534 |  3.470 |  3.590 |
+| epydemic   | 165865 |   20 |                12.511 | 12.476 | 12.582 |
 
 ### Simulation time
 
@@ -181,16 +194,16 @@ epiworldR completed the simulation call faster.
 
 | Engine     | Agents | Median time / epiworldR |    Q1 |    Q3 |
 |:-----------|-------:|------------------------:|------:|------:|
-| epiworld   | 165865 |                    0.94 |  0.84 |  0.98 |
-| epiworldpy | 165865 |                    0.94 |  0.82 |  1.00 |
-| covasim    | 165865 |                    2.76 |  2.39 |  2.86 |
-| starsim    | 165865 |                    4.26 |  3.85 |  4.73 |
-| EoN        | 165865 |                   18.21 | 16.70 | 20.29 |
-| epydemic   | 165865 |                   63.47 | 56.16 | 66.45 |
-| ixa        | 165865 |                    0.77 |  0.74 |  0.80 |
-| individual | 165865 |                    0.66 |  0.63 |  0.70 |
-| FRED       | 165865 |                   13.74 | 12.30 | 14.59 |
-| Agents.jl  | 165865 |                    0.76 |  0.74 |  0.90 |
+| epiworld   | 165865 |                    1.00 |  0.99 |  1.01 |
+| epiworldpy | 165865 |                    0.97 |  0.96 |  0.99 |
+| covasim    | 165865 |                    3.57 |  3.51 |  3.85 |
+| starsim    | 165865 |                    5.26 |  5.22 |  5.37 |
+| EoN        | 165865 |                   22.65 | 22.09 | 22.88 |
+| epydemic   | 165865 |                   79.84 | 79.29 | 81.50 |
+| ixa        | 165865 |                    0.96 |  0.94 |  0.98 |
+| individual | 165865 |                    0.87 |  0.86 |  0.89 |
+| FRED       | 165865 |                   16.93 | 16.68 | 17.16 |
+| Agents.jl  | 165865 |                    0.85 |  0.85 |  0.86 |
 
 ### Time to a first result
 
@@ -203,24 +216,51 @@ result once the edge list is in memory.
 
 | Engine     | Agents | Read edges (s) | Build (s) | Simulate (s) | Build + simulate (s) |
 |:-----------|-------:|---------------:|----------:|-------------:|---------------------:|
-| ixa        | 165865 |          0.030 |     0.000 |        0.170 |                0.170 |
-| individual | 165865 |          0.067 |     0.034 |        0.148 |                0.182 |
-| Agents.jl  | 165865 |          0.368 |     0.028 |        0.182 |                0.209 |
-| epiworld   | 165865 |          0.046 |     0.014 |        0.204 |                0.219 |
-| epiworldR  | 165865 |          0.066 |     0.029 |        0.216 |                0.245 |
-| epiworldpy | 165865 |          0.133 |     0.055 |        0.205 |                0.259 |
-| covasim    | 165865 |          0.139 |     0.048 |        0.597 |                0.643 |
-| starsim    | 165865 |          0.135 |     0.000 |        0.943 |                0.943 |
-| FRED       | 165865 |          2.653 |     0.765 |        3.025 |                3.788 |
-| EoN        | 165865 |          0.134 |     0.463 |        4.058 |                4.527 |
-| epydemic   | 165865 |          0.145 |     0.494 |       13.764 |               14.264 |
+| ixa        | 165865 |          0.030 |     0.000 |        0.149 |                0.149 |
+| Agents.jl  | 165865 |          0.304 |     0.028 |        0.133 |                0.161 |
+| individual | 165865 |          0.064 |     0.034 |        0.136 |                0.169 |
+| epiworld   | 165865 |          0.046 |     0.014 |        0.156 |                0.169 |
+| epiworldR  | 165865 |          0.064 |     0.032 |        0.157 |                0.188 |
+| epiworldpy | 165865 |          0.129 |     0.070 |        0.152 |                0.221 |
+| covasim    | 165865 |          0.134 |     0.043 |        0.562 |                0.605 |
+| starsim    | 165865 |          0.130 |     0.000 |        0.822 |                0.822 |
+| FRED       | 165865 |          2.420 |     0.664 |        2.658 |                3.318 |
+| EoN        | 165865 |          0.131 |     0.421 |        3.534 |                3.957 |
+| epydemic   | 165865 |          0.127 |     0.398 |       12.511 |               12.905 |
 
 ### The epiworld family
 
 | Engine     | Agents | Median time / epiworld |   Q1 |   Q3 |
 |:-----------|-------:|-----------------------:|-----:|-----:|
-| epiworldR  | 165865 |                   1.06 | 1.02 | 1.19 |
-| epiworldpy | 165865 |                   1.01 | 0.98 | 1.04 |
+| epiworldR  | 165865 |                   1.00 | 0.99 | 1.01 |
+| epiworldpy | 165865 |                   0.97 | 0.97 | 0.98 |
+
+### Memory
+
+Resident memory (RSS) of each run, in MiB, as median \[Q1, Q3\] across
+replicates. *Simulation memory* is the peak during the simulate timer
+less the memory held when it started: the extra memory one replicate
+needs. *Model footprint* is what building the reusable model adds after
+the edge list is read, and *baseline* is the runtime after its imports.
+FRED runs as a child process, so only its overall peak is known. See
+“Memory” under “What is measured” in the
+[overview](../README.md#memory).
+
+| Engine | Agents | Baseline (MiB) | Model footprint (MiB) | Simulation memory (MiB) | Overall peak (MiB) |
+|:---|:---|---:|---:|---:|---:|
+| ixa | 165865 | 2.2 \[2.2, 2.2\] | 0.0 \[0.0, 0.0\] | 37.5 \[37.2, 37.5\] | 45.7 \[45.6, 45.9\] |
+| epiworld | 165865 | 3.0 \[3.0, 3.0\] | 29.7 \[29.7, 29.7\] | 54.2 \[54.1, 54.3\] | 90.5 \[90.5, 90.5\] |
+| individual | 165865 | 74.8 \[74.8, 74.8\] | 6.1 \[6.1, 6.1\] | 38.9 \[38.7, 39.7\] | 130.4 \[130.2, 131.2\] |
+| epiworldpy | 165865 | 46.6 \[46.6, 46.7\] | 41.1 \[40.6, 41.1\] | 41.5 \[41.5, 41.5\] | 136.9 \[136.8, 137.0\] |
+| epiworldR | 165865 | 72.1 \[72.1, 72.1\] | 31.3 \[31.3, 31.3\] | 36.2 \[36.2, 36.4\] | 149.6 \[149.6, 149.7\] |
+| covasim | 165865 | 225.1 \[225.1, 225.1\] | 3.8 \[3.1, 3.8\] | 70.7 \[70.2, 70.7\] | 307.4 \[306.9, 307.4\] |
+| starsim | 165865 | 260.9 \[260.9, 260.9\] | 0.0 \[0.0, 0.0\] | 62.5 \[62.4, 63.3\] | 330.9 \[330.8, 331.7\] |
+| EoN | 165865 | 120.3 \[120.3, 120.3\] | 124.9 \[124.7, 124.9\] | 97.7 \[96.6, 98.3\] | 350.4 \[349.3, 351.0\] |
+| epydemic | 165865 | 117.2 \[117.2, 117.2\] | 125.0 \[125.0, 125.0\] | 166.7 \[166.5, 166.9\] | 416.3 \[416.0, 416.4\] |
+| Agents.jl | 165865 | 482.3 \[482.3, 482.5\] | 2.8 \[2.8, 2.9\] | 10.3 \[10.2, 10.4\] | 568.6 \[567.7, 569.2\] |
+| FRED | 165865 |  |  |  | 784.4 \[784.4, 784.4\] |
+
+![](README_files/figure-commonmark/memory-plot-1.png)
 
 ### Epidemiological sanity checks
 
@@ -233,9 +273,9 @@ hospitalization load.
 | Agents.jl  | 165865 |                    0.624 |                    855.0 |
 | covasim    | 165865 |                    0.699 |                   1725.5 |
 | EoN        | 165865 |                    0.620 |                   1004.0 |
-| epiworld   | 165865 |                    0.623 |                    848.5 |
-| epiworldpy | 165865 |                    0.623 |                    848.5 |
-| epiworldR  | 165865 |                    0.623 |                    848.5 |
+| epiworld   | 165865 |                    0.622 |                    843.5 |
+| epiworldpy | 165865 |                    0.622 |                    843.5 |
+| epiworldR  | 165865 |                    0.622 |                    843.5 |
 | epydemic   | 165865 |                    0.623 |                   1104.5 |
 | FRED       | 165865 |                    0.631 |                   1110.5 |
 | individual | 165865 |                    0.630 |                   1001.5 |
@@ -255,13 +295,13 @@ regions are listed in [`code_regions.yml`](code_regions.yml).
 |:-----------|:---------|------:|------------:|
 | epiworld   | C++      |     1 |          26 |
 | individual | R        |     1 |          32 |
-| epiworldpy | Python   |     1 |          34 |
-| EoN        | Python   |     1 |          37 |
+| epiworldpy | Python   |     1 |          35 |
+| EoN        | Python   |     1 |          38 |
 | epiworldR  | R        |     1 |          47 |
-| covasim    | Python   |     1 |          64 |
-| Agents.jl  | Julia    |     1 |          66 |
-| epydemic   | Python   |     1 |          70 |
-| starsim    | Python   |     1 |          83 |
+| covasim    | Python   |     1 |          65 |
+| Agents.jl  | Julia    |     1 |          68 |
+| epydemic   | Python   |     1 |          71 |
+| starsim    | Python   |     1 |          84 |
 | FRED       | Python   |     1 |          92 |
 | ixa        | Rust     |     3 |         138 |
 
@@ -272,9 +312,9 @@ regions are listed in [`code_regions.yml`](code_regions.yml).
 | Agents.jl  | 7.0.4              |
 | covasim    | 3.1.8              |
 | EoN        | 1.92               |
-| epiworld   | 0.17.0             |
-| epiworldpy | 0.17.0-1+g0733151  |
-| epiworldR  | 0.17.0.0           |
+| epiworld   | 0.17.1+g04c4ad8    |
+| epiworldpy | 0.17.1-0+gc24b4f9  |
+| epiworldR  | 0.17.1.0+gfca60f3  |
 | epydemic   | 1.14.1             |
 | FRED       | PUB.5.7.0+gbd25f04 |
 | individual | 0.1.19             |

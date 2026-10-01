@@ -343,19 +343,20 @@ susceptible agent scanning all of its neighbours for infectious ones (the
 change proposed in
 [UofUEpiBio/epiworld#264](https://github.com/UofUEpiBio/epiworld/issues/264)).
 Together with the other changes through 0.17.0, this made epiworldR about
-four times faster here than 0.15.1.0 was at 100,000 agents. Both engines'
-daily work now follows the outbreak rather than the population.
+four times faster here than 0.15.1.0 was at 100,000 agents. 0.17.1 revised
+the cost model that chooses between pushing and pulling
+([UofUEpiBio/epiworld#281](https://github.com/UofUEpiBio/epiworld/pull/281)),
+which mattered most around the epidemic peak on scenario 04's network. Both
+engines' daily work now follows the outbreak rather than the population.
 
-Per replicate, ixa is a little faster at 10,000 agents, and epiworld is
-faster at 100,000: ixa takes `r ratio("ixa", "epiworld", 1e4)` and
-`r ratio("ixa", "epiworld", 1e5)` times as long as the C++ runner. ixa's `execute()` can run a context only
-once, so every replicate rebuilds the population, network, and index, which
-grows with the population. epiworld builds its model once and resets it at
-the start of every `run()`, which is about twenty times cheaper. ixa's
-`execute()` alone is faster than epiworld's `run()`, because epiworld looks
-up the transmission probability by name for every contact it tries and
-re-initializes every agent in `reset()`. [analysis.md](../analysis.md)
-measures each of these, and shows how they map onto every scenario.
+Per replicate, epiworld is faster at both sizes: ixa takes
+`r ratio("ixa", "epiworld", 1e4)` and `r ratio("ixa", "epiworld", 1e5)` times
+as long as the C++ runner. ixa's `execute()` can run a context only once, so
+every replicate rebuilds the population, network, and index, which grows with
+the population. epiworld builds its model once and resets it at the start of
+every `run()`, which is about twenty times cheaper. On the epidemic
+computation itself the two are close. [analysis.md](../analysis.md) measures
+each of these, and shows how they map onto every scenario.
 
 ### Equivalence across engines
 
