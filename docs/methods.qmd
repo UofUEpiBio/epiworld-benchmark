@@ -27,7 +27,8 @@ scenarios, and each scenario's report covers what that scenario adds.
 
 ## Engines
 
-Eleven engines run every scenario. Each runner is a short program in the
+Eleven engines run every scenario ([Engines](engines.md) describes what each
+is). Each runner is a short program in the
 engine's own language that reads the shared edge list, builds the model with
 the engine's own tools, runs one replicate, and writes one result record.
 

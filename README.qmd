@@ -46,9 +46,13 @@ replicate at a time, inside one container image.
 
 - [**Methods**](docs/methods.md): the engines, the common model, networks,
   calibration, the execution protocol, and what is measured.
+- [**Engines**](docs/engines.md): what each of the engines is, what it was built
+  for, and how it represents a model.
 - [**Results**](docs/results.md): run time, scaling, the cost of each added
   feature, memory, epidemiological agreement, and implementation size, across
   every scenario.
+- [**Showcase models**](docs/showcase-models.md): the plan for adding, for
+  each engine, a scenario it was built for.
 - [**Running the benchmark**](setup.md): the container, commands, and the
   published records. [scenarios.md](scenarios.md) explains how to add a
   scenario.
@@ -136,6 +140,8 @@ docs/
   methods.qmd        how the benchmark is built and run (rendered to .md)
   results.qmd        results across scenarios (rendered to .md)
   epiworld-ixa.md    where epiworld's and ixa's time goes
+  engines.md         what each engine is (rendered from engines.qmd)
+  showcase-models.md the plan for a scenario per engine
 scenario_NN/
   README.qmd         the scenario's report (rendered to README.md)
   scenario.toml      model parameters and calibration
