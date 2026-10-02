@@ -1,6 +1,7 @@
 # Engines
 
 
+- [Feature summary](#feature-summary)
 - [epiworld family](#epiworld-family)
 - [Covasim](#covasim)
 - [Starsim](#starsim)
@@ -21,6 +22,83 @@ dynamics, and what it is typically used for.
 [Methods](methods.md#engines) lists how each engine is used in the
 benchmark (version, language, time semantics, implementation notes). The
 engines are described in the order the benchmark lists them.
+
+## Feature summary
+
+The table summarizes the features that epidemiologists look for in a
+simulation engine. The features follow the dimensions of the taxonomy of
+agent-based infectious disease models by Hunter et al. (2017) (the
+disease model, the society and its contact structure, transport and the
+environment) and the needs that Gozzi et al. (2025) identify when they
+review the available software: age structure and contact patterns, a
+variety of public health interventions, built-in calibration, and
+accessibility. We did not find a published table that compares the
+engines of this benchmark on these features, so this one is ours. It
+reflects the engines’ documentation and the benchmark’s own runners, not
+a systematic review.
+
+Each cell uses one of three marks:
+
+- ● the engine provides the feature;
+- ◐ the feature is possible with code the user writes, or by repurposing
+  other components;
+- ○ the engine does not provide the feature, and its design suggests it
+  would be hard to add.
+
+A **†** after a mark means the benchmark has no implementation of the
+feature for that engine. The engine could potentially implement it (or
+provide it, for ●), but this has not been formally tested. Marks without
+a **†** are used by at least one of the benchmark’s scenarios
+([scenarios 00 to 04](../README.md#scenarios)). The [showcase model
+plan](showcase-models.md) proposes the scenarios that would test the
+cells marked with a **†**.
+
+| Feature | epiworld family | Covasim | Starsim | EoN | epydemic | ixa | individual | FRED | Agents.jl |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| Language | C++, R, Python | Python | Python | Python | Python | Rust | R | C++ (own model language) | Julia |
+| Ready-made disease models | ● | ● | ● | ● | ● | ○ | ○ | ● | ○ |
+| User-defined states and transitions | ● | ◐ | ● | ● | ● | ◐ | ◐ | ● | ◐ |
+| Continuous-time (event-driven) simulation | ○ | ○ | ○ | ● | ● | ● | ○ | ○ | ◐† |
+| Contact network from an edge list | ● | ● | ● | ● | ● | ● | ◐ | ◐ | ◐ |
+| Vaccination | ● | ● | ● | ◐ | ◐ | ◐ | ◐ | ● | ◐ |
+| Layered or place-based contacts (households, schools, workplaces) | ●† | ●† | ◐† | ○ | ◐† | ◐† | ◐† | ●† | ◐† |
+| Age and other individual attributes | ◐† | ●† | ●† | ◐† | ◐† | ●† | ●† | ●† | ●† |
+| Demography (births, deaths, ageing) | ◐† | ◐† | ●† | ○ | ◐† | ◐† | ◐† | ◐† | ◐† |
+| Movement in space | ○ | ○ | ○ | ○ | ○ | ◐† | ◐† | ◐† | ●† |
+| Testing, tracing, and quarantine | ●† | ●† | ◐† | ○ | ◐† | ◐† | ◐† | ◐† | ◐† |
+| Several pathogens or variants | ●† | ●† | ●† | ◐† | ◐† | ◐† | ◐† | ●† | ◐† |
+| Built-in calibration or inference | ●† | ●† | ●† | ○ | ○ | ○ | ○ | ○ | ◐† |
+
+Notes on the cells:
+
+- **Ready-made disease models.** ixa, individual, and Agents.jl are
+  frameworks: ixa and Agents.jl document example epidemics, and none
+  ships disease models as part of its API. The disease in the benchmark
+  is written for them.
+- **User-defined states.** Covasim’s states follow its native COVID-19
+  disease course; the benchmark restricts it to the SEIRH model with the
+  severe state as the hospitalization proxy
+  ([Methods](methods.md#engines)).
+- **Contact network from an edge list.** Starsim and ixa use their own
+  network structure and Covasim a custom contact layer; individual,
+  FRED, and Agents.jl have no edge-list primitive, and their runners
+  write one (FRED loads the edges as properties of a network group, and
+  the other two an adjacency list).
+- **Layered or place-based contacts.** epiworld has entities (groups of
+  agents) and Covasim contact layers; FRED’s places are its central
+  concept. Scenario 04 collapses the layers of its GeoPops population
+  into one graph, so no scenario uses them as layers.
+- **Movement in space.** FRED places have locations but agents do not
+  move between positions at random; ixa and individual have no space of
+  their own, so movement would be a property the user maintains.
+- **Built-in calibration.** Only a few of the engines include
+  calibration or inference; for the others, parameters are tuned with an
+  external package, as the benchmark does with its own procedure
+  ([Calibration](methods.md#calibration)).
+
+The marks come from the engines’ documentation as we read it, and
+several (those with a **†**) are expectations to verify, so treat the
+table as a starting point rather than as a finding.
 
 ## epiworld family
 
@@ -229,6 +307,16 @@ class="uri">Https://github.com/simoninireland/epydemic</a>; GitHub.
 
 </div>
 
+<div id="ref-gozziEpydemix2025" class="csl-entry">
+
+Gozzi, Nicoló, Matteo Chinazzi, Jessica T. Davis, et al. 2025.
+“Epydemix: An Open-Source Python Package for Epidemic Modeling with
+Integrated Approximate Bayesian Calibration.” *PLOS Computational
+Biology* 21 (11): e1013735.
+<https://doi.org/10.1371/journal.pcbi.1013735>.
+
+</div>
+
 <div id="ref-grefenstetteFRED2013" class="csl-entry">
 
 Grefenstette, John J., Shawn T. Brown, Roni Rosenfeld, et al. 2013.
@@ -236,6 +324,15 @@ Grefenstette, John J., Shawn T. Brown, Roni Rosenfeld, et al. 2013.
 Dynamics</span>): An Open-Source Software System for Modeling Infectious
 Diseases and Control Strategies Using Census-Based Populations.” *BMC
 Public Health* 13: 940. <https://doi.org/10.1186/1471-2458-13-940>.
+
+</div>
+
+<div id="ref-hunterTaxonomyAgentBasedModels2017" class="csl-entry">
+
+Hunter, Elizabeth, Brian Mac Namee, and John D. Kelleher. 2017. “A
+Taxonomy for Agent-Based Models in Human Infectious Disease
+Epidemiology.” *Journal of Artificial Societies and Social Simulation*
+20 (3): 2. <https://doi.org/10.18564/jasss.3414>.
 
 </div>
 
