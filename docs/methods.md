@@ -38,13 +38,17 @@ tools, runs one replicate, and writes one result record.
 | epiworldpy (Vega Yon and Banks 2026) | Python (C++ core) | 0.17.1-0+gc24b4f9 | The same model through the Python wrapper (`UpdateFun.susceptible()`, `UpdateFun.rate()`) | Synchronous daily |
 | Covasim (Kerr et al. 2021) | Python | 3.1.8 | Native disease progression, restricted to SEIRH; severe state as the hospitalization proxy | Daily, native |
 | Starsim (Kerr et al. 2025) | Python | 3.6.1 | Built-in `ss.SEIR`, subclassed to add a hospital state; network module over the edge list | Daily; durations sampled on entry |
-| EoN (Miller and Ting 2019) | Python | 1.92 | Rate graphs run with the event-driven `fast_simple_contagion` | Continuous time (exact) |
+| EoN\* (Miller and Ting 2019) | Python | 1.92 | Rate graphs run with the event-driven `fast_simple_contagion` | Continuous time (exact) |
 | epydemic (Dobson 2022) | Python | 1.14.1 | `CompartmentedModel` under `SynchronousDynamics` | Synchronous daily |
 | ixa (The Ixa Developers 2026) | Rust | 3.1.0 | One plan per day, the built-in contact network, an indexed disease-status property | Synchronous daily |
 | individual (Charles and Wu 2021) | R (C++ core) | 0.1.19 | `CategoricalVariable` and built-in transition processes; infection process written for the benchmark | Synchronous daily |
-| ABM (Ma 2025) | R (C++ core) | 0.4.3 | `Simulation` with exponential transitions over a `Contact` subclass serving the edge list | Continuous time; counts reported daily |
+| ABM\* (Ma 2025) | R (C++ core) | 0.4.3 | `Simulation` with exponential transitions over a `Contact` subclass serving the edge list | Continuous time; counts reported daily |
 | FRED (Grefenstette et al. 2013) | C++, driven by its own model language from Python | PUB.5.7.0+gbd25f04 | A FRED condition per compartment over a `Network` group type loaded with the edges | Daily; transitions before transmission |
 | Agents.jl (Datseris et al. 2024) | Julia | 7.0.4 | `StandardABM` with a daily `model_step!` over an adjacency list written for the benchmark | Synchronous daily |
+
+\* A continuous-time engine: it simulates events at exact times, and the
+benchmark records the daily totals. The same asterisk marks it in every
+figure and table.
 
 The recorded version is the one each result record carries. Versions
 built from a pinned commit end in that commit (`+g…`), so moving a pin
@@ -142,7 +146,7 @@ recovered branch. Its parameters are in each scenario’s `scenario.toml`:
 | `hospital_days` | 7.0 | Mean hospital stay |
 
 **Transmission mapping.** With mean degree $k$ and recovery rate
-$\gamma = 1/\text{infectious\_days}$, every engine starts from the
+$\gamma = 1/\mathrm{infectious\_days}$, every engine starts from the
 per-contact transmissibility $T = \min(0.999,\ R_0 / \max(1, k - 1))$.
 The daily engines convert it into a per-day, per-edge probability
 through geometric competing risks,

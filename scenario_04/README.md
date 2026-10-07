@@ -123,9 +123,12 @@ None: every engine runs scenario 00’s runner on this edge list.
 | covasim    | 165865 |   20 |                 0.562 |  0.548 |  0.609 |
 | starsim    | 165865 |   20 |                 0.822 |  0.814 |  0.830 |
 | FRED       | 165865 |   20 |                 2.658 |  2.579 |  2.710 |
-| EoN        | 165865 |   20 |                 3.534 |  3.470 |  3.590 |
+| EoN\*      | 165865 |   20 |                 3.534 |  3.470 |  3.590 |
 | epydemic   | 165865 |   20 |                12.511 | 12.476 | 12.582 |
-| ABM        | 165865 |   20 |                14.326 | 12.464 | 15.338 |
+| ABM\*      | 165865 |   20 |                14.326 | 12.464 | 15.338 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 ### Simulation time
 
@@ -142,13 +145,16 @@ epiworldR completed the simulation call faster.
 | epiworldpy | 165865 |                    0.97 |  0.96 |  0.99 |
 | covasim    | 165865 |                    3.57 |  3.51 |  3.85 |
 | starsim    | 165865 |                    5.26 |  5.22 |  5.37 |
-| EoN        | 165865 |                   22.65 | 22.09 | 22.88 |
+| EoN\*      | 165865 |                   22.65 | 22.09 | 22.88 |
 | epydemic   | 165865 |                   79.84 | 79.29 | 81.50 |
 | ixa        | 165865 |                    0.96 |  0.94 |  0.98 |
 | individual | 165865 |                    0.87 |  0.86 |  0.89 |
-| ABM        | 165865 |                   91.05 | 80.05 | 95.92 |
+| ABM\*      | 165865 |                   91.05 | 80.05 | 95.92 |
 | FRED       | 165865 |                   16.93 | 16.68 | 17.16 |
 | Agents.jl  | 165865 |                    0.85 |  0.85 |  0.86 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 ### Time to a first result
 
@@ -165,9 +171,12 @@ epiworldR completed the simulation call faster.
 | covasim    | 165865 |          0.134 |     0.043 |        0.562 |                0.605 |
 | starsim    | 165865 |          0.130 |     0.000 |        0.822 |                0.822 |
 | FRED       | 165865 |          2.420 |     0.664 |        2.658 |                3.318 |
-| EoN        | 165865 |          0.131 |     0.421 |        3.534 |                3.957 |
+| EoN\*      | 165865 |          0.131 |     0.421 |        3.534 |                3.957 |
 | epydemic   | 165865 |          0.127 |     0.398 |       12.511 |               12.905 |
-| ABM        | 165865 |          0.071 |     0.044 |       14.326 |               14.370 |
+| ABM\*      | 165865 |          0.071 |     0.044 |       14.326 |               14.370 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 ### Memory
 
@@ -181,21 +190,24 @@ Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 | epiworldpy | 165865 | 46.6 \[46.6, 46.7\] | 41.1 \[40.6, 41.1\] | 41.5 \[41.5, 41.5\] | 136.9 \[136.8, 137.0\] |
 | epiworldR | 165865 | 72.1 \[72.1, 72.1\] | 31.3 \[31.3, 31.3\] | 36.2 \[36.2, 36.4\] | 149.6 \[149.6, 149.7\] |
 | covasim | 165865 | 225.1 \[225.1, 225.1\] | 3.8 \[3.1, 3.8\] | 70.7 \[70.2, 70.7\] | 307.4 \[306.9, 307.4\] |
-| ABM | 165865 | 74.4 \[74.4, 74.4\] | 6.1 \[6.1, 6.1\] | 218.3 \[218.2, 218.4\] | 313.4 \[313.3, 313.5\] |
+| ABM\* | 165865 | 74.4 \[74.4, 74.4\] | 6.1 \[6.1, 6.1\] | 218.3 \[218.2, 218.4\] | 313.4 \[313.3, 313.5\] |
 | starsim | 165865 | 260.9 \[260.9, 260.9\] | 0.0 \[0.0, 0.0\] | 62.5 \[62.4, 63.3\] | 330.9 \[330.8, 331.7\] |
-| EoN | 165865 | 120.3 \[120.3, 120.3\] | 124.9 \[124.7, 124.9\] | 97.7 \[96.6, 98.3\] | 350.4 \[349.3, 351.0\] |
+| EoN\* | 165865 | 120.3 \[120.3, 120.3\] | 124.9 \[124.7, 124.9\] | 97.7 \[96.6, 98.3\] | 350.4 \[349.3, 351.0\] |
 | epydemic | 165865 | 117.2 \[117.2, 117.2\] | 125.0 \[125.0, 125.0\] | 166.7 \[166.5, 166.9\] | 416.3 \[416.0, 416.4\] |
 | Agents.jl | 165865 | 482.3 \[482.3, 482.5\] | 2.8 \[2.8, 2.9\] | 10.3 \[10.2, 10.4\] | 568.6 \[567.7, 569.2\] |
 | FRED | 165865 |  |  |  | 784.4 \[784.4, 784.4\] |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 ### Epidemiological sanity checks
 
 | Engine     | Agents | Median final attack rate | Median peak hospitalized |
 |:-----------|-------:|-------------------------:|-------------------------:|
-| ABM        | 165865 |                    0.620 |                   1015.0 |
+| ABM\*      | 165865 |                    0.620 |                   1015.0 |
 | Agents.jl  | 165865 |                    0.624 |                    855.0 |
 | covasim    | 165865 |                    0.699 |                   1725.5 |
-| EoN        | 165865 |                    0.620 |                   1004.0 |
+| EoN\*      | 165865 |                    0.620 |                   1004.0 |
 | epiworld   | 165865 |                    0.622 |                    843.5 |
 | epiworldpy | 165865 |                    0.622 |                    843.5 |
 | epiworldR  | 165865 |                    0.622 |                    843.5 |
@@ -204,6 +216,9 @@ Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 | individual | 165865 |                    0.630 |                   1001.5 |
 | ixa        | 165865 |                    0.625 |                    851.5 |
 | starsim    | 165865 |                    0.612 |                    968.5 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 ### Model lines
 

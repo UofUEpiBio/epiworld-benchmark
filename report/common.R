@@ -24,6 +24,28 @@ options(scipen = 999, knitr.kable.NA = "")
 
 q <- function(x, p) unname(stats::quantile(x, p, na.rm = TRUE))
 
+# Continuous-time engines simulate events at exact times; the benchmark keeps
+# only their daily totals, so their figures and tables carry an asterisk.
+continuous_time <- c("EoN", "ABM")
+continuous_note <- paste(
+  "* Continuous-time engine: it simulates events at exact times,",
+  "and the benchmark records the daily totals."
+)
+engine_label <- function(x) ifelse(x %in% continuous_time, paste0(x, "*"), as.character(x))
+
+#' `knitr::kable()` with the asterisk on continuous-time engines in any
+#' `engine` or `Engine` column, and the note under a table that has one.
+kable_engines <- function(x, ...) {
+  marked <- FALSE
+  for (column in intersect(c("engine", "Engine"), names(x))) {
+    marked <- marked || any(x[[column]] %in% continuous_time)
+    x[[column]] <- engine_label(x[[column]])
+  }
+  table <- knitr::kable(x, ...)
+  if (!marked) return(table)
+  knitr::asis_output(paste(c(table, "", paste0("<sub>", continuous_note, "</sub>"), ""), collapse = "\n"))
+}
+
 #' Load results for one scenario, plus the full-design rows of every scenario
 #' (needed for comparisons against another scenario).
 load_benchmark <- function(scenario, root = "..") {
@@ -193,7 +215,7 @@ table_summary <- function(bench) {
       q75 = q(d$simulate_seconds, 0.75)
     )))
   rows <- rows[order(rows$agents, rows$median), ]
-  knitr::kable(rows, digits = 3,
+  kable_engines(rows, digits = 3,
     col.names = c("Engine", "Agents", "Runs", "Median simulation (s)", "Q1 (s)", "Q3 (s)"),
     row.names = FALSE)
 }
@@ -217,8 +239,9 @@ plot_simulation_time <- function(bench) {
       x = "Simulation wall time (seconds, log scale)",
       y = NULL,
       subtitle = "Wall time distribution for 100-day simulations",
-      caption = "Note: dots show individual replicates"
+      caption = paste0("Note: dots show individual replicates\n", continuous_note)
     ) +
+    ggplot2::scale_y_discrete(labels = engine_label) +
     ggplot2::theme_minimal(base_size = 18) +
     ggplot2::theme(legend.position = "none")
 }
@@ -269,7 +292,7 @@ table_memory <- function(bench) {
       peak = cell(d$peak)
     )))
   rows <- rows[order(rows$agents, rows$order), setdiff(names(rows), "order")]
-  knitr::kable(rows, col.names = c(
+  kable_engines(rows, col.names = c(
     "Engine", "Agents", "Baseline (MiB)", "Model footprint (MiB)",
     "Simulation memory (MiB)", "Overall peak (MiB)"
   ), row.names = FALSE, align = "llrrrr")
@@ -293,7 +316,7 @@ table_phases <- function(bench) {
       result = median(d$build_seconds + d$simulate_seconds)
     )))
   rows <- rows[order(rows$agents, rows$result), ]
-  knitr::kable(rows, digits = 3,
+  kable_engines(rows, digits = 3,
     col.names = c("Engine", "Agents", "Read edges (s)", "Build (s)", "Simulate (s)",
                   "Build + simulate (s)"),
     row.names = FALSE)
@@ -320,7 +343,7 @@ table_speedup <- function(bench, reference = "epiworldR", engines = NULL) {
       q75 = q(d$ratio, .75)
     )))
   rows <- rows[order(rows$agents, factor(rows$engine, levels = engine_levels)), ]
-  knitr::kable(rows, digits = 2,
+  kable_engines(rows, digits = 2,
     col.names = c("Engine", "Agents", paste("Median time /", reference), "Q1", "Q3"),
     row.names = FALSE)
 }
@@ -349,7 +372,7 @@ table_outcomes <- function(bench) {
     columns <- c(columns, "protected_share")
     names <- c(names, "Median share protected")
   }
-  knitr::kable(rows[columns], digits = 3, col.names = names, row.names = FALSE)
+  kable_engines(rows[columns], digits = 3, col.names = names, row.names = FALSE)
 }
 
 #' Count the model lines of one engine's runner. Each region runs from the
@@ -399,7 +422,7 @@ table_code_effort <- function(bench, baseline = NULL) {
                paste("Lines,", this), paste("Added since", label))
   }
   effort <- effort[order(effort$model_lines), ]
-  knitr::kable(effort, col.names = names, row.names = FALSE)
+  kable_engines(effort, col.names = names, row.names = FALSE)
 }
 
 #' Median daily incidence and reproductive number across replicates, from
@@ -424,7 +447,7 @@ table_extraction <- function(bench) {
       ratio = median(d$extract_seconds / d$simulate_seconds)
     )))
   rows <- rows[order(rows$agents, rows$simulate), ]
-  knitr::kable(rows, digits = c(0, 0, 3, 3, 2),
+  kable_engines(rows, digits = c(0, 0, 3, 3, 2),
     col.names = c("Engine", "Agents", "Median simulation (s)",
                   "Median extraction (s)", "Median extraction / simulation"),
     row.names = FALSE)
@@ -450,7 +473,7 @@ table_output_checks <- function(bench) {
       matrix = mean(d$matrix_matches)
     )))
   rows <- rows[order(rows$agents, factor(rows$engine, levels = engine_levels)), ]
-  knitr::kable(rows, digits = c(0, 0, 0, 2, 2),
+  kable_engines(rows, digits = c(0, 0, 0, 2, 2),
     col.names = c("Engine", "Agents", "Median transmissions",
                   "Share of runs: tree matches counts",
                   "Share of runs: matrix matches counts"),
@@ -475,8 +498,9 @@ plot_daily <- function(bench) {
     ggplot2::geom_line(linewidth = 0.7) +
     ggplot2::facet_grid(measure ~ agents, scales = "free_y", switch = "y",
                         labeller = ggplot2::label_wrap_gen(28)) +
+    ggplot2::scale_colour_discrete(labels = engine_label) +
     ggplot2::labs(x = "Day", y = NULL, colour = NULL,
-                  subtitle = "Medians across replicates") +
+                  subtitle = "Medians across replicates", caption = continuous_note) +
     ggplot2::theme_minimal(base_size = 12) +
     ggplot2::theme(legend.position = "bottom", strip.placement = "outside")
 }
@@ -534,7 +558,7 @@ summary_by_scenario <- function(all, column, format) {
   out <- data.frame(Engine = engines, cells, check.names = FALSE, row.names = NULL)
   names(out)[-1] <- paste0(scenario_label(colnames(medians)), " (",
                            size_label(largest[colnames(medians)]), ")")
-  knitr::kable(out, align = c("l", rep("r", ncol(medians))))
+  kable_engines(out, align = c("l", rep("r", ncol(medians))))
 }
 
 #' Median simulation time in seconds, three significant digits.
@@ -576,7 +600,9 @@ plot_runtime_decomposition <- function(all) {
     ggplot2::geom_point(size = 2.4) +
     ggplot2::facet_wrap(~ cell, ncol = 4) +
     ggplot2::scale_x_log10(labels = function(x) format(x, scientific = FALSE, drop0trailing = TRUE)) +
-    ggplot2::labs(x = "Median seconds (log scale)", y = NULL, colour = NULL, shape = NULL) +
+    ggplot2::scale_y_discrete(labels = engine_label) +
+    ggplot2::labs(x = "Median seconds (log scale)", y = NULL, colour = NULL, shape = NULL,
+                  caption = continuous_note) +
     ggplot2::theme_minimal(base_size = 12) +
     ggplot2::theme(legend.position = "bottom")
 }
@@ -596,8 +622,9 @@ plot_scaling <- function(all, scenarios = c("scenario_00", "scenario_03")) {
     ggplot2::geom_point(size = 2) +
     ggplot2::scale_x_log10(breaks = sizes, labels = size_label(sizes)) +
     ggplot2::scale_y_log10() +
+    ggplot2::scale_colour_discrete(labels = engine_label) +
     ggplot2::labs(x = "Agents (log scale)", y = "Median simulation seconds (log scale)",
-                  colour = NULL) +
+                  colour = NULL, caption = continuous_note) +
     ggplot2::theme_minimal(base_size = 12)
 }
 
@@ -636,7 +663,7 @@ table_complexity_cost <- function(all) {
   if (is.null(parts)) return(NULL)
   wide <- tapply(parts$ratio, list(parts$engine, parts$column), median)
   wide <- wide[engine_levels[engine_levels %in% rownames(wide)], unique(parts$column), drop = FALSE]
-  knitr::kable(data.frame(Engine = rownames(wide), wide, check.names = FALSE, row.names = NULL),
+  kable_engines(data.frame(Engine = rownames(wide), wide, check.names = FALSE, row.names = NULL),
                digits = 2)
 }
 
@@ -650,7 +677,9 @@ plot_memory_all <- function(all) {
     ggplot2::geom_boxplot(outlier.shape = NA, width = 0.6, fill = "grey90") +
     ggplot2::facet_wrap(~ cell, ncol = 4) +
     ggplot2::scale_x_log10() +
-    ggplot2::labs(x = "Overall peak resident memory (MiB, log scale)", y = NULL) +
+    ggplot2::scale_y_discrete(labels = engine_label) +
+    ggplot2::labs(x = "Overall peak resident memory (MiB, log scale)", y = NULL,
+                  caption = continuous_note) +
     ggplot2::theme_minimal(base_size = 12)
 }
 
@@ -661,7 +690,7 @@ table_by_cell <- function(all, column, digits) {
   rows$cell <- cell_factor(rows$scenario, rows$n)
   m <- tapply(rows[[column]], list(rows$engine, rows$cell), median)
   m <- m[engine_levels[engine_levels %in% rownames(m)], , drop = FALSE]
-  knitr::kable(data.frame(Engine = rownames(m), m, check.names = FALSE, row.names = NULL),
+  kable_engines(data.frame(Engine = rownames(m), m, check.names = FALSE, row.names = NULL),
                digits = digits, format.args = list(big.mark = ","))
 }
 
@@ -678,7 +707,7 @@ table_agreement <- function(all) {
   for (i in rownames(m)) if (i != "epiworldR") {
     cells[i, ] <- sprintf("%.3f (%+.3f)", m[i, ], m[i, ] - reference)
   }
-  knitr::kable(data.frame(Engine = rownames(m), cells, check.names = FALSE, row.names = NULL),
+  kable_engines(data.frame(Engine = rownames(m), cells, check.names = FALSE, row.names = NULL),
                align = c("l", rep("r", ncol(m))))
 }
 
@@ -692,7 +721,7 @@ table_code_size <- function(all) {
   wide <- tapply(effort$lines, list(effort$engine, scenario_label(effort$scenario)), sum)
   wide <- wide[engine_levels[engine_levels %in% rownames(wide)], , drop = FALSE]
   language <- tapply(effort$language, effort$engine, `[`, 1)[rownames(wide)]
-  knitr::kable(data.frame(Engine = rownames(wide), Language = language, wide,
+  kable_engines(data.frame(Engine = rownames(wide), Language = language, wide,
                           check.names = FALSE, row.names = NULL))
 }
 
@@ -716,7 +745,7 @@ table_completion <- function(all) {
   out <- data.frame(Engine = engines, cells, check.names = FALSE, row.names = NULL)
   names(out)[-1] <- scenario_label(colnames(done))
   out <- rbind(out, c("Failed runs, latest run", ifelse(is.na(failures), "", failures)))
-  knitr::kable(out, align = c("l", rep("r", ncol(out) - 1)))
+  kable_engines(out, align = c("l", rep("r", ncol(out) - 1)))
 }
 
 #' The environment of the published runs, from every scenario's record: one
@@ -762,7 +791,7 @@ table_family_ratios <- function(all) {
   if (is.null(parts)) return(NULL)
   parts$cell <- cell_factor(parts$scenario, parts$n)
   wide <- tapply(parts$ratio, list(parts$engine, parts$cell), median)
-  knitr::kable(data.frame(Wrapper = rownames(wide), wide, check.names = FALSE, row.names = NULL),
+  kable_engines(data.frame(Wrapper = rownames(wide), wide, check.names = FALSE, row.names = NULL),
                digits = 2)
 }
 
@@ -812,7 +841,8 @@ plot_summary <- function(all, column, label, value_label) {
     ggplot2::scale_x_log10(expand = ggplot2::expansion(mult = c(0.06, 0.3)),
                            labels = function(x) format(x, big.mark = ",", scientific = FALSE,
                                                        drop0trailing = TRUE, trim = TRUE)) +
-    ggplot2::labs(x = label, y = NULL) +
+    ggplot2::scale_y_discrete(labels = engine_label) +
+    ggplot2::labs(x = label, y = NULL, caption = continuous_note) +
     ggplot2::theme_minimal(base_size = 11) +
     ggplot2::theme(
       plot.background = ggplot2::element_rect(fill = surface, colour = NA),

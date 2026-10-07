@@ -96,11 +96,14 @@ The same medians as a table (seconds)
 | Agents.jl  |    0.0366 |    0.0374 |    0.0366 |   0.727 |        0.133 |
 | individual |     0.053 |     0.049 |      0.07 |   0.272 |        0.136 |
 | covasim    |     0.324 |     0.334 |     0.334 |    3.14 |        0.562 |
-| EoN        |     0.285 |     0.211 |      0.45 |    2.27 |         3.53 |
+| EoN\*      |     0.285 |     0.211 |      0.45 |    2.27 |         3.53 |
 | FRED       |     0.485 |     0.587 |     0.706 |     7.2 |         2.66 |
 | starsim    |     0.905 |     0.908 |     0.715 |    11.0 |        0.822 |
-| ABM        |     0.936 |     0.868 |     0.827 |    11.0 |         14.3 |
+| ABM\*      |     0.936 |     0.868 |     0.827 |    11.0 |         14.3 |
 | epydemic   |      1.71 |      1.07 |      1.08 |    13.3 |         12.5 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 </details>
 
@@ -124,13 +127,16 @@ The same medians as a table (MiB)
 | individual |       127 |       127 |       142 |     282 |          130 |
 | epiworldR  |       113 |       113 |       113 |     479 |          150 |
 | epiworldpy |       127 |       132 |       132 |     854 |          137 |
-| ABM        |       192 |       191 |       191 |   1,344 |          313 |
+| ABM\*      |       192 |       191 |       191 |   1,344 |          313 |
 | covasim    |       272 |       281 |       281 |     684 |          307 |
 | starsim    |       339 |       339 |       341 |     905 |          331 |
-| EoN        |       284 |       286 |       313 |   1,671 |          350 |
+| EoN\*      |       284 |       286 |       313 |   1,671 |          350 |
 | epydemic   |       413 |       413 |       413 |   3,020 |          416 |
 | Agents.jl  |       574 |       585 |       586 |     971 |          569 |
 | FRED       |       581 |       597 |       599 |   5,847 |          784 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 </details>
 

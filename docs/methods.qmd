@@ -39,9 +39,9 @@ engines <- data.frame(
              "epydemic", "ixa", "individual", "ABM", "FRED", "Agents.jl"),
   name = c("epiworld [@vegayonEpiworld2026]", "epiworldR [@meyerEpiworldRFastAgentBased2023]",
            "epiworldpy [@vegayonEpiworldpy2026]", "Covasim [@kerrCovasimAgentbasedModel2021]",
-           "Starsim [@kerrStarsim2025]", "EoN [@millerEoNEpidemicsNetworks2019]",
+           "Starsim [@kerrStarsim2025]", "EoN* [@millerEoNEpidemicsNetworks2019]",
            "epydemic [@dobson2022epydemic]", "ixa [@ixa2026]",
-           "individual [@charlesIndividual2021]", "ABM [@maABM2025]", "FRED [@grefenstetteFRED2013]",
+           "individual [@charlesIndividual2021]", "ABM* [@maABM2025]", "FRED [@grefenstetteFRED2013]",
            "Agents.jl [@datserisAgentsjl2024]"),
   language = c("C++", "R (C++ core)", "Python (C++ core)", "Python", "Python", "Python",
                "Python", "Rust", "R (C++ core)", "R (C++ core)", "C++, driven by its own model language from Python",
@@ -70,6 +70,10 @@ knitr::kable(engines[c("name", "language", "version", "features", "time")],
   col.names = c("Engine", "Language", "Recorded version", "Model as implemented", "Time"),
   row.names = FALSE)
 ```
+
+\* A continuous-time engine: it simulates events at exact times, and the
+benchmark records the daily totals. The same asterisk marks it in every
+figure and table.
 
 The recorded version is the one each result record carries. Versions built
 from a pinned commit end in that commit (`+g…`), so moving a pin
@@ -164,7 +168,7 @@ hospitalized → recovered branch. Its parameters are in each scenario's
 | `hospital_days` | 7.0 | Mean hospital stay |
 
 **Transmission mapping.** With mean degree $k$ and recovery rate
-$\gamma = 1/\text{infectious\_days}$, every engine starts from the per-contact
+$\gamma = 1/\mathrm{infectious\_days}$, every engine starts from the per-contact
 transmissibility $T = \min(0.999,\ R_0 / \max(1, k - 1))$. The daily engines
 convert it into a per-day, per-edge probability through geometric competing
 risks, $\beta = T\gamma / (1 - T(1 - \gamma))$, and the daily hospitalization
