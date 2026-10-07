@@ -41,7 +41,8 @@ vaccine_efficacy = 0.80
 #
 # epiworldR needs no factor: its uncalibrated median attack rates (0.382 and
 # 0.060) match EoN's exact continuous-time results. Starsim needs none either:
-# its uncalibrated medians were 0.387 and 0.060.
+# its uncalibrated medians were 0.387 and 0.060. ABM needs none: its
+# uncalibrated medians were 0.383 and 0.059.
 covasim_transmission_multiplier_10000 = 0.715
 covasim_transmission_multiplier_100000 = 0.710
 #

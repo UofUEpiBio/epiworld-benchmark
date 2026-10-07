@@ -7,7 +7,7 @@
 - [Repository layout](#repository-layout)
 - [References](#references)
 
-This project compares how fast eleven epidemic simulation engines run
+This project compares how fast twelve epidemic simulation engines run
 the same agent-based model on the same contact network, and how much
 code each engine needs to express that model. Three of them are the
 epiworld family: the header-only C++ library
@@ -17,7 +17,7 @@ target="_blank">epiworld</a> (Vega Yon 2026) and its two wrappers,
 target="_blank">epiworldR</a> (Meyer and Vega Yon 2023) for R and
 <a href="https://github.com/UofUEpiBio/epiworldpy"
 target="_blank">epiworldpy</a> (Vega Yon and Banks 2026) for Python. The
-other eight are
+other nine are
 <a href="https://covasim.org/" target="_blank">Covasim</a> (Kerr et al.
 2021) and its successor
 <a href="https://starsim.org/" target="_blank">Starsim</a> (Kerr et al.
@@ -28,8 +28,9 @@ target="_blank">EoN</a> (Miller and Ting 2019),
 target="_blank">epydemic</a> (Dobson 2022),
 <a href="https://ixa.rs/" target="_blank">ixa</a> (The Ixa Developers
 2026), the R package <a href="https://mrc-ide.github.io/individual/"
-target="_blank">individual</a> (Charles and Wu 2021),
-<a href="https://github.com/PublicHealthDynamicsLab/FRED"
+target="_blank">individual</a> (Charles and Wu 2021), the R package
+<a href="https://cran.r-project.org/package=ABM" target="_blank">ABM</a>
+(Ma 2025), <a href="https://github.com/PublicHealthDynamicsLab/FRED"
 target="_blank">FRED</a> (Grefenstette et al. 2013), and the Julia
 package <a href="https://github.com/JuliaDynamics/Agents.jl"
 target="_blank">Agents.jl</a> (Datseris et al. 2024).
@@ -43,13 +44,13 @@ image.
 
 - [**Methods**](docs/methods.md): the engines, the common model,
   networks, calibration, the execution protocol, and what is measured.
-- [**Engines**](docs/engines.md): what each engine is, what it was built
-  for, and how it represents a model.
+- [**Engines**](docs/engines.md): what each of the engines is, what it
+  was built for, and how it represents a model.
 - [**Results**](docs/results.md): run time, scaling, the cost of each
   added feature, memory, epidemiological agreement, and implementation
   size, across every scenario.
-- [**Showcase models**](docs/showcase-models.md): the plan for adding, for
-  each engine, a scenario it was built for.
+- [**Showcase models**](docs/showcase-models.md): the plan for adding,
+  for each engine, a scenario it was built for.
 - [**Running the benchmark**](setup.md): the container, commands, and
   the published records. [scenarios.md](scenarios.md) explains how to
   add a scenario.
@@ -98,6 +99,7 @@ The same medians as a table (seconds)
 | EoN        |     0.285 |     0.211 |      0.45 |    2.27 |         3.53 |
 | FRED       |     0.485 |     0.587 |     0.706 |     7.2 |         2.66 |
 | starsim    |     0.905 |     0.908 |     0.715 |    11.0 |        0.822 |
+| ABM        |     0.936 |     0.868 |     0.827 |    11.0 |         14.3 |
 | epydemic   |      1.71 |      1.07 |      1.08 |    13.3 |         12.5 |
 
 </details>
@@ -122,6 +124,7 @@ The same medians as a table (MiB)
 | individual |       127 |       127 |       142 |     282 |          130 |
 | epiworldR  |       113 |       113 |       113 |     479 |          150 |
 | epiworldpy |       127 |       132 |       132 |     854 |          137 |
+| ABM        |       192 |       191 |       191 |   1,344 |          313 |
 | covasim    |       272 |       281 |       281 |     684 |          307 |
 | starsim    |       339 |       339 |       341 |     905 |          331 |
 | EoN        |       284 |       286 |       313 |   1,671 |          350 |
@@ -219,6 +222,13 @@ Computational Biology* 17 (7): e1009149.
 
 Kerr, Cliff, Robyn Stuart, Romesh Abeysuriya, et al. 2025. *Starsim*. V.
 3.0.0. Released July. <https://github.com/starsimhub/starsim>.
+
+</div>
+
+<div id="ref-maABM2025" class="csl-entry">
+
+Ma, Junling. 2025. *ABM: Agent Based Model Simulation Framework*.
+<https://CRAN.R-project.org/package=ABM>.
 
 </div>
 

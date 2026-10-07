@@ -82,6 +82,13 @@ individual:
     - {from: '^recovery <- 1', to: '^beta <- beta \*'}
     - {from: '^from <- c\(edges', to: '^neighbours_of <- function'}
     - {from: '^set\.seed', to: '^simulation_loop\('}
+ABM:
+  language: R
+  files: [runners/abm.R]
+  regions:
+    - {from: '^recovery <- 1', to: '^hospital_rate <- '}
+    - {from: '^from <- c\(edges', to: '^invisible\(gc'}
+    - {from: '^set\.seed', to: '^trajectory <- sim\$run'}
 FRED:
   language: Python
   files: [runners/run_FRED.py]

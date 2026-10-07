@@ -93,7 +93,7 @@ check:
 	for manifest in $(IXA_MANIFESTS); do \
 		$(CARGO) test --release --locked --manifest-path $$manifest || exit 1; \
 	done
-	Rscript --vanilla -e 'stopifnot(requireNamespace("epiworldR", quietly = TRUE), requireNamespace("individual", quietly = TRUE), requireNamespace("jsonlite", quietly = TRUE))'
+	Rscript --vanilla -e 'stopifnot(requireNamespace("epiworldR", quietly = TRUE), requireNamespace("individual", quietly = TRUE), requireNamespace("ABM", quietly = TRUE), requireNamespace("jsonlite", quietly = TRUE))'
 
 smoke:
 	$(PYTHON) run.py --profile smoke $(SCENARIO_ARGS) $(RUN_ARGS)

@@ -64,15 +64,16 @@ the table, and may change as the models are refined.
 
 | Scenario | Showcase of | Model | Component the engine is built for |
 |:---------|:------------|:------|:----------------------------------|
-| 05 | epiworld family | SEIR with three age groups, a contact matrix, and quarantine of detected cases | Population mixing between groups, with isolation as a built-in model |
-| 06 | Covasim | Age-structured COVID-like disease on household, school, workplace, and community layers, with test-and-trace | Multi-layer contacts, age-dependent severity, testing and tracing |
-| 07 | Starsim | SIS infection on a dynamic partnership network with births and deaths | Demographics and contacts that form and dissolve |
-| 08 | EoN | SIR in continuous time on a weighted network with Gamma-distributed infectious periods | Exact event-driven simulation with non-exponential durations |
-| 09 | epydemic | SIR on an adaptive network in which susceptible agents rewire away from infectious ones | Processes that change the network |
-| 10 | ixa | Continuous-time disease with an infectiousness profile, individual heterogeneity, and delayed isolation | Plans on an event queue and person properties |
-| 11 | individual | Host–vector malaria-like transmission with age-dependent biting | Two interacting populations, no contact network |
-| 12 | FRED | Influenza in a synthetic population with household, school, and workplace places and reactive school closure | Place-based co-location and a policy language |
-| 13 | Agents.jl | Mobile agents in continuous space with proximity transmission and a movement restriction | Spatial agents, co-location by distance |
+| 05 | epiworld family | SEIR with three age groups, a contact matrix, and quarantine of detected cases | Population mixing between groups, with isolation as a built-in model || W 
+| 06 | Covasim | Age-structured COVID-like disease on household, school, workplace, and community layers, with test-and-trace | Multi-layer contacts, age-dependent severity, testing and tracing || W 
+| 07 | Starsim | SIS infection on a dynamic partnership network with births and deaths | Demographics and contacts that form and dissolve || W 
+| 08 | EoN | SIR in continuous time on a weighted network with Gamma-distributed infectious periods | Exact event-driven simulation with non-exponential durations || N 
+| 09 | epydemic | SIR on an adaptive network in which susceptible agents rewire away from infectious ones | Processes that change the network || W 
+| 10 | ixa | Continuous-time disease with an infectiousness profile, individual heterogeneity, and delayed isolation | Plans on an event queue and person properties || W 
+| 11 | individual | Host–vector malaria-like transmission with age-dependent biting | Two interacting populations, no contact network || ? 
+| 12 | FRED | Influenza in a synthetic population with household, school, and workplace places and reactive school closure | Place-based co-location and a policy language || W 
+| 13 | Agents.jl | Mobile agents in continuous space with proximity transmission and a movement restriction | Spatial agents, co-location by distance || ? 
+| 14 | ABM | SEIR in continuous time in an open population, with births, deaths, and Gamma-distributed periods | Event-driven agents that join and leave, with arbitrary waiting times |
 
 The sections below specify each model. Parameters are starting points, to be
 settled when the model is implemented; the baseline's disease values (a mean
@@ -255,6 +256,27 @@ latent period of 4 days, a mean infectious period of 7 days, $R_0$ of 2,
   expected to need a hand-written neighbor search, or to be unable to express
   it.
 
+### 14. ABM: an open population in continuous time
+
+- **Model.** SEIR in continuous time on a network in which agents die at a
+  rate and are replaced by susceptible newborns who connect to a few random
+  agents, so the population turns over during the epidemic. The latent and
+  infectious periods are Gamma distributed.
+- **Parameters.** The birth and death rate (a mean lifetime much longer than
+  the epidemic, and one comparable to it), the number of connections of a
+  newborn, the Gamma shapes and scales (keeping the baseline means of 4 and
+  7 days), and the transmission rate calibrated to $R_0$.
+- **Outputs.** The baseline outputs, plus the population size at the end of
+  each day. Because $n$ changes, the five compartments sum to the final
+  population and not to $n$. There is no hospitalization branch.
+- **Why it suits ABM.** Its events are ordered in continuous time, agents can
+  leave and join a population while the simulation runs, and a waiting time
+  can be any distribution, so the model needs no discretisation.
+- **To verify.** Whether the discrete-time engines can represent turnover on
+  a network (Starsim has demographics; the others would add and remove agents
+  by hand or fix the population), and whether EoN can handle a network that
+  changes.
+
 ## Expected feasibility
 
 Initial assessment of how each engine would implement each showcase, to be
@@ -263,17 +285,18 @@ means expressible with code written for the benchmark, **?** means unclear,
 and **X** means likely unsupported. Rows are the showcase models, and columns
 are the engines (epiworld = the epiworld family).
 
-| Showcase | epiworld | Covasim | Starsim | EoN | epydemic | ixa | individual | FRED | Agents.jl |
-|:---------|:--------:|:-------:|:-------:|:---:|:--------:|:---:|:----------:|:----:|:---------:|
-| 05 mixing and quarantine | N | W | W | X | W | W | W | W | W |
-| 06 layers and test-and-trace | W | N | W | X | X | W | W | W | W |
-| 07 partnerships and demography | W | W | N | X | ? | W | W | W | W |
-| 08 continuous time, Gamma durations | X | W | W | N | W | N | W | W | W |
-| 09 adaptive network | ? | X | W | ? | N | W | W | X | W |
-| 10 infectiousness profile and isolation | ? | W | W | ? | ? | N | W | W | W |
-| 11 host–vector | W | ? | W | X | X | W | N | ? | W |
-| 12 places and school closure | W | W | W | X | X | W | W | N | W |
-| 13 movement in space | X | X | ? | X | X | W | W | ? | N |
+| Showcase | epiworld | Covasim | Starsim | EoN | epydemic | ixa | individual | ABM | FRED | Agents.jl |
+|:---------|:--------:|:-------:|:-------:|:---:|:--------:|:---:|:----------:|:---:|:----:|:---------:|
+| 05 mixing and quarantine | N | W | W | X | W | W | W | W | W | W |
+| 06 layers and test-and-trace | W | N | W | X | X | W | W | W | W | W |
+| 07 partnerships and demography | W | W | N | X | ? | W | W | W | W | W |
+| 08 continuous time, Gamma durations | X | W | W | N | W | N | W | N | W | W |
+| 09 adaptive network | ? | X | W | ? | N | W | W | W | X | W |
+| 10 infectiousness profile and isolation | ? | W | W | ? | ? | N | W | W | W | W |
+| 11 host–vector | W | ? | W | X | X | W | N | ? | ? | W |
+| 12 places and school closure | W | W | W | X | X | W | W | W | N | W |
+| 13 movement in space | X | X | ? | X | X | W | W | ? | ? | N |
+| 14 open population, continuous time | W | W | N | X | ? | W | W | N | W | W |
 
 The matrix is a hypothesis. Its purpose is to say where the work is: the
 cells marked **X** or **?** are those that need a decision before
@@ -313,8 +336,8 @@ For each showcase, in this order, as the issue lays out:
   failing, and the report prints the reasons. A scenario's `engines` list can
   already restrict it to a subset, but it has nowhere to say why.
 - **A relaxed record contract.** The checks that the five compartments sum to
-  `n` need to allow the demographic showcase (07), where `n` changes, and
-  the model without a hospitalization branch (11).
+  `n` need to allow the demographic showcases (07 and 14), where `n` changes, and
+  the models without a hospitalization branch (11 and 14).
 - **Reports.** Each scenario's report keeps its current structure and adds a
   support table; the overview's engine table gains a column for the engine's
   showcase.
@@ -327,8 +350,8 @@ For each showcase, in this order, as the issue lays out:
    run on the existing edge list, and are the cheapest to start with.
 3. **Showcases that need a population file**: 05 (epiworld), 06 (Covasim),
    and 12 (FRED).
-4. **Showcases with their own world**: 07 (Starsim), 11 (individual), and
-   13 (Agents.jl).
+4. **Showcases with their own world**: 07 (Starsim), 11 (individual),
+   13 (Agents.jl), and 14 (ABM).
 
 Each showcase is its own pull request, so each can be reviewed and its
 results published on their own.

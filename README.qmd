@@ -1,6 +1,6 @@
 ---
 title: "Network epidemic ABM speed benchmark"
-subtitle: "epiworld (C++, R, and Python), Covasim, Starsim, EoN, epydemic, ixa, individual, FRED, and Agents.jl"
+subtitle: "epiworld (C++, R, and Python), Covasim, Starsim, EoN, epydemic, ixa, individual, ABM, FRED, and Agents.jl"
 format:
   gfm:
     toc: true
@@ -17,7 +17,7 @@ source("report/common.R")
 all <- load_all(".")
 ```
 
-This project compares how fast eleven epidemic simulation engines run the same
+This project compares how fast twelve epidemic simulation engines run the same
 agent-based model on the same contact network, and how much code each engine
 needs to express that model. Three of them are the epiworld family: the
 header-only C++ library
@@ -26,14 +26,15 @@ and its two wrappers,
 [epiworldR](https://uofuepibio.github.io/epiworldR/){target="_blank"} [@meyerEpiworldRFastAgentBased2023]
 for R and
 [epiworldpy](https://github.com/UofUEpiBio/epiworldpy){target="_blank"} [@vegayonEpiworldpy2026]
-for Python. The other eight are
+for Python. The other nine are
 [Covasim](https://covasim.org/){target="_blank"} [@kerrCovasimAgentbasedModel2021]
 and its successor
 [Starsim](https://starsim.org/){target="_blank"} [@kerrStarsim2025],
 [EoN](https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html){target="_blank"} [@millerEoNEpidemicsNetworks2019],
 [epydemic](https://github.com/simoninireland/epydemic){target="_blank"} [@dobson2022epydemic],
 [ixa](https://ixa.rs/){target="_blank"} [@ixa2026], the R package
-[individual](https://mrc-ide.github.io/individual/){target="_blank"} [@charlesIndividual2021],
+[individual](https://mrc-ide.github.io/individual/){target="_blank"} [@charlesIndividual2021], the R package
+[ABM](https://cran.r-project.org/package=ABM){target="_blank"} [@maABM2025],
 [FRED](https://github.com/PublicHealthDynamicsLab/FRED){target="_blank"} [@grefenstetteFRED2013],
 and the Julia package
 [Agents.jl](https://github.com/JuliaDynamics/Agents.jl){target="_blank"} [@datserisAgentsjl2024].

@@ -50,26 +50,26 @@ least one of the benchmark's scenarios
 [showcase model plan](showcase-models.md) proposes the scenarios that would
 test the cells marked with a **†**.
 
-| Feature | epiworld family | Covasim | Starsim | EoN | epydemic | ixa | individual | FRED | Agents.jl |
-|:--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Language | C++, R, Python | Python | Python | Python | Python | Rust | R | C++ (own model language) | Julia |
-| Ready-made disease models | ● | ● | ● | ● | ● | ○ | ○ | ● | ○ |
-| User-defined states and transitions | ● | ◐ | ● | ● | ● | ◐ | ◐ | ● | ◐ |
-| Continuous-time (event-driven) simulation | ○ | ○ | ○ | ● | ● | ● | ○ | ○ | ◐† |
-| Contact network from an edge list | ● | ● | ● | ● | ● | ● | ◐ | ◐ | ◐ |
-| Vaccination | ● | ● | ● | ◐ | ◐ | ◐ | ◐ | ● | ◐ |
-| Layered or place-based contacts (households, schools, workplaces) | ●† | ●† | ◐† | ○ | ◐† | ◐† | ◐† | ●† | ◐† |
-| Age and other individual attributes | ◐† | ●† | ●† | ◐† | ◐† | ●† | ●† | ●† | ●† |
-| Demography (births, deaths, ageing) | ◐† | ◐† | ●† | ○ | ◐† | ◐† | ◐† | ◐† | ◐† |
-| Movement in space | ○ | ○ | ○ | ○ | ○ | ◐† | ◐† | ◐† | ●† |
-| Testing, tracing, and quarantine | ●† | ●† | ◐† | ○ | ◐† | ◐† | ◐† | ◐† | ◐† |
-| Several pathogens or variants | ●† | ●† | ●† | ◐† | ◐† | ◐† | ◐† | ●† | ◐† |
-| Built-in calibration or inference | ●† | ●† | ●† | ○ | ○ | ○ | ○ | ○ | ◐† |
+| Feature | epiworld family | Covasim | Starsim | EoN | epydemic | ixa | individual | ABM | FRED | Agents.jl |
+|:--------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Language | C++, R, Python | Python | Python | Python | Python | Rust | R | R | C++ (own model language) | Julia |
+| Ready-made disease models | ● | ● | ● | ● | ● | ○ | ○ | ○ | ● | ○ |
+| User-defined states and transitions | ● | ◐ | ● | ● | ● | ◐ | ◐ | ● | ● | ◐ |
+| Continuous-time (event-driven) simulation | ○ | ○ | ○ | ● | ● | ● | ○ | ● | ○ | ◐† |
+| Contact network from an edge list | ● | ● | ● | ● | ● | ● | ◐ | ◐ | ◐ | ◐ |
+| Vaccination | ● | ● | ● | ◐ | ◐ | ◐ | ◐ | ◐ | ● | ◐ |
+| Layered or place-based contacts (households, schools, workplaces) | ●† | ●† | ◐† | ○ | ◐† | ◐† | ◐† | ◐† | ●† | ◐† |
+| Age and other individual attributes | ◐† | ●† | ●† | ◐† | ◐† | ●† | ●† | ●† | ●† | ●† |
+| Demography (births, deaths, ageing) | ◐† | ◐† | ●† | ○ | ◐† | ◐† | ◐† | ●† | ◐† | ◐† |
+| Movement in space | ○ | ○ | ○ | ○ | ○ | ◐† | ◐† | ◐† | ◐† | ●† |
+| Testing, tracing, and quarantine | ●† | ●† | ◐† | ○ | ◐† | ◐† | ◐† | ◐† | ◐† | ◐† |
+| Several pathogens or variants | ●† | ●† | ●† | ◐† | ◐† | ◐† | ◐† | ◐† | ●† | ◐† |
+| Built-in calibration or inference | ●† | ●† | ●† | ○ | ○ | ○ | ○ | ○ | ○ | ◐† |
 
 Notes on the cells:
 
-- **Ready-made disease models.** ixa, individual, and Agents.jl are
-  frameworks: ixa and Agents.jl document example epidemics, and none ships
+- **Ready-made disease models.** ixa, individual, ABM, and Agents.jl are
+  frameworks: ixa, ABM, and Agents.jl document example epidemics, and none ships
   disease models as part of its API. The disease in the benchmark is
   written for them.
 - **User-defined states.** Covasim's states follow its native COVID-19
@@ -78,8 +78,10 @@ Notes on the cells:
 - **Contact network from an edge list.** Starsim and ixa use their own network
   structure and Covasim a custom contact layer; individual, FRED, and
   Agents.jl have no edge-list primitive, and their runners write one (FRED
-  loads the edges as properties of a network group, and the other two
-  an adjacency list).
+  loads the edges as properties of a network group, individual and
+  Agents.jl an adjacency list). ABM's built-in networks are random mixing
+  and a configuration model, so its runner serves an adjacency list through a
+  `Contact` subclass.
 - **Layered or place-based contacts.** epiworld has entities (groups of
   agents) and Covasim contact layers; FRED's places are its central
   concept. Scenario 04 collapses the layers of its GeoPops population into one
@@ -226,6 +228,26 @@ the infection process, and it has no notion of contact networks. It suits
 models with rich individual heterogeneity (age, immunity, biting rates) and
 with other populations that interact with people, such as the mosquitoes in a
 vector-borne disease, for which it was designed.
+
+## ABM
+
+ABM [@maABM2025] is an R package by Junling Ma for continuous-time
+agent-based models, available from CRAN, with its core in C++ through Rcpp
+and its user-facing classes in R6. It models an agent as a set of states, and
+a simulation as events in chronological order, so a transition fires after a
+waiting time (exponential, Gamma, or any R function) and no two events share a
+step. A contact pattern says whom an agent meets: the package provides random
+mixing and a configuration-model network, and a `Contact` subclass written in
+R can supply others. Transitions are written as rules such as
+`"I" + "S" -> "I" + "E" ~ network`, loggers count the agents in each state or
+the transitions between two, and agents can leave a population or be added
+to it, which is how it expresses births and deaths. Its documentation
+describes it as built to simulate millions of agents.
+
+ABM provides the machinery for such models, not epidemic models, and it keeps
+no history beyond what its loggers and callbacks record. It suits models in
+which timing matters and the number of agents changes, in the way EoN does
+for networks fixed in advance.
 
 ## FRED
 

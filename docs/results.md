@@ -46,6 +46,7 @@ in seconds, in every scenario and size:
 | epydemic | 0.4895 | 1.7056 | 0.2033 | 1.0750 | 0.2029 | 1.0761 | 13.3329 | 12.5106 |
 | ixa | 0.0067 | 0.0334 | 0.0043 | 0.0289 | 0.0045 | 0.0284 | 0.3728 | 0.1489 |
 | individual | 0.0240 | 0.0530 | 0.0210 | 0.0490 | 0.0400 | 0.0700 | 0.2715 | 0.1355 |
+| ABM | 0.1400 | 0.9365 | 0.0815 | 0.8680 | 0.0990 | 0.8270 | 10.9625 | 14.3255 |
 | FRED | 0.0662 | 0.4846 | 0.0543 | 0.5873 | 0.0686 | 0.7056 | 7.2043 | 2.6578 |
 | Agents.jl | 0.0198 | 0.0366 | 0.0197 | 0.0374 | 0.0192 | 0.0366 | 0.7266 | 0.1334 |
 
@@ -96,6 +97,13 @@ individual, ixa, and the epiworld family finish within about 20% of each
 other (0.13 to 0.16 seconds). Its outbreak infects 0.622 of the
 population, against 0.060 in scenario 00 at 100,000 agents, so the
 engines whose work follows the outbreak do far more of it.
+
+ABM, the second continuous-time engine after EoN, takes 0.94 seconds in
+scenario 00 at 100,000 agents and 11 seconds at 1,000,000. It is slowest
+on scenario 04’s network, where the outbreak reaches most of the
+population: 14 seconds. ABM asks an R function for an infectious agent’s
+contacts, because it cannot load an edge list, which is a likely cost on
+a network of that size, but the benchmark has not profiled it.
 
 ## Scaling
 
@@ -156,6 +164,7 @@ scenario:
 | epydemic | 0.42 | 0.63 | 1.00 | 1.01 |
 | ixa | 0.63 | 0.88 | 1.05 | 0.99 |
 | individual | 0.88 | 0.92 | 1.90 | 1.43 |
+| ABM | 0.57 | 0.95 | 1.22 | 0.96 |
 | FRED | 0.81 | 1.21 | 1.26 | 1.20 |
 | Agents.jl | 1.01 | 1.02 | 0.97 | 0.99 |
 
@@ -201,6 +210,7 @@ MiB:
 | epydemic | 16 | 160 | 16 | 160 | 16 | 160 | 1,643 | 167 |
 | ixa | 3 | 32 | 3 | 32 | 3 | 32 | 330 | 37 |
 | individual | 14 | 35 | 10 | 35 | 16 | 50 | 126 | 39 |
+| ABM | 16 | 98 | 15 | 96 | 16 | 96 | 1,129 | 218 |
 | FRED |  |  |  |  |  |  |  |  |
 | Agents.jl | 0 | 2 | 0 | 2 | 0 | 2 | 8 | 10 |
 
@@ -228,6 +238,7 @@ epiworldR’s in parentheses:
 | epydemic | 0.396 (+0.010) | 0.064 (+0.004) | 0.121 (+0.006) | 0.014 (-0.000) | 0.121 (+0.006) | 0.014 (-0.000) | 0.007 (+0.001) | 0.623 (+0.001) |
 | ixa | 0.378 (-0.007) | 0.062 (+0.002) | 0.119 (+0.004) | 0.014 (-0.000) | 0.119 (+0.004) | 0.014 (-0.000) | 0.006 (+0.000) | 0.625 (+0.002) |
 | individual | 0.381 (-0.005) | 0.060 (+0.000) | 0.117 (+0.002) | 0.013 (-0.001) | 0.116 (+0.001) | 0.013 (-0.001) | 0.006 (+0.000) | 0.630 (+0.008) |
+| ABM | 0.383 (-0.003) | 0.059 (-0.001) | 0.114 (-0.001) | 0.013 (-0.001) | 0.114 (-0.001) | 0.013 (-0.001) | 0.006 (+0.000) | 0.620 (-0.002) |
 | FRED | 0.385 (-0.000) | 0.060 (-0.000) | 0.115 (-0.000) | 0.012 (-0.002) | 0.115 (-0.000) | 0.012 (-0.002) | 0.006 (+0.000) | 0.631 (+0.009) |
 | Agents.jl | 0.387 (+0.001) | 0.062 (+0.002) | 0.118 (+0.003) | 0.014 (-0.000) | 0.118 (+0.003) | 0.014 (-0.000) | 0.007 (+0.001) | 0.624 (+0.002) |
 
@@ -276,6 +287,7 @@ scenario 00’s runners.
 | epydemic   | Python   |  71 |  89 | 122 |  71 |  71 |
 | ixa        | Rust     | 138 | 168 | 220 | 138 | 138 |
 | individual | R        |  32 |  37 |  80 |  32 |  32 |
+| ABM        | R        |  42 |  45 |  59 |  42 |  42 |
 | FRED       | Python   |  92 | 123 | 165 |  92 |  92 |
 | Agents.jl  | Julia    |  68 |  83 | 115 |  68 |  68 |
 
@@ -296,6 +308,7 @@ completes every scenario.
 | epydemic                | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | ixa                     | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | individual              | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
+| ABM                     | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | FRED                    | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | Agents.jl               | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | Failed runs, latest run |     0 |     0 |     0 |    0 |    0 |
