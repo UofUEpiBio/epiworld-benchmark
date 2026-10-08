@@ -120,15 +120,12 @@ Implementation details that matter for interpreting results:
 
 The engines included so far share what the common design needs: each
 runs the common model over an arbitrary undirected edge list, from a
-script, with a seed, and reports the five compartment counts.
-**MEmilio** was evaluated and excluded for now. Its ABM has no edge-list
-network primitive: agents interact only through shared locations
-(household, work, school, …), so scenario 04’s network alone would need
-on the order of 376,000 synthetic two-person locations, of unproven
-performance. Its disease model is an 8-compartment, viral-load-driven
-simulation with no simple mapping onto the common SEIRH model. See
-[issue
-\#11](https://github.com/UofUEpiBio/epiworld-benchmark/issues/11).
+script, with a seed, and reports the five compartment counts. MEmilio
+and Epiabm were assessed and excluded for now: neither takes an edge
+list as its contact structure, and both have disease models with no
+simple mapping onto the common SEIRH model. [Engines considered and not
+included](excluded-engines.md) states the inclusion criteria, the
+reasons for each exclusion, and the candidates not yet assessed.
 
 ## Common model
 
