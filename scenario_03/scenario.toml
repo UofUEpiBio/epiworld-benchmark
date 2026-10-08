@@ -32,7 +32,7 @@ hospital_days = 7.0
 [calibration]
 # Not recalibrated: each engine reuses its 100,000-agent factor from
 # scenario_00, which barely moved from 10,000 agents. epiworldR, epiworld,
-# epiworldpy, EoN, epydemic, and Starsim need none; see scenario_00.
+# epiworldpy, EoN, epydemic, Starsim, and ABM need none; see scenario_00.
 covasim_transmission_multiplier_1000000 = 0.710
 ixa_transmission_multiplier_1000000 = 0.988
 individual_transmission_multiplier_1000000 = 0.951

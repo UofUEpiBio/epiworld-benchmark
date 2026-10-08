@@ -116,7 +116,7 @@ def base_task(**overrides) -> dict:
 def test_task_command_passes_transmission_multiplier_to_each_runner() -> None:
     engines = (
         "covasim", "starsim", "EoN", "epydemic", "epiworldR", "epiworldpy", "epiworld", "ixa",
-        "individual", "FRED", "Agents.jl",
+        "individual", "ABM", "FRED", "Agents.jl",
     )
     for engine in engines:
         command = task_command(base_task(engine=engine))
@@ -161,6 +161,7 @@ def test_runners_accept_exactly_their_scenario_parameters() -> None:
             "python": (runners / "runner_common.py").read_text(),
             "R": (runners / "epiworld.R").read_text(),
             "individual": (runners / "individual.R").read_text(),
+            "ABM": (runners / "abm.R").read_text(),
             "ixa": (runners / "ixa" / "src" / "main.rs").read_text(),
             "C++": (runners / "epiworld" / "main.cpp").read_text(),
             "Julia": (runners / "agents.jl").read_text(),
@@ -169,6 +170,7 @@ def test_runners_accept_exactly_their_scenario_parameters() -> None:
             assert f"--{key.replace('_', '-')}" in sources["python"], (scenario, key)
             assert f'"{key}"' in sources["R"], (scenario, key)
             assert f'"{key}"' in sources["individual"], (scenario, key)
+            assert f'"{key}"' in sources["ABM"], (scenario, key)
             assert f'"{key}"' in sources["C++"], (scenario, key)
             assert f'"{key}"' in sources["Julia"], (scenario, key)
             assert f"{key}:" in sources["ixa"], (scenario, key)
@@ -179,7 +181,7 @@ def test_every_runner_records_the_edge_reading_time() -> None:
         runners = ROOT / scenario / "runners"
         for path in (
             runners / "runner_common.py", runners / "epiworld.R", runners / "individual.R",
-            runners / "epiworld" / "main.cpp", runners / "ixa" / "src" / "main.rs",
+            runners / "abm.R", runners / "epiworld" / "main.cpp", runners / "ixa" / "src" / "main.rs",
             runners / "agents.jl",
         ):
             assert "read_seconds" in path.read_text(), path
@@ -194,7 +196,7 @@ def test_every_runner_records_memory_at_the_timing_boundaries() -> None:
         runners = ROOT / scenario / "runners"
         for path in (
             runners / "runner_common.py", runners / "epiworld.R", runners / "individual.R",
-            runners / "epiworld" / "main.cpp", runners / "ixa" / "src" / "main.rs",
+            runners / "abm.R", runners / "epiworld" / "main.cpp", runners / "ixa" / "src" / "main.rs",
             runners / "agents.jl", runners / "run_FRED.py",
         ):
             source = path.read_text()
@@ -209,7 +211,7 @@ def test_every_runner_records_memory_at_the_timing_boundaries() -> None:
 
 
 def test_r_engines_run_their_own_script() -> None:
-    for engine, script in (("epiworldR", "epiworld.R"), ("individual", "individual.R")):
+    for engine, script in (("epiworldR", "epiworld.R"), ("individual", "individual.R"), ("ABM", "abm.R")):
         command = task_command(base_task(engine=engine))
         assert command[:3] == ["Rscript", "--vanilla", str(ROOT / "scenario_00" / "runners" / script)]
 
@@ -246,7 +248,7 @@ def test_scenario_03_is_scenario_00_at_one_million_agents() -> None:
     assert scenario_parameters(load_scenario("scenario_03")) == scenario_parameters(
         load_scenario("scenario_00")
     )
-    for runner in ("epiworld.R", "individual.R", "runner_common.py", "epiworld/main.cpp"):
+    for runner in ("epiworld.R", "individual.R", "abm.R", "runner_common.py", "epiworld/main.cpp"):
         assert (ROOT / "scenario_03" / "runners" / runner).read_text() == (
             ROOT / "scenario_00" / "runners" / runner
         ).read_text(), runner
@@ -265,6 +267,7 @@ def test_source_paths_cover_only_the_scenario_runners() -> None:
         assert f"{scenario}/runners/ixa/Cargo.lock" in paths
         assert f"{scenario}/runners/epiworld.R" in paths
         assert f"{scenario}/runners/individual.R" in paths
+        assert f"{scenario}/runners/abm.R" in paths
         assert f"{scenario}/runners/epiworld/main.cpp" in paths
         assert "config.toml" not in paths and "run.py" not in paths
         assert not any("/target/" in path or "/build/" in path for path in paths)

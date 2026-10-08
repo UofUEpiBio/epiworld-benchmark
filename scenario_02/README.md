@@ -71,7 +71,14 @@ counted as model code.
 
 > [!TIP]
 >
-> The complete 2,200-run design for this scenario is available.
+> The complete 2,400-run design for this scenario is available.
+
+> [!WARNING]
+>
+> This scenario’s results were produced in 2 different environments (see
+> `environment_id` in `results/results.csv`). The table describes the
+> latest run only, and timings from different environments are not
+> comparable.
 
 | Field | Value |
 |:---|:---|
@@ -100,9 +107,10 @@ counted as model code.
 | ixa        |  10000 |  100 |                 0.004 |  0.004 |  0.005 |
 | Agents.jl  |  10000 |  100 |                 0.019 |  0.019 |  0.020 |
 | individual |  10000 |  100 |                 0.040 |  0.040 |  0.041 |
-| EoN        |  10000 |  100 |                 0.056 |  0.054 |  0.058 |
+| EoN\*      |  10000 |  100 |                 0.056 |  0.054 |  0.058 |
 | covasim    |  10000 |  100 |                 0.061 |  0.061 |  0.062 |
 | FRED       |  10000 |  100 |                 0.069 |  0.067 |  0.070 |
+| ABM\*      |  10000 |  100 |                 0.099 |  0.095 |  0.106 |
 | starsim    |  10000 |  100 |                 0.171 |  0.169 |  0.174 |
 | epydemic   |  10000 |  100 |                 0.203 |  0.193 |  0.211 |
 | epiworldpy | 100000 |  100 |                 0.006 |  0.006 |  0.006 |
@@ -112,10 +120,14 @@ counted as model code.
 | Agents.jl  | 100000 |  100 |                 0.037 |  0.036 |  0.037 |
 | individual | 100000 |  100 |                 0.070 |  0.069 |  0.071 |
 | covasim    | 100000 |  100 |                 0.334 |  0.333 |  0.344 |
-| EoN        | 100000 |  100 |                 0.450 |  0.445 |  0.468 |
+| EoN\*      | 100000 |  100 |                 0.450 |  0.445 |  0.468 |
 | FRED       | 100000 |  100 |                 0.706 |  0.695 |  0.720 |
 | starsim    | 100000 |  100 |                 0.715 |  0.709 |  0.743 |
+| ABM\*      | 100000 |  100 |                 0.827 |  0.802 |  0.868 |
 | epydemic   | 100000 |  100 |                 1.076 |  1.064 |  1.093 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 ### Simulation time
 
@@ -132,22 +144,27 @@ one mean that epiworldR completed the simulation call faster.
 | epiworldpy |  10000 |                    0.92 |   0.77 |   1.04 |
 | covasim    |  10000 |                   30.46 |  21.77 |  30.99 |
 | starsim    |  10000 |                   84.61 |  59.49 |  86.67 |
-| EoN        |  10000 |                   27.38 |  19.77 |  28.87 |
+| EoN\*      |  10000 |                   27.38 |  19.77 |  28.87 |
 | epydemic   |  10000 |                   98.02 |  73.52 | 104.79 |
 | ixa        |  10000 |                    2.20 |   1.61 |   2.32 |
 | individual |  10000 |                   20.00 |  13.92 |  20.50 |
+| ABM\*      |  10000 |                   48.50 |  37.50 |  51.62 |
 | FRED       |  10000 |                   33.57 |  24.07 |  34.76 |
 | Agents.jl  |  10000 |                    9.57 |   7.05 |   9.73 |
 | epiworld   | 100000 |                    1.08 |   1.02 |   1.18 |
 | epiworldpy | 100000 |                    0.91 |   0.83 |   1.02 |
 | covasim    | 100000 |                   49.45 |  47.52 |  55.64 |
 | starsim    | 100000 |                  115.69 | 101.75 | 118.69 |
-| EoN        | 100000 |                   69.53 |  63.89 |  75.54 |
+| EoN\*      | 100000 |                   69.53 |  63.89 |  75.54 |
 | epydemic   | 100000 |                  157.56 | 152.49 | 179.41 |
 | ixa        | 100000 |                    4.17 |   4.02 |   4.74 |
 | individual | 100000 |                   10.21 |  10.00 |  11.71 |
+| ABM\*      | 100000 |                  126.43 | 115.82 | 137.83 |
 | FRED       | 100000 |                  103.89 |  99.67 | 117.77 |
 | Agents.jl  | 100000 |                    5.70 |   5.21 |   6.10 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 ### Time to a first result
 
@@ -161,8 +178,9 @@ one mean that epiworldR completed the simulation call faster.
 | epiworldR  |  10000 |          0.007 |     0.016 |        0.002 |                0.018 |
 | Agents.jl  |  10000 |          0.174 |     0.024 |        0.019 |                0.043 |
 | individual |  10000 |          0.007 |     0.017 |        0.040 |                0.058 |
-| EoN        |  10000 |          0.016 |     0.028 |        0.056 |                0.084 |
+| EoN\*      |  10000 |          0.016 |     0.028 |        0.056 |                0.084 |
 | covasim    |  10000 |          0.016 |     0.038 |        0.061 |                0.099 |
+| ABM\*      |  10000 |          0.007 |     0.021 |        0.099 |                0.120 |
 | starsim    |  10000 |          0.016 |     0.000 |        0.171 |                0.171 |
 | FRED       |  10000 |          0.240 |     0.128 |        0.069 |                0.197 |
 | epydemic   |  10000 |          0.015 |     0.016 |        0.203 |                0.219 |
@@ -173,10 +191,14 @@ one mean that epiworldR completed the simulation call faster.
 | Agents.jl  | 100000 |          0.285 |     0.029 |        0.037 |                0.065 |
 | individual | 100000 |          0.068 |     0.030 |        0.070 |                0.100 |
 | covasim    | 100000 |          0.152 |     0.040 |        0.334 |                0.373 |
-| EoN        | 100000 |          0.153 |     0.243 |        0.450 |                0.695 |
+| EoN\*      | 100000 |          0.153 |     0.243 |        0.450 |                0.695 |
 | starsim    | 100000 |          0.153 |     0.000 |        0.715 |                0.715 |
+| ABM\*      | 100000 |          0.070 |     0.036 |        0.827 |                0.863 |
 | epydemic   | 100000 |          0.147 |     0.276 |        1.076 |                1.357 |
 | FRED       | 100000 |          2.419 |     0.825 |        0.706 |                1.535 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 ### Extracting the outputs
 
@@ -191,9 +213,10 @@ of the simulation time.
 | ixa | 10000 | 0.004 | 0.000 | 0.02 |
 | Agents.jl | 10000 | 0.019 | 0.006 | 0.32 |
 | individual | 10000 | 0.040 | 0.001 | 0.03 |
-| EoN | 10000 | 0.056 | 0.001 | 0.02 |
+| EoN\* | 10000 | 0.056 | 0.001 | 0.02 |
 | covasim | 10000 | 0.061 | 0.000 | 0.00 |
 | FRED | 10000 | 0.069 | 0.012 | 0.18 |
+| ABM\* | 10000 | 0.099 | 0.001 | 0.01 |
 | starsim | 10000 | 0.171 | 0.001 | 0.01 |
 | epydemic | 10000 | 0.203 | 0.000 | 0.00 |
 | epiworldpy | 100000 | 0.006 | 0.000 | 0.08 |
@@ -203,10 +226,14 @@ of the simulation time.
 | Agents.jl | 100000 | 0.037 | 0.007 | 0.19 |
 | individual | 100000 | 0.070 | 0.001 | 0.01 |
 | covasim | 100000 | 0.334 | 0.001 | 0.00 |
-| EoN | 100000 | 0.450 | 0.007 | 0.02 |
+| EoN\* | 100000 | 0.450 | 0.007 | 0.02 |
 | FRED | 100000 | 0.706 | 0.095 | 0.13 |
 | starsim | 100000 | 0.715 | 0.001 | 0.00 |
+| ABM\* | 100000 | 0.827 | 0.002 | 0.00 |
 | epydemic | 100000 | 1.076 | 0.000 | 0.00 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 ### Memory
 
@@ -219,8 +246,9 @@ Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 | epiworldpy | 10000 | 46.7 \[46.7, 46.7\] | 7.6 \[7.6, 7.6\] | 0.5 \[0.5, 0.6\] | 59.4 \[59.4, 59.4\] |
 | FRED | 10000 |  |  |  | 70.0 \[70.0, 70.0\] |
 | epiworldR | 10000 | 72.1 \[72.1, 72.1\] | 2.8 \[2.8, 2.8\] | 0.0 \[0.0, 0.0\] | 76.1 \[76.1, 76.2\] |
+| ABM\* | 10000 | 74.4 \[74.4, 74.4\] | 1.9 \[1.9, 1.9\] | 15.6 \[15.6, 15.7\] | 92.9 \[92.9, 93.1\] |
 | individual | 10000 | 74.8 \[74.8, 74.8\] | 1.5 \[1.5, 1.5\] | 16.0 \[15.9, 16.2\] | 93.3 \[93.2, 93.6\] |
-| EoN | 10000 | 120.5 \[120.5, 120.5\] | 10.1 \[10.1, 10.1\] | 6.1 \[5.9, 6.1\] | 139.7 \[139.6, 139.8\] |
+| EoN\* | 10000 | 120.5 \[120.5, 120.5\] | 10.1 \[10.1, 10.1\] | 6.1 \[5.9, 6.1\] | 139.7 \[139.6, 139.8\] |
 | epydemic | 10000 | 117.3 \[117.3, 117.3\] | 10.1 \[10.1, 10.1\] | 16.0 \[16.0, 16.0\] | 146.6 \[146.6, 146.6\] |
 | covasim | 10000 | 225.3 \[225.3, 225.3\] | 1.8 \[1.8, 1.8\] | 5.4 \[5.2, 5.5\] | 235.7 \[235.7, 235.8\] |
 | starsim | 10000 | 261.1 \[261.1, 261.1\] | 0.0 \[0.0, 0.0\] | 8.1 \[8.0, 8.3\] | 272.3 \[272.2, 272.4\] |
@@ -230,39 +258,48 @@ Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 | epiworldR | 100000 | 72.1 \[72.1, 72.1\] | 23.6 \[23.6, 23.6\] | 0.0 \[0.0, 0.0\] | 113.4 \[113.4, 113.4\] |
 | epiworldpy | 100000 | 46.7 \[46.7, 46.7\] | 39.6 \[39.6, 39.6\] | 0.9 \[0.9, 1.0\] | 132.1 \[132.1, 132.1\] |
 | individual | 100000 | 74.8 \[74.8, 74.8\] | 6.2 \[6.2, 6.2\] | 49.6 \[49.2, 49.6\] | 142.0 \[141.6, 142.0\] |
+| ABM\* | 100000 | 74.4 \[74.4, 74.4\] | 6.2 \[6.2, 6.2\] | 95.6 \[95.5, 95.7\] | 191.1 \[191.0, 191.2\] |
 | covasim | 100000 | 225.3 \[225.3, 225.3\] | 3.2 \[3.2, 3.5\] | 41.9 \[41.9, 42.2\] | 281.0 \[280.8, 281.2\] |
-| EoN | 100000 | 120.5 \[120.5, 120.5\] | 126.4 \[125.9, 126.4\] | 56.8 \[56.8, 56.9\] | 312.9 \[312.9, 312.9\] |
+| EoN\* | 100000 | 120.5 \[120.5, 120.5\] | 126.4 \[125.9, 126.4\] | 56.8 \[56.8, 56.9\] | 312.9 \[312.9, 312.9\] |
 | starsim | 100000 | 261.1 \[261.1, 261.1\] | 0.0 \[0.0, 0.0\] | 69.3 \[69.1, 69.7\] | 340.6 \[340.5, 340.9\] |
 | epydemic | 100000 | 117.3 \[117.3, 117.3\] | 126.2 \[126.2, 126.2\] | 160.5 \[160.5, 160.5\] | 413.4 \[413.4, 413.4\] |
 | Agents.jl | 100000 | 507.1 \[506.7, 507.3\] | 1.4 \[1.4, 1.8\] | 2.2 \[2.1, 2.4\] | 585.6 \[584.4, 588.0\] |
 | FRED | 100000 |  |  |  | 598.5 \[598.5, 598.6\] |
 
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
+
 ### Epidemiological sanity checks
 
 | Engine | Agents | Median final attack rate | Median peak hospitalized | Median share protected |
 |:---|---:|---:|---:|---:|
-| Agents.jl | 10000 | 0.118 | 8 | 0.24 |
-| covasim | 10000 | 0.105 | 11 | 0.24 |
-| EoN | 10000 | 0.113 | 10 | 0.24 |
-| epiworld | 10000 | 0.119 | 8 | 0.24 |
-| epiworldpy | 10000 | 0.117 | 8 | 0.24 |
-| epiworldR | 10000 | 0.115 | 9 | 0.24 |
-| epydemic | 10000 | 0.121 | 11 | 0.24 |
-| FRED | 10000 | 0.115 | 10 | 0.24 |
-| individual | 10000 | 0.116 | 9 | 0.24 |
-| ixa | 10000 | 0.119 | 8 | 0.24 |
-| starsim | 10000 | 0.119 | 9 | 0.24 |
-| Agents.jl | 100000 | 0.014 | 9 | 0.24 |
-| covasim | 100000 | 0.012 | 11 | 0.24 |
-| EoN | 100000 | 0.013 | 10 | 0.24 |
-| epiworld | 100000 | 0.014 | 9 | 0.24 |
-| epiworldpy | 100000 | 0.014 | 9 | 0.24 |
-| epiworldR | 100000 | 0.014 | 9 | 0.24 |
-| epydemic | 100000 | 0.014 | 11 | 0.24 |
-| FRED | 100000 | 0.012 | 10 | 0.24 |
-| individual | 100000 | 0.013 | 10 | 0.24 |
-| ixa | 100000 | 0.014 | 9 | 0.24 |
-| starsim | 100000 | 0.014 | 10 | 0.24 |
+| ABM\* | 10000 | 0.114 | 9.0 | 0.24 |
+| Agents.jl | 10000 | 0.118 | 8.0 | 0.24 |
+| covasim | 10000 | 0.105 | 11.0 | 0.24 |
+| EoN\* | 10000 | 0.113 | 10.0 | 0.24 |
+| epiworld | 10000 | 0.119 | 8.0 | 0.24 |
+| epiworldpy | 10000 | 0.117 | 8.0 | 0.24 |
+| epiworldR | 10000 | 0.115 | 9.0 | 0.24 |
+| epydemic | 10000 | 0.121 | 11.0 | 0.24 |
+| FRED | 10000 | 0.115 | 10.0 | 0.24 |
+| individual | 10000 | 0.116 | 9.0 | 0.24 |
+| ixa | 10000 | 0.119 | 8.0 | 0.24 |
+| starsim | 10000 | 0.119 | 9.0 | 0.24 |
+| ABM\* | 100000 | 0.013 | 9.5 | 0.24 |
+| Agents.jl | 100000 | 0.014 | 9.0 | 0.24 |
+| covasim | 100000 | 0.012 | 11.0 | 0.24 |
+| EoN\* | 100000 | 0.013 | 10.0 | 0.24 |
+| epiworld | 100000 | 0.014 | 9.0 | 0.24 |
+| epiworldpy | 100000 | 0.014 | 9.0 | 0.24 |
+| epiworldR | 100000 | 0.014 | 9.0 | 0.24 |
+| epydemic | 100000 | 0.014 | 11.0 | 0.24 |
+| FRED | 100000 | 0.012 | 10.0 | 0.24 |
+| individual | 100000 | 0.013 | 10.0 | 0.24 |
+| ixa | 100000 | 0.014 | 9.0 | 0.24 |
+| starsim | 100000 | 0.014 | 10.0 | 0.24 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 Share of runs whose outputs agree with their own final counts (every
 agent who left S is a seed or a transmission target, every transmission
@@ -275,10 +312,11 @@ is an S → E transition, every recovered agent came from I or H):
 | epiworldpy | 10000 | 1067 | 1 | 1 |
 | covasim | 10000 | 947 | 1 | 1 |
 | starsim | 10000 | 1092 | 1 | 1 |
-| EoN | 10000 | 1034 | 1 | 1 |
+| EoN\* | 10000 | 1034 | 1 | 1 |
 | epydemic | 10000 | 1108 | 1 | 1 |
 | ixa | 10000 | 1088 | 1 | 1 |
 | individual | 10000 | 1060 | 1 | 1 |
+| ABM\* | 10000 | 1043 | 1 | 1 |
 | FRED | 10000 | 1046 | 1 | 1 |
 | Agents.jl | 10000 | 1081 | 1 | 1 |
 | epiworld | 100000 | 1288 | 1 | 1 |
@@ -286,12 +324,16 @@ is an S → E transition, every recovered agent came from I or H):
 | epiworldpy | 100000 | 1264 | 1 | 1 |
 | covasim | 100000 | 1084 | 1 | 1 |
 | starsim | 100000 | 1262 | 1 | 1 |
-| EoN | 100000 | 1188 | 1 | 1 |
+| EoN\* | 100000 | 1188 | 1 | 1 |
 | epydemic | 100000 | 1281 | 1 | 1 |
 | ixa | 100000 | 1269 | 1 | 1 |
 | individual | 100000 | 1191 | 1 | 1 |
+| ABM\* | 100000 | 1160 | 1 | 1 |
 | FRED | 100000 | 1115 | 1 | 1 |
 | Agents.jl | 100000 | 1250 | 1 | 1 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 Daily series, as medians across replicates. Engines that seed their
 initial cases exposed (the epiworld family, Covasim, and Starsim) start
@@ -310,8 +352,9 @@ for the result record is not counted.
 |:---|:---|---:|---:|---:|---:|
 | epiworldpy | Python | 1 | 39 | 53 | 14 |
 | epiworld | C++ | 1 | 34 | 57 | 23 |
+| ABM\* | R | 1 | 45 | 59 | 14 |
 | epiworldR | R | 1 | 62 | 66 | 4 |
-| EoN | Python | 1 | 45 | 77 | 32 |
+| EoN\* | Python | 1 | 45 | 77 | 32 |
 | individual | R | 1 | 37 | 80 | 43 |
 | covasim | Python | 1 | 76 | 110 | 34 |
 | Agents.jl | Julia | 1 | 83 | 115 | 32 |
@@ -319,6 +362,9 @@ for the result record is not counted.
 | starsim | Python | 1 | 95 | 137 | 42 |
 | FRED | Python | 1 | 123 | 165 | 42 |
 | ixa | Rust | 3 | 168 | 220 | 52 |
+
+<sub>\* Continuous-time engine: it simulates events at exact times, and
+the benchmark records the daily totals.</sub>
 
 ## Notes
 

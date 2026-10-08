@@ -87,6 +87,15 @@ RUN Rscript -e 'install.packages(c("R6", "Rcpp", "testthat"), Ncpus = parallel::
     && rm /tmp/individual.tar.gz \
     && Rscript -e 'stopifnot(packageVersion("individual") == "0.1.19")'
 
+# ABM (Junling Ma), for its R runner: the CRAN release, pinned to 0.4.3. The
+# runner uses its 0.4 API (transitions without a contact rate), so a newer
+# release needs the runner revisited. It depends on R6 and Rcpp, installed above.
+RUN (curl -fsSL https://cran.r-project.org/src/contrib/ABM_0.4.3.tar.gz -o /tmp/ABM.tar.gz \
+        || curl -fsSL https://cran.r-project.org/src/contrib/Archive/ABM/ABM_0.4.3.tar.gz -o /tmp/ABM.tar.gz) \
+    && R CMD INSTALL /tmp/ABM.tar.gz \
+    && rm /tmp/ABM.tar.gz \
+    && Rscript -e 'stopifnot(packageVersion("ABM") == "0.4.3")'
+
 # The epiworld family last, as it changes most often. All three are pinned to
 # commits on their default branches at epiworld 0.17.1: epiworld's master and
 # epiworldR's main here, epiworldpy in pyproject.toml above.

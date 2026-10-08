@@ -18,6 +18,7 @@ scenario_NN/
   runners/
     epiworld.R          # epiworldR
     individual.R        # individual
+    abm.R               # ABM
     epiworld/main.cpp   # epiworld (C++), built by `make setup`
     run_epiworldpy.py   # one script per Python engine: run_epiworldpy.py,
     run_covasim.py      #   run_covasim.py, run_starsim.py, run_eon.py,
@@ -61,8 +62,8 @@ complete model. The report leaves that shared plumbing out of the line counts.
 
 4. **Implement the change in every runner.**
    - Accept exactly the new flags: argparse in `runner_common.py`,
-     `number("...")` or `integer("...")` in `epiworld.R`, `individual.R`, and
-     `main.cpp`, and
+     `number("...")` or `integer("...")` in `epiworld.R`, `individual.R`,
+     `abm.R`, and `main.cpp`, and
      `Args` in `main.rs`. `tests/test_cache_and_network.py` checks that every
      parameter appears in each runner.
    - Use each engine's **own way** of expressing the feature: its built-in
@@ -86,8 +87,8 @@ complete model. The report leaves that shared plumbing out of the line counts.
    - Time everything an engine has to redo for another replicate on the same
      network. The simulation timer covers each run's initial conditions
      (seeding, vaccination, and the like), because epiworld sets them up
-     inside `run()`. ixa does this in plans at time 0; the Python runners and
-     `individual.R` start their timer before building the initial state. An
+     inside `run()`. ixa does this in plans at time 0; the Python runners,
+     `individual.R`, and `abm.R` start their timer before building the initial state. An
      engine object that can run only once is rebuilt for every replicate, so
      it is timed too: ixa's context (population, network, and index) and
      Starsim's `Sim`, including `sim.init()`.

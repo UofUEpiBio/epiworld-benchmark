@@ -26,11 +26,10 @@ adds.
 
 ## Engines
 
-Eleven engines run every scenario ([Engines](engines.md) describes what each
-is). Each runner is a short program in the
-engine’s own language that reads the shared edge list, builds the model
-with the engine’s own tools, runs one replicate, and writes one result
-record.
+Twelve engines run every scenario ([Engines](engines.md) describes what
+each is). Each runner is a short program in the engine’s own language
+that reads the shared edge list, builds the model with the engine’s own
+tools, runs one replicate, and writes one result record.
 
 | Engine | Language | Recorded version | Model as implemented | Time |
 |:---|:---|:---|:---|:---|
@@ -39,12 +38,17 @@ record.
 | epiworldpy (Vega Yon and Banks 2026) | Python (C++ core) | 0.17.1-0+gc24b4f9 | The same model through the Python wrapper (`UpdateFun.susceptible()`, `UpdateFun.rate()`) | Synchronous daily |
 | Covasim (Kerr et al. 2021) | Python | 3.1.8 | Native disease progression, restricted to SEIRH; severe state as the hospitalization proxy | Daily, native |
 | Starsim (Kerr et al. 2025) | Python | 3.6.1 | Built-in `ss.SEIR`, subclassed to add a hospital state; network module over the edge list | Daily; durations sampled on entry |
-| EoN (Miller and Ting 2019) | Python | 1.92 | Rate graphs run with the event-driven `fast_simple_contagion` | Continuous time (exact) |
+| EoN\* (Miller and Ting 2019) | Python | 1.92 | Rate graphs run with the event-driven `fast_simple_contagion` | Continuous time (exact) |
 | epydemic (Dobson 2022) | Python | 1.14.1 | `CompartmentedModel` under `SynchronousDynamics` | Synchronous daily |
 | ixa (The Ixa Developers 2026) | Rust | 3.1.0 | One plan per day, the built-in contact network, an indexed disease-status property | Synchronous daily |
 | individual (Charles and Wu 2021) | R (C++ core) | 0.1.19 | `CategoricalVariable` and built-in transition processes; infection process written for the benchmark | Synchronous daily |
+| ABM\* (Ma 2025) | R (C++ core) | 0.4.3 | `Simulation` with exponential transitions over a `Contact` subclass serving the edge list | Continuous time; counts reported daily |
 | FRED (Grefenstette et al. 2013) | C++, driven by its own model language from Python | PUB.5.7.0+gbd25f04 | A FRED condition per compartment over a `Network` group type loaded with the edges | Daily; transitions before transmission |
 | Agents.jl (Datseris et al. 2024) | Julia | 7.0.4 | `StandardABM` with a daily `model_step!` over an adjacency list written for the benchmark | Synchronous daily |
+
+\* A continuous-time engine: it simulates events at exact times, and the
+benchmark records the daily totals. The same asterisk marks it in every
+figure and table.
 
 The recorded version is the one each result record carries. Versions
 built from a pinned commit end in that commit (`+g…`), so moving a pin
@@ -73,6 +77,24 @@ Implementation details that matter for interpreting results:
   for the benchmark over an adjacency list, infects a susceptible agent
   with $k$ infectious neighbours with probability $1 - (1 - \beta)^k$,
   as epiworld does. Updates queued during a day apply at its end.
+- **ABM** is event-driven: every transition fires after an exponential
+  waiting time, so it uses EoN’s mapping from $R_0$ to a per-contact
+  rate rather than the daily probabilities of the synchronous engines.
+  Its built-in networks are random mixing and a configuration model
+  sampled from a degree distribution, neither of which can load an edge
+  list. The runner writes a `Contact` subclass whose `contact()` returns
+  an agent’s neighbours from an adjacency list, which ABM then treats as
+  a per-neighbour transmission process. The final compartments are
+  counted from the agents’ states after the simulate timer stops, and
+  `peak_hospitalized` is the largest end-of-day count of an ABM counter,
+  not the exact continuous-time peak. In version 0.4.3, an initial state
+  given as a character string makes ABM build a temporary list that its
+  garbage collection handling can lose, which corrupts one agent now and
+  then ([junlingm/ABM#4](https://github.com/junlingm/ABM/issues/4)), so
+  the runner hands ABM states that are already lists. The scenario 01
+  vaccine puts protected agents in a state that no transition touches,
+  and the scenario 02 outputs come from a callback on the infection
+  transition and from counters on each pair of states.
 - **FRED** has no edge-list network primitive. Its runner writes a
   synthetic population of single-person households, so FRED’s household
   mixing adds no contacts, and loads the edges verbatim as
@@ -124,7 +146,7 @@ recovered branch. Its parameters are in each scenario’s `scenario.toml`:
 | `hospital_days` | 7.0 | Mean hospital stay |
 
 **Transmission mapping.** With mean degree $k$ and recovery rate
-$\gamma = 1/\text{infectious\_days}$, every engine starts from the
+$\gamma = 1/\mathrm{infectious\_days}$, every engine starts from the
 per-contact transmissibility $T = \min(0.999,\ R_0 / \max(1, k - 1))$.
 The daily engines convert it into a per-day, per-edge probability
 through geometric competing risks,
@@ -438,6 +460,13 @@ Computational Biology* 17 (7): e1009149.
 
 Kerr, Cliff, Robyn Stuart, Romesh Abeysuriya, et al. 2025. *Starsim*. V.
 3.0.0. Released July. <https://github.com/starsimhub/starsim>.
+
+</div>
+
+<div id="ref-maABM2025" class="csl-entry">
+
+Ma, Junling. 2025. *ABM: Agent Based Model Simulation Framework*.
+<https://CRAN.R-project.org/package=ABM>.
 
 </div>
 
