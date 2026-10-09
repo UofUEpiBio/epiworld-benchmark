@@ -387,12 +387,17 @@ the benchmark records the daily totals.</sub>
 
 ## Notes
 
-**Extraction is small for every engine but epiworldR and FRED.** FRED’s
-is parsing its health records. Almost all of epiworldR’s is the
-documented `plot(get_reproductive_number(model), plot = FALSE)`, which
-computes a mean, a standard deviation, and two quantiles for every day
-and builds a data frame for each: about 25 ms for 100 days however small
-the outbreak, against 0.4 ms for a plain `tapply()` on the same data and
+**Extraction is small for every engine but epiworldR, EpiModel, and
+FRED.** FRED’s is parsing its health records. EpiModel’s is
+`get_transmat()`, which keeps one infector per newly infected agent by
+grouping the transmission matrix with dplyr and sampling within each
+group. That costs about 45 µs per transmission, about 45 ms for the
+roughly 1,000 transmissions of a replicate here, and grows with the
+outbreak. Almost all of epiworldR’s is the documented
+`plot(get_reproductive_number(model), plot = FALSE)`, which computes a
+mean, a standard deviation, and two quantiles for every day and builds a
+data frame for each: about 25 ms for 100 days however small the
+outbreak, against 0.4 ms for a plain `tapply()` on the same data and
 about 1 ms for `get_reproductive_number()` itself. The runner keeps the
 documented call, as an epiworldR user would write it; a vectorized
 summary in epiworldR would remove nearly all of the package’s extraction

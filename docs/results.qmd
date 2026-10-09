@@ -248,7 +248,8 @@ table_by_cell(all, "simulation_mib", 0)
 
 At 1,000,000 agents, FRED peaks at
 `r mib(med("FRED", "scenario_03", 1e6, "peak_mib"))` MiB, epydemic at
-`r mib(med("epydemic", "scenario_03", 1e6, "peak_mib"))`, and EoN at
+`r mib(med("epydemic", "scenario_03", 1e6, "peak_mib"))`, EpiModel at
+`r mib(med("EpiModel", "scenario_03", 1e6, "peak_mib"))`, and EoN at
 `r mib(med("EoN", "scenario_03", 1e6, "peak_mib"))`, against
 `r mib(med("epiworld", "scenario_03", 1e6, "peak_mib"))` for the C++
 epiworld runner, `r mib(med("ixa", "scenario_03", 1e6, "peak_mib"))` for
@@ -287,9 +288,10 @@ checks every engine's outputs against its own final counts.
 - **Concurrency.** Running replicates side by side changes timings unevenly
   across engines, so every published run is sequential
   ([Execution protocol](methods.md#execution-protocol)).
-- **Environment.** Every scenario's replicates ran in one recorded
-  environment ([Environment](methods.md#environment)); a report warns when
-  its replicates mix environments.
+- **Environment.** Every replicate ran on one machine, in the container
+  ([Environment](methods.md#environment)). ABM and EpiModel were added after
+  the main run and ran separately, in images that add their package, so
+  every scenario report warns that its replicates mix environments.
 - **Validity checks.** Every runner checks that its five compartments sum
   to the population, and scenario 02 checks the outputs against the final
   counts in every run.

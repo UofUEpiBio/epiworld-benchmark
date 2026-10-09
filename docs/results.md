@@ -239,13 +239,14 @@ MiB:
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
 
-At 1,000,000 agents, FRED peaks at 5,847 MiB, epydemic at 3,020, and EoN
-at 1,671, against 352 for the C++ epiworld runner, 409 for ixa, and 282
-for individual. At small sizes the runtime itself can dominate:
-Agents.jl uses 483 MiB before it reads the edge list. At large sizes,
-most of EoN’s memory is its NetworkX graph (model footprint), epydemic
-adds about as much again during the run, and most of ixa’s and Starsim’s
-is their per-replicate rebuild (simulation memory).
+At 1,000,000 agents, FRED peaks at 5,847 MiB, epydemic at 3,020,
+EpiModel at 1,893, and EoN at 1,671, against 352 for the C++ epiworld
+runner, 409 for ixa, and 282 for individual. At small sizes the runtime
+itself can dominate: Agents.jl uses 483 MiB before it reads the edge
+list. At large sizes, most of EoN’s memory is its NetworkX graph (model
+footprint), epydemic adds about as much again during the run, and most
+of ixa’s and Starsim’s is their per-replicate rebuild (simulation
+memory).
 
 ## Epidemiological agreement
 
@@ -288,9 +289,11 @@ engine’s outputs against its own final counts.
 - **Concurrency.** Running replicates side by side changes timings
   unevenly across engines, so every published run is sequential
   ([Execution protocol](methods.md#execution-protocol)).
-- **Environment.** Every scenario’s replicates ran in one recorded
-  environment ([Environment](methods.md#environment)); a report warns
-  when its replicates mix environments.
+- **Environment.** Every replicate ran on one machine, in the container
+  ([Environment](methods.md#environment)). ABM and EpiModel were added
+  after the main run and ran separately, in images that add their
+  package, so every scenario report warns that its replicates mix
+  environments.
 - **Validity checks.** Every runner checks that its five compartments
   sum to the population, and scenario 02 checks the outputs against the
   final counts in every run.
