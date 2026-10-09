@@ -396,6 +396,14 @@ published results:
 
 Scenarios 00, 01, 02, 03, 04 ran in this one environment.
 
+The table describes the run that produced every engine except ABM and
+EpiModel, which were added later and ran separately on the same machine
+and virtual machine, one replicate at a time: ABM in the published image
+with ABM installed into a mounted library, and EpiModel in an image
+built from the Dockerfile with EpiModel added. Their records carry their
+own `environment_id`, so each scenario report warns that its replicates
+mix environments.
+
 ## Scenario ladder
 
 | Scenario | What it adds | Agents | Replicates per engine and size |
