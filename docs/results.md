@@ -47,6 +47,7 @@ in seconds, in every scenario and size:
 | ixa | 0.0067 | 0.0334 | 0.0043 | 0.0289 | 0.0045 | 0.0284 | 0.3728 | 0.1489 |
 | individual | 0.0240 | 0.0530 | 0.0210 | 0.0490 | 0.0400 | 0.0700 | 0.2715 | 0.1355 |
 | ABM\* | 0.1400 | 0.9365 | 0.0815 | 0.8680 | 0.0990 | 0.8270 | 10.9625 | 14.3255 |
+| EpiModel | 0.6510 | 7.0250 | 0.6180 | 6.9630 | 0.6150 | 7.6645 | 79.2665 | 5.9060 |
 | FRED | 0.0662 | 0.4846 | 0.0543 | 0.5873 | 0.0686 | 0.7056 | 7.2043 | 2.6578 |
 | Agents.jl | 0.0198 | 0.0366 | 0.0197 | 0.0374 | 0.0192 | 0.0366 | 0.7266 | 0.1334 |
 
@@ -108,6 +109,16 @@ population: 14 seconds. ABM asks an R function for an infectious agent’s
 contacts, because it cannot load an edge list, which is a likely cost on
 a network of that size, but the benchmark has not profiled it.
 
+EpiModel takes 7 seconds in scenario 00 at 100,000 agents and 79 seconds
+at 1,000,000. Its daily work does not follow the outbreak: the infection
+module asks `discord_edgelist()` for the susceptible–infectious pairs,
+and that shuffles and scans every edge of the network every day,
+whatever the prevalence. On scenario 04’s network, which has 376,526
+edges against scenario 00’s 500,000 at 100,000 agents, it takes 5.9
+seconds although its outbreak reaches most of the population. The runner
+already keeps the network in EpiModel’s fastest form, a plain edge list
+(see [Methods](methods.md#engines)).
+
 ## Scaling
 
 The scenario 00 model at 10,000 and 100,000 agents and, in scenario 03,
@@ -139,6 +150,9 @@ From 100,000 to 1,000,000 agents:
   this size.
 - **FRED** grows by 14.9 times, faster than the population: it rebuilds
   its places, population, and network for every replicate.
+- **EpiModel** grows by 11.3 times: `discord_edgelist()` shuffles and
+  scans all five million edges every day, so its time grows with the
+  network rather than with the outbreak.
 - **Agents.jl** grows by 19.8 times. Its daily step visits only the
   infectious agents’ neighbours, but it loops over every agent to find
   them and counts the hospitalized agents over the whole population
@@ -168,6 +182,7 @@ scenario:
 | ixa | 0.63 | 0.88 | 1.05 | 0.99 |
 | individual | 0.88 | 0.92 | 1.90 | 1.43 |
 | ABM\* | 0.57 | 0.95 | 1.22 | 0.96 |
+| EpiModel | 0.96 | 0.98 | 1.00 | 1.09 |
 | FRED | 0.81 | 1.21 | 1.26 | 1.20 |
 | Agents.jl | 1.01 | 1.02 | 0.97 | 0.99 |
 
@@ -179,9 +194,9 @@ The vaccine cuts the median attack rate from 0.385 to 0.115 at 10,000
 agents and from 0.060 to 0.014 at 100,000, so engines whose work follows
 the outbreak (EoN, epydemic, the epiworld family, and ixa) get faster
 for that reason alone. Covasim’s vectorized daily update touches every
-agent regardless, and Starsim draws transmission on every edge every
-day, so their times barely move; individual sits in between. A ratio
-above one means the feature itself is expensive.
+agent regardless, and Starsim and EpiModel visit every edge every day,
+so their times barely move; individual sits in between. A ratio above
+one means the feature itself is expensive.
 
 **The outputs.** Both scenarios run the same epidemics, so a ratio above
 one is the cost of recording the outputs during the run. The epiworld
@@ -217,6 +232,7 @@ MiB:
 | ixa | 3 | 32 | 3 | 32 | 3 | 32 | 330 | 37 |
 | individual | 14 | 35 | 10 | 35 | 16 | 50 | 126 | 39 |
 | ABM\* | 16 | 98 | 15 | 96 | 16 | 96 | 1,129 | 218 |
+| EpiModel | 23 | 106 | 39 | 108 | 42 | 98 | 544 | 105 |
 | FRED |  |  |  |  |  |  |  |  |
 | Agents.jl | 0 | 2 | 0 | 2 | 0 | 2 | 8 | 10 |
 
@@ -248,6 +264,7 @@ epiworldR’s in parentheses:
 | ixa | 0.378 (-0.007) | 0.062 (+0.002) | 0.119 (+0.004) | 0.014 (-0.000) | 0.119 (+0.004) | 0.014 (-0.000) | 0.006 (+0.000) | 0.625 (+0.002) |
 | individual | 0.381 (-0.005) | 0.060 (+0.000) | 0.117 (+0.002) | 0.013 (-0.001) | 0.116 (+0.001) | 0.013 (-0.001) | 0.006 (+0.000) | 0.630 (+0.008) |
 | ABM\* | 0.383 (-0.003) | 0.059 (-0.001) | 0.114 (-0.001) | 0.013 (-0.001) | 0.114 (-0.001) | 0.013 (-0.001) | 0.006 (+0.000) | 0.620 (-0.002) |
+| EpiModel | 0.387 (+0.002) | 0.060 (-0.000) | 0.104 (-0.011) | 0.012 (-0.002) | 0.104 (-0.011) | 0.012 (-0.002) | 0.007 (+0.000) | 0.629 (+0.007) |
 | FRED | 0.385 (-0.000) | 0.060 (-0.000) | 0.115 (-0.000) | 0.012 (-0.002) | 0.115 (-0.000) | 0.012 (-0.002) | 0.006 (+0.000) | 0.631 (+0.009) |
 | Agents.jl | 0.387 (+0.001) | 0.062 (+0.002) | 0.118 (+0.003) | 0.014 (-0.000) | 0.118 (+0.003) | 0.014 (-0.000) | 0.007 (+0.001) | 0.624 (+0.002) |
 
@@ -300,6 +317,7 @@ scenario 00’s runners.
 | ixa        | Rust     | 138 | 168 | 220 | 138 | 138 |
 | individual | R        |  32 |  37 |  80 |  32 |  32 |
 | ABM\*      | R        |  42 |  45 |  59 |  42 |  42 |
+| EpiModel   | R        |  59 |  73 |  99 |  59 |  59 |
 | FRED       | Python   |  92 | 123 | 165 |  92 |  92 |
 | Agents.jl  | Julia    |  68 |  83 | 115 |  68 |  68 |
 
@@ -324,6 +342,7 @@ completes every scenario.
 | ixa                     | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | individual              | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | ABM\*                   | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
+| EpiModel                | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | FRED                    | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | Agents.jl               | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | Failed runs, latest run |     0 |     0 |     0 |    0 |    0 |

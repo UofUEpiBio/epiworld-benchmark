@@ -53,8 +53,12 @@ PYTHON_RUNNERS = {
     "epiworldpy": "run_epiworldpy.py", "starsim": "run_starsim.py", "FRED": "run_FRED.py",
 }
 # R engines and their runner in each scenario's runners/ folder.
-R_RUNNERS = {"epiworldR": "epiworld.R", "individual": "individual.R", "ABM": "abm.R"}
-R_PACKAGES = {"epiworldR": "epiworldR", "individual": "individual", "ABM": "ABM"}
+R_RUNNERS = {
+    "epiworldR": "epiworld.R", "individual": "individual.R", "ABM": "abm.R", "EpiModel": "epimodel.R",
+}
+R_PACKAGES = {
+    "epiworldR": "epiworldR", "individual": "individual", "ABM": "ABM", "EpiModel": "EpiModel",
+}
 JULIA_RUNNERS = {"Agents.jl": "agents.jl"}
 # Scenario tables whose keys are forwarded to every runner as --kebab-case flags.
 PARAMETER_TABLES = ("disease", "intervention")

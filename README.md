@@ -7,7 +7,7 @@
 - [Repository layout](#repository-layout)
 - [References](#references)
 
-This project compares how fast twelve epidemic simulation engines run
+This project compares how fast thirteen epidemic simulation engines run
 the same agent-based model on the same contact network, and how much
 code each engine needs to express that model. Three of them are the
 epiworld family: the header-only C++ library
@@ -17,9 +17,8 @@ target="_blank">epiworld</a> (Vega Yon 2026) and its two wrappers,
 target="_blank">epiworldR</a> (Meyer and Vega Yon 2023) for R and
 <a href="https://github.com/UofUEpiBio/epiworldpy"
 target="_blank">epiworldpy</a> (Vega Yon and Banks 2026) for Python. The
-other nine are
-<a href="https://covasim.org/" target="_blank">Covasim</a> (Kerr et al.
-2021) and its successor
+other ten are <a href="https://covasim.org/" target="_blank">Covasim</a>
+(Kerr et al. 2021) and its successor
 <a href="https://starsim.org/" target="_blank">Starsim</a> (Kerr et al.
 2025),
 <a href="https://epidemicsonnetworks.readthedocs.io/en/latest/EoN.html"
@@ -30,7 +29,10 @@ target="_blank">epydemic</a> (Dobson 2022),
 2026), the R package <a href="https://mrc-ide.github.io/individual/"
 target="_blank">individual</a> (Charles and Wu 2021), the R package
 <a href="https://cran.r-project.org/package=ABM" target="_blank">ABM</a>
-(Ma 2025), <a href="https://github.com/PublicHealthDynamicsLab/FRED"
+(Ma 2025), the R package
+<a href="https://www.epimodel.org/" target="_blank">EpiModel</a>
+(Jenness et al. 2018),
+<a href="https://github.com/PublicHealthDynamicsLab/FRED"
 target="_blank">FRED</a> (Grefenstette et al. 2013), and the Julia
 package <a href="https://github.com/JuliaDynamics/Agents.jl"
 target="_blank">Agents.jl</a> (Datseris et al. 2024).
@@ -103,6 +105,7 @@ The same medians as a table (seconds)
 | starsim    |     0.905 |     0.908 |     0.715 |    11.0 |        0.822 |
 | ABM\*      |     0.936 |     0.868 |     0.827 |    11.0 |         14.3 |
 | epydemic   |      1.71 |      1.07 |      1.08 |    13.3 |         12.5 |
+| EpiModel   |      7.03 |      6.96 |      7.66 |    79.3 |         5.91 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -134,6 +137,7 @@ The same medians as a table (MiB)
 | starsim    |       339 |       339 |       341 |     905 |          331 |
 | EoN\*      |       284 |       286 |       313 |   1,671 |          350 |
 | epydemic   |       413 |       413 |       413 |   3,020 |          416 |
+| EpiModel   |       485 |       487 |       477 |   1,893 |          495 |
 | Agents.jl  |       574 |       585 |       586 |     971 |          569 |
 | FRED       |       581 |       597 |       599 |   5,847 |          784 |
 
@@ -215,6 +219,15 @@ Grefenstette, John J., Shawn T. Brown, Roni Rosenfeld, et al. 2013.
 Dynamics</span>): An Open-Source Software System for Modeling Infectious
 Diseases and Control Strategies Using Census-Based Populations.” *BMC
 Public Health* 13: 940. <https://doi.org/10.1186/1471-2458-13-940>.
+
+</div>
+
+<div id="ref-jennessEpiModel2018" class="csl-entry">
+
+Jenness, Samuel M., Steven M. Goodreau, and Martina Morris. 2018.
+“EpiModel: An R Package for Mathematical Modeling of Infectious Disease
+over Networks.” *Journal of Statistical Software* 84 (8).
+<https://doi.org/10.18637/jss.v084.i08>.
 
 </div>
 

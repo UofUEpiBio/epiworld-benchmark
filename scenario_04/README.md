@@ -84,11 +84,11 @@ None: every engine runs scenario 00’s runner on this edge list.
 
 > [!TIP]
 >
-> The complete 240-run design for this scenario is available.
+> The complete 260-run design for this scenario is available.
 
 > [!WARNING]
 >
-> This scenario’s results were produced in 2 different environments (see
+> This scenario’s results were produced in 3 different environments (see
 > `environment_id` in `results/results.csv`). The table describes the
 > latest run only, and timings from different environments are not
 > comparable.
@@ -124,6 +124,7 @@ None: every engine runs scenario 00’s runner on this edge list.
 | starsim    | 165865 |   20 |                 0.822 |  0.814 |  0.830 |
 | FRED       | 165865 |   20 |                 2.658 |  2.579 |  2.710 |
 | EoN\*      | 165865 |   20 |                 3.534 |  3.470 |  3.590 |
+| EpiModel   | 165865 |   20 |                 5.906 |  5.836 |  6.073 |
 | epydemic   | 165865 |   20 |                12.511 | 12.476 | 12.582 |
 | ABM\*      | 165865 |   20 |                14.326 | 12.464 | 15.338 |
 
@@ -150,6 +151,7 @@ epiworldR completed the simulation call faster.
 | ixa        | 165865 |                    0.96 |  0.94 |  0.98 |
 | individual | 165865 |                    0.87 |  0.86 |  0.89 |
 | ABM\*      | 165865 |                   91.05 | 80.05 | 95.92 |
+| EpiModel   | 165865 |                   37.68 | 37.36 | 38.80 |
 | FRED       | 165865 |                   16.93 | 16.68 | 17.16 |
 | Agents.jl  | 165865 |                    0.85 |  0.85 |  0.86 |
 
@@ -172,6 +174,7 @@ the benchmark records the daily totals.</sub>
 | starsim    | 165865 |          0.130 |     0.000 |        0.822 |                0.822 |
 | FRED       | 165865 |          2.420 |     0.664 |        2.658 |                3.318 |
 | EoN\*      | 165865 |          0.131 |     0.421 |        3.534 |                3.957 |
+| EpiModel   | 165865 |          0.065 |     0.722 |        5.906 |                6.651 |
 | epydemic   | 165865 |          0.127 |     0.398 |       12.511 |               12.905 |
 | ABM\*      | 165865 |          0.071 |     0.044 |       14.326 |               14.370 |
 
@@ -194,6 +197,7 @@ Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 | starsim | 165865 | 260.9 \[260.9, 260.9\] | 0.0 \[0.0, 0.0\] | 62.5 \[62.4, 63.3\] | 330.9 \[330.8, 331.7\] |
 | EoN\* | 165865 | 120.3 \[120.3, 120.3\] | 124.9 \[124.7, 124.9\] | 97.7 \[96.6, 98.3\] | 350.4 \[349.3, 351.0\] |
 | epydemic | 165865 | 117.2 \[117.2, 117.2\] | 125.0 \[125.0, 125.0\] | 166.7 \[166.5, 166.9\] | 416.3 \[416.0, 416.4\] |
+| EpiModel | 165865 | 231.3 \[231.3, 231.3\] | 149.3 \[149.2, 149.3\] | 105.0 \[105.0, 105.0\] | 495.5 \[495.4, 495.5\] |
 | Agents.jl | 165865 | 482.3 \[482.3, 482.5\] | 2.8 \[2.8, 2.9\] | 10.3 \[10.2, 10.4\] | 568.6 \[567.7, 569.2\] |
 | FRED | 165865 |  |  |  | 784.4 \[784.4, 784.4\] |
 
@@ -208,6 +212,7 @@ the benchmark records the daily totals.</sub>
 | Agents.jl  | 165865 |                    0.624 |                    855.0 |
 | covasim    | 165865 |                    0.699 |                   1725.5 |
 | EoN\*      | 165865 |                    0.620 |                   1004.0 |
+| EpiModel   | 165865 |                    0.629 |                   1091.5 |
 | epiworld   | 165865 |                    0.622 |                    843.5 |
 | epiworldpy | 165865 |                    0.622 |                    843.5 |
 | epiworldR  | 165865 |                    0.622 |                    843.5 |

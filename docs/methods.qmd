@@ -27,7 +27,7 @@ scenarios, and each scenario's report covers what that scenario adds.
 
 ## Engines
 
-Twelve engines run every scenario ([Engines](engines.md) describes what each
+Thirteen engines run every scenario ([Engines](engines.md) describes what each
 is). Each runner is a short program in the
 engine's own language that reads the shared edge list, builds the model with
 the engine's own tools, runs one replicate, and writes one result record.
@@ -36,15 +36,16 @@ the engine's own tools, runs one replicate, and writes one result record.
 #| label: engines
 engines <- data.frame(
   engine = c("epiworld", "epiworldR", "epiworldpy", "covasim", "starsim", "EoN",
-             "epydemic", "ixa", "individual", "ABM", "FRED", "Agents.jl"),
+             "epydemic", "ixa", "individual", "ABM", "EpiModel", "FRED", "Agents.jl"),
   name = c("epiworld [@vegayonEpiworld2026]", "epiworldR [@meyerEpiworldRFastAgentBased2023]",
            "epiworldpy [@vegayonEpiworldpy2026]", "Covasim [@kerrCovasimAgentbasedModel2021]",
            "Starsim [@kerrStarsim2025]", "EoN* [@millerEoNEpidemicsNetworks2019]",
            "epydemic [@dobson2022epydemic]", "ixa [@ixa2026]",
-           "individual [@charlesIndividual2021]", "ABM* [@maABM2025]", "FRED [@grefenstetteFRED2013]",
+           "individual [@charlesIndividual2021]", "ABM* [@maABM2025]",
+           "EpiModel [@jennessEpiModel2018]", "FRED [@grefenstetteFRED2013]",
            "Agents.jl [@datserisAgentsjl2024]"),
   language = c("C++", "R (C++ core)", "Python (C++ core)", "Python", "Python", "Python",
-               "Python", "Rust", "R (C++ core)", "R (C++ core)", "C++, driven by its own model language from Python",
+               "Python", "Rust", "R (C++ core)", "R (C++ core)", "R", "C++, driven by its own model language from Python",
                "Julia"),
   features = c(
     "Custom model from `add_state()` and the update-function factories",
@@ -57,12 +58,14 @@ engines <- data.frame(
     "One plan per day, the built-in contact network, an indexed disease-status property",
     "`CategoricalVariable` and built-in transition processes; infection process written for the benchmark",
     "`Simulation` with exponential transitions over a `Contact` subclass serving the edge list",
+    "`netsim()` with SEIRH modules on a fixed network: no ERGM fit, the edge list installed at initialization",
     "A FRED condition per compartment over a `Network` group type loaded with the edges",
     "`StandardABM` with a daily `model_step!` over an adjacency list written for the benchmark"),
   time = c("Synchronous daily", "Synchronous daily", "Synchronous daily",
            "Daily, native", "Daily; durations sampled on entry", "Continuous time (exact)",
            "Synchronous daily", "Synchronous daily", "Synchronous daily",
-           "Continuous time; counts reported daily", "Daily; transitions before transmission", "Synchronous daily")
+           "Continuous time; counts reported daily", "Daily; progression, then transmission",
+           "Daily; transitions before transmission", "Synchronous daily")
 )
 versions <- unique(all$rows[c("engine", "engine_version")])
 engines$version <- versions$engine_version[match(engines$engine, versions$engine)]
@@ -120,6 +123,27 @@ Implementation details that matter for interpreting results:
   that no transition touches, and the scenario 02 outputs come from a
   callback on the infection transition and from counters on each pair of
   states.
+- **EpiModel** draws its networks from a fitted exponential random graph
+  model. The benchmark's network is fixed, so the runner skips both the fit
+  and the draw: the formation model is an edges term held at the shared
+  network's density (`~offset(edges)`, which leaves ergm nothing to estimate),
+  a replacement initialization module installs the edge list where EpiModel
+  would put its first draw, and the network-resimulation module does nothing.
+  EpiModel keeps the network as an edge list (`tergmLite = TRUE`), its form
+  for large models. Its default, a `networkDynamic` object that records the
+  network's history, was 30 to 40 times slower on the same fixed network in a
+  side test at 10,000 and 100,000 agents, because every day it also reads the
+  edges out of that object and writes every agent's status into it. The SEIRH
+  disease is written as modules, as in the EpiModel Gallery: infection over
+  `discord_edgelist()` with probability $1 - (1 - \beta)^k$ for $k$ infectious
+  neighbours, as epiworld does, and progression with daily probabilities.
+  EpiModel runs user modules before its built-in ones, so each day
+  progression comes first and an agent that becomes infectious transmits the
+  same day. `discord_edgelist()` shuffles and scans the whole edge list every
+  day, whatever the prevalence, and it is most of EpiModel's run time. The
+  scenario 01 vaccine is a protection attribute that the infection module
+  skips, and the scenario 02 outputs are EpiModel's transmission matrix and
+  epidemic statistics for each flow.
 - **FRED** has no edge-list network primitive. Its runner writes a synthetic
   population of single-person households, so FRED's household mixing adds no
   contacts, and loads the edges verbatim as `Contact.add_edge` properties on

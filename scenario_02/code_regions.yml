@@ -118,6 +118,16 @@ ABM:
     - {from: '^recovery <- 1', to: '^hospital_rate <- '}
     - {from: '^from <- c\(edges', to: '^invisible\(gc'}
     - {from: '^set\.seed', to: '^trajectory <- sim\$run'}
+EpiModel:
+  language: R
+  files: [runners/epimodel.R]
+  regions:
+    - {from: '^vaccine_coverage <- number', to: '^vaccine_efficacy <- number'}
+    - {from: '^recovery <- 1', to: '^beta <- beta \*'}
+    - {from: '^estimate <- suppress', to: '^network <- as\.edgelist'}
+    - {from: '^initialize_fixed <- function', to: '^\)\)$'}
+    - {from: '^sim <- netsim'}
+    - {from: '^pairs <- c\("SE"', to: '^repnum <- tapply'}
 FRED:
   language: Python
   files: [runners/run_FRED.py]

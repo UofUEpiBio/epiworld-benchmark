@@ -9,7 +9,7 @@ replicates = 20
 workers = 1
 engines = [
   "epiworldR", "epiworldpy", "epiworld", "covasim", "starsim", "EoN", "epydemic", "ixa",
-  "individual", "ABM", "FRED", "Agents.jl",
+  "individual", "ABM", "EpiModel", "FRED", "Agents.jl",
 ]
 # MEmilio is deliberately excluded: its ABM has no edge-list network
 # primitive (contacts are mediated by shared Locations, not a graph), so

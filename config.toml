@@ -6,7 +6,7 @@ base_seed = 8675309
 # "epiworld" is the C++ library itself; epiworldR and epiworldpy wrap it.
 engines = [
   "epiworldR", "epiworldpy", "epiworld", "covasim", "starsim", "EoN", "epydemic", "ixa",
-  "individual", "ABM", "FRED", "Agents.jl",
+  "individual", "ABM", "EpiModel", "FRED", "Agents.jl",
 ]
 # Scenario-specific settings (disease, interventions, calibration) live in
 # scenario_*/scenario.toml; see scenarios.md. A scenario's [design] table can

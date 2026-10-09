@@ -69,6 +69,9 @@ Each engine expresses the vaccine with its own tools:
   step consults. **Agents.jl**: a `protected` field the daily step consults.
 - **individual**: a `Bitset` of protected agents that the infection process
   leaves out.
+- **EpiModel**: a `protected` attribute, set by the initialization module on
+  day 0, that the infection module leaves out, as in the EpiModel Gallery's
+  vaccination examples.
 - **FRED**: a second condition, `VAX`, written as in FRED's own vaccine
   example. An import on day 0 moves the vaccinees into it, and `Protected`
   sets their susceptibility to zero.

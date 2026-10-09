@@ -61,6 +61,9 @@ outputs out afterwards is `extract_seconds`. Records add `extract_seconds`,
   `PropertyChangeEvent` subscription.
 - **individual**: the infection process picks each source among the infectious
   neighbours; a second process compares the states on consecutive days.
+- **EpiModel**: its transmission matrix (`save.transmat`, filled with
+  `set_transmat()` by the infection module) and its `infTime` attribute for
+  the tree, and an epidemic statistic per transition, set by the modules.
 - **FRED**: its health records log every exposure and state change during
   the run; the runner parses them afterwards.
 

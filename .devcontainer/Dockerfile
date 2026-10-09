@@ -96,6 +96,13 @@ RUN (curl -fsSL https://cran.r-project.org/src/contrib/ABM_0.4.3.tar.gz -o /tmp/
     && rm /tmp/ABM.tar.gz \
     && Rscript -e 'stopifnot(packageVersion("ABM") == "0.4.3")'
 
+# EpiModel (Statnet), for its R runner: 2.5.0 from the image's dated CRAN
+# snapshot, with its Statnet dependencies (ergm, tergm, networkDynamic). The
+# runner overrides EpiModel's network modules, so a newer release needs the
+# runner revisited.
+RUN Rscript -e 'install.packages("EpiModel", Ncpus = parallel::detectCores())' \
+    && Rscript -e 'stopifnot(packageVersion("EpiModel") == "2.5.0")'
+
 # The epiworld family last, as it changes most often. All three are pinned to
 # commits on their default branches at epiworld 0.17.1: epiworld's master and
 # epiworldR's main here, epiworldpy in pyproject.toml above.
