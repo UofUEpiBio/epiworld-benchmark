@@ -38,3 +38,4 @@ ixa_transmission_multiplier_1000000 = 0.988
 individual_transmission_multiplier_1000000 = 0.951
 FRED_transmission_multiplier_1000000 = 0.898
 "Agents.jl_transmission_multiplier_1000000" = 0.982
+EpiModel_transmission_multiplier_1000000 = 0.940

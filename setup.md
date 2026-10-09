@@ -49,7 +49,7 @@ The same image is a development container: open the folder in VS Code (with
 shell.
 
 Running natively is still possible given Python 3.12, uv, R with `epiworldR`,
-`individual`, `ABM`, and `jsonlite`, a Rust toolchain, a C++17 compiler with zlib, Quarto, and,
+`individual`, `ABM`, `EpiModel`, and `jsonlite`, a Rust toolchain, a C++17 compiler with zlib, Quarto, and,
 for each run's process peak memory, GNU `time` (Linux only)
 (`make setup check smoke benchmark report`); `make setup` downloads epiworld's
 headers into `.deps/`. Cache records carry the host OS and architecture in
@@ -61,7 +61,7 @@ The report target renders the overview (`README.md`), the methods and results
 the rendered results stay readable directly in a pull request.
 
 The smoke profile is deliberately tiny (1,000 agents, 10 days, one replicate)
-and tests all twelve integrations in every scenario. `make benchmark` launches
+and tests all thirteen integrations in every scenario. `make benchmark` launches
 the full design: 2,200 runs for each of scenarios 00 to 02, and 220 for each
 of scenarios 03 and 04. It is safe to stop and restart: each successful replicate is written
 atomically beneath `results/runs/`, and a later invocation only schedules
@@ -113,7 +113,8 @@ default branches: epiworld (`EPIWORLD_SHA` in
 [`.devcontainer/Dockerfile`](.devcontainer/Dockerfile), kept in step with
 `EPIWORLD_REF` in the [Makefile](Makefile)), epiworldR (`EPIWORLDR_SHA` in the
 Dockerfile), and epiworldpy (in [`pyproject.toml`](pyproject.toml) and
-`uv.lock`). FRED (`FRED_SHA`), individual (`INDIVIDUAL_SHA`), and ABM (its CRAN version) are pinned in
+`uv.lock`). FRED (`FRED_SHA`), individual (`INDIVIDUAL_SHA`), ABM (its CRAN version), and EpiModel (the
+image's dated CRAN snapshot) are pinned in
 the Dockerfile, the Python engines in `uv.lock`, Agents.jl in
 `julia/Manifest.toml`, and ixa in each runner's `Cargo.lock`. Each engine's
 recorded version ends in the commit it was built from where the version

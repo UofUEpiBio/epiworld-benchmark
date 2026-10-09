@@ -126,6 +126,18 @@ for an infectious agent's contacts, because it cannot load an edge list, which
 is a likely cost on a network of that size, but the benchmark has not profiled
 it.
 
+EpiModel takes `r secs(med("EpiModel", "scenario_00", 1e5))` seconds in
+scenario 00 at 100,000 agents and
+`r secs(med("EpiModel", "scenario_03", 1e6))` seconds at 1,000,000. Its daily
+work does not follow the outbreak: the infection module asks
+`discord_edgelist()` for the susceptible–infectious pairs, and that shuffles
+and scans every edge of the network every day, whatever the prevalence. On
+scenario 04's network, which has 376,526 edges against scenario 00's 500,000 at
+100,000 agents, it takes `r secs(med("EpiModel", "scenario_04", 165865))`
+seconds although its outbreak reaches most of the population. The runner
+already keeps the network in EpiModel's fastest form, a plain edge list (see
+[Methods](methods.md#engines)).
+
 ## Scaling
 
 The scenario 00 model at 10,000 and 100,000 agents and, in scenario 03, at
@@ -167,6 +179,9 @@ From 100,000 to 1,000,000 agents:
 - **FRED** grows by `r times(growth[["FRED"]])` times, faster than the
   population: it rebuilds its places, population, and network for every
   replicate.
+- **EpiModel** grows by `r times(growth[["EpiModel"]])` times:
+  `discord_edgelist()` shuffles and scans all five million edges every day,
+  so its time grows with the network rather than with the outbreak.
 - **Agents.jl** grows by `r times(growth[["Agents.jl"]])` times. Its daily
   step visits only the infectious agents' neighbours, but it loops over every
   agent to find them and counts the hospitalized agents over the whole
@@ -197,8 +212,8 @@ vaccine cuts the median attack rate from `r attack("scenario_00", 1e4)` to
 `r attack("scenario_00", 1e5)` to `r attack("scenario_01", 1e5)` at 100,000,
 so engines whose work follows the outbreak (EoN, epydemic, the epiworld
 family, and ixa) get faster for that reason alone. Covasim's vectorized daily
-update touches every agent regardless, and Starsim draws transmission on
-every edge every day, so their times barely move; individual sits in
+update touches every agent regardless, and Starsim and EpiModel visit every
+edge every day, so their times barely move; individual sits in
 between. A ratio above one means the feature itself is expensive.
 
 **The outputs.** Both scenarios run the same epidemics, so a ratio above one

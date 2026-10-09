@@ -20,8 +20,8 @@
 [Scenario 00](../scenario_00/README.md) at 1,000,000 agents, ten times
 its largest size. It asks how each engine’s time grows with the
 population when the outbreak does not: with 100 seed cases and the same
-per-contact risk, about 6,100 agents are infected at 100,000 agents and
-6,600 at 1,000,000 (median attack rates 0.061 and 0.0066). The
+per-contact risk, about 6,000 agents are infected at 100,000 agents and
+6,600 at 1,000,000 (median attack rates 0.06 and 0.0066). The
 [results](../docs/results.md#scaling) compare the growth across engines.
 
 ## Model
@@ -50,11 +50,11 @@ None: every runner is scenario 00’s.
 
 > [!TIP]
 >
-> The complete 240-run design for this scenario is available.
+> The complete 260-run design for this scenario is available.
 
 > [!WARNING]
 >
-> This scenario’s results were produced in 2 different environments (see
+> This scenario’s results were produced in 3 different environments (see
 > `environment_id` in `results/results.csv`). The table describes the
 > latest run only, and timings from different environments are not
 > comparable.
@@ -92,6 +92,7 @@ None: every runner is scenario 00’s.
 | starsim    | 1000000 |   20 |                10.962 | 10.780 | 11.119 |
 | ABM\*      | 1000000 |   20 |                10.963 | 10.200 | 11.635 |
 | epydemic   | 1000000 |   20 |                13.333 | 13.246 | 13.499 |
+| EpiModel   | 1000000 |   20 |                79.267 | 78.234 | 80.212 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -105,19 +106,20 @@ the benchmark records the daily totals.</sub>
 Ratios are matched by replicate seed. Values above one mean that
 epiworldR completed the simulation call faster.
 
-| Engine     |  Agents | Median time / epiworldR |     Q1 |     Q3 |
-|:-----------|--------:|------------------------:|-------:|-------:|
-| epiworld   | 1000000 |                    1.10 |   1.03 |   1.15 |
-| epiworldpy | 1000000 |                    1.15 |   1.10 |   1.21 |
-| covasim    | 1000000 |                  134.64 | 131.19 | 139.52 |
-| starsim    | 1000000 |                  471.29 | 453.60 | 484.84 |
-| EoN\*      | 1000000 |                   96.08 |  94.65 |  98.69 |
-| epydemic   | 1000000 |                  571.62 | 552.84 | 587.43 |
-| ixa        | 1000000 |                   16.08 |  15.31 |  16.51 |
-| individual | 1000000 |                   11.62 |  11.25 |  11.84 |
-| ABM\*      | 1000000 |                  466.83 | 418.59 | 506.21 |
-| FRED       | 1000000 |                  309.84 | 291.92 | 325.40 |
-| Agents.jl  | 1000000 |                   31.18 |  28.49 |  34.17 |
+| Engine     |  Agents | Median time / epiworldR |      Q1 |      Q3 |
+|:-----------|--------:|------------------------:|--------:|--------:|
+| epiworld   | 1000000 |                    1.10 |    1.03 |    1.15 |
+| epiworldpy | 1000000 |                    1.15 |    1.10 |    1.21 |
+| covasim    | 1000000 |                  134.64 |  131.19 |  139.52 |
+| starsim    | 1000000 |                  471.29 |  453.60 |  484.84 |
+| EoN\*      | 1000000 |                   96.08 |   94.65 |   98.69 |
+| epydemic   | 1000000 |                  571.62 |  552.84 |  587.43 |
+| ixa        | 1000000 |                   16.08 |   15.31 |   16.51 |
+| individual | 1000000 |                   11.62 |   11.25 |   11.84 |
+| ABM\*      | 1000000 |                  466.83 |  418.59 |  506.21 |
+| EpiModel   | 1000000 |                 3391.58 | 3263.80 | 3462.50 |
+| FRED       | 1000000 |                  309.84 |  291.92 |  325.40 |
+| Agents.jl  | 1000000 |                   31.18 |   28.49 |   34.17 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -140,6 +142,7 @@ the benchmark records the daily totals.</sub>
 | ABM\*      | 1000000 |          0.950 |     0.349 |       10.963 |               11.331 |
 | FRED       | 1000000 |         28.374 |     9.367 |        7.204 |               16.803 |
 | epydemic   | 1000000 |          1.492 |     3.558 |       13.333 |               16.948 |
+| EpiModel   | 1000000 |          1.070 |     4.866 |       79.267 |               84.210 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -160,6 +163,7 @@ Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 | Agents.jl | 1000000 | 481.9 \[481.7, 482.1\] | 34.0 \[30.2, 41.9\] | 8.4 \[8.4, 8.7\] | 970.7 \[955.8, 975.0\] |
 | ABM\* | 1000000 | 74.4 \[74.4, 74.4\] | 7.0 \[7.0, 7.0\] | 1128.6 \[1126.5, 1129.5\] | 1343.6 \[1341.8, 1344.3\] |
 | EoN\* | 1000000 | 120.3 \[120.3, 120.3\] | 1182.4 \[1182.4, 1182.5\] | 290.0 \[290.0, 290.0\] | 1670.8 \[1670.8, 1670.8\] |
+| EpiModel | 1000000 | 231.3 \[231.3, 231.3\] | 1010.2 \[1010.2, 1010.2\] | 544.2 \[544.2, 544.2\] | 1893.5 \[1893.4, 1893.5\] |
 | epydemic | 1000000 | 117.2 \[117.2, 117.2\] | 1181.0 \[1181.0, 1181.7\] | 1642.8 \[1642.8, 1642.8\] | 3020.0 \[3020.0, 3020.0\] |
 | FRED | 1000000 |  |  |  | 5846.8 \[5846.7, 5846.8\] |
 
@@ -174,6 +178,7 @@ the benchmark records the daily totals.</sub>
 | Agents.jl  | 1000000 |                    0.007 |                     34.5 |
 | covasim    | 1000000 |                    0.007 |                     38.0 |
 | EoN\*      | 1000000 |                    0.007 |                     41.0 |
+| EpiModel   | 1000000 |                    0.007 |                     36.0 |
 | epiworld   | 1000000 |                    0.006 |                     32.0 |
 | epiworldpy | 1000000 |                    0.006 |                     32.0 |
 | epiworldR  | 1000000 |                    0.006 |                     32.0 |

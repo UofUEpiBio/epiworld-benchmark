@@ -1,6 +1,6 @@
 # Scenario 00: SEIRH baseline
 
-2026-10-01
+2026-10-09
 
 - [Model](#model)
 - [Engine notes](#engine-notes)
@@ -47,11 +47,11 @@ every seed.
 
 > [!TIP]
 >
-> The complete 2,400-run design for this scenario is available.
+> The complete 2,600-run design for this scenario is available.
 
 > [!WARNING]
 >
-> This scenario’s results were produced in 2 different environments (see
+> This scenario’s results were produced in 3 different environments (see
 > `environment_id` in `results/results.csv`). The table describes the
 > latest run only, and timings from different environments are not
 > comparable.
@@ -89,6 +89,7 @@ every seed.
 | ABM\*      |  10000 |  100 |                 0.140 |  0.134 |  0.151 |
 | starsim    |  10000 |  100 |                 0.165 |  0.163 |  0.166 |
 | epydemic   |  10000 |  100 |                 0.489 |  0.469 |  0.515 |
+| EpiModel   |  10000 |  100 |                 0.651 |  0.631 |  0.669 |
 | epiworldpy | 100000 |  100 |                 0.007 |  0.007 |  0.008 |
 | epiworld   | 100000 |  100 |                 0.008 |  0.007 |  0.008 |
 | epiworldR  | 100000 |  100 |                 0.008 |  0.008 |  0.009 |
@@ -101,6 +102,7 @@ every seed.
 | starsim    | 100000 |  100 |                 0.905 |  0.897 |  0.924 |
 | ABM\*      | 100000 |  100 |                 0.936 |  0.883 |  1.006 |
 | epydemic   | 100000 |  100 |                 1.706 |  1.628 |  1.790 |
+| EpiModel   | 100000 |  100 |                 7.025 |  6.934 |  7.274 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -125,6 +127,7 @@ one mean that epiworldR completed the simulation call faster.
 | ixa        |  10000 |                    1.47 |   1.33 |   1.70 |
 | individual |  10000 |                    5.75 |   4.80 |   6.00 |
 | ABM\*      |  10000 |                   33.00 |  28.75 |  35.00 |
+| EpiModel   |  10000 |                  152.25 | 130.60 | 162.75 |
 | FRED       |  10000 |                   15.08 |  13.15 |  16.83 |
 | Agents.jl  |  10000 |                    4.80 |   3.95 |   4.96 |
 | epiworld   | 100000 |                    0.95 |   0.91 |   0.98 |
@@ -136,6 +139,7 @@ one mean that epiworldR completed the simulation call faster.
 | ixa        | 100000 |                    4.14 |   3.75 |   4.64 |
 | individual | 100000 |                    6.63 |   5.89 |   7.43 |
 | ABM\*      | 100000 |                  118.04 | 106.91 | 131.18 |
+| EpiModel   | 100000 |                  875.19 | 804.36 | 971.21 |
 | FRED       | 100000 |                   60.48 |  54.45 |  67.25 |
 | Agents.jl  | 100000 |                    4.57 |   4.12 |   5.01 |
 
@@ -162,6 +166,7 @@ in memory ([Timing](../docs/methods.md#timing)).
 | starsim    |  10000 |          0.015 |     0.000 |        0.165 |                0.165 |
 | FRED       |  10000 |          0.242 |     0.109 |        0.066 |                0.175 |
 | epydemic   |  10000 |          0.015 |     0.017 |        0.489 |                0.507 |
+| EpiModel   |  10000 |          0.008 |     0.207 |        0.651 |                0.857 |
 | epiworld   | 100000 |          0.048 |     0.011 |        0.008 |                0.018 |
 | ixa        | 100000 |          0.028 |     0.000 |        0.033 |                0.034 |
 | epiworldR  | 100000 |          0.068 |     0.028 |        0.008 |                0.036 |
@@ -174,6 +179,7 @@ in memory ([Timing](../docs/methods.md#timing)).
 | ABM\*      | 100000 |          0.075 |     0.041 |        0.936 |                0.982 |
 | FRED       | 100000 |          2.413 |     0.798 |        0.485 |                1.283 |
 | epydemic   | 100000 |          0.149 |     0.277 |        1.706 |                1.990 |
+| EpiModel   | 100000 |          0.070 |     0.653 |        7.025 |                7.693 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -195,6 +201,7 @@ Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 | epydemic | 10000 | 117.2 \[117.2, 117.2\] | 10.1 \[10.1, 10.1\] | 15.6 \[15.6, 15.8\] | 145.9 \[145.9, 146.0\] |
 | covasim | 10000 | 225.1 \[225.1, 225.1\] | 1.4 \[1.4, 1.4\] | 4.8 \[4.6, 4.9\] | 234.5 \[234.5, 234.6\] |
 | starsim | 10000 | 260.9 \[260.9, 260.9\] | 0.0 \[0.0, 0.0\] | 6.7 \[6.6, 6.8\] | 270.5 \[270.5, 270.7\] |
+| EpiModel | 10000 | 231.3 \[231.3, 231.3\] | 16.2 \[16.2, 16.2\] | 23.2 \[22.9, 35.8\] | 272.0 \[271.2, 284.5\] |
 | Agents.jl | 10000 | 482.6 \[482.3, 483.0\] | 2.0 \[2.0, 2.0\] | 0.5 \[0.5, 0.5\] | 518.1 \[517.6, 519.8\] |
 | epiworld | 100000 | 3.0 \[3.0, 3.0\] | 23.3 \[23.3, 23.3\] | 4.5 \[4.2, 4.8\] | 38.1 \[38.1, 38.1\] |
 | ixa | 100000 | 2.2 \[2.2, 2.2\] | 0.0 \[0.0, 0.0\] | 32.0 \[32.0, 32.0\] | 42.2 \[42.2, 42.3\] |
@@ -206,6 +213,7 @@ Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 | EoN\* | 100000 | 120.3 \[120.3, 120.3\] | 126.1 \[125.9, 126.5\] | 27.8 \[27.8, 27.8\] | 283.6 \[283.6, 283.6\] |
 | starsim | 100000 | 260.9 \[260.9, 260.9\] | 0.0 \[0.0, 0.0\] | 67.6 \[66.5, 68.3\] | 339.0 \[337.5, 339.6\] |
 | epydemic | 100000 | 117.2 \[117.2, 117.2\] | 126.2 \[126.2, 126.4\] | 160.5 \[160.5, 160.5\] | 413.2 \[413.2, 413.3\] |
+| EpiModel | 100000 | 231.3 \[231.3, 231.3\] | 137.1 \[137.1, 137.1\] | 105.7 \[105.7, 105.7\] | 485.0 \[485.0, 485.0\] |
 | Agents.jl | 100000 | 482.5 \[482.4, 482.8\] | 10.8 \[10.6, 10.9\] | 1.5 \[1.4, 1.5\] | 574.3 \[574.0, 574.5\] |
 | FRED | 100000 |  |  |  | 581.0 \[580.9, 581.0\] |
 
@@ -220,6 +228,7 @@ the benchmark records the daily totals.</sub>
 | Agents.jl  |  10000 |                    0.387 |                     18.0 |
 | covasim    |  10000 |                    0.392 |                     23.0 |
 | EoN\*      |  10000 |                    0.379 |                     21.0 |
+| EpiModel   |  10000 |                    0.387 |                     22.0 |
 | epiworld   |  10000 |                    0.385 |                     19.0 |
 | epiworldpy |  10000 |                    0.385 |                     19.0 |
 | epiworldR  |  10000 |                    0.385 |                     19.0 |
@@ -232,6 +241,7 @@ the benchmark records the daily totals.</sub>
 | Agents.jl  | 100000 |                    0.062 |                     30.0 |
 | covasim    | 100000 |                    0.061 |                     35.0 |
 | EoN\*      | 100000 |                    0.060 |                     32.0 |
+| EpiModel   | 100000 |                    0.060 |                     34.0 |
 | epiworld   | 100000 |                    0.060 |                     30.0 |
 | epiworldpy | 100000 |                    0.060 |                     30.0 |
 | epiworldR  | 100000 |                    0.060 |                     30.0 |
@@ -258,6 +268,7 @@ size](../docs/methods.md#implementation-size), over the regions in
 | EoN\*      | Python   |     1 |          38 |
 | ABM\*      | R        |     1 |          42 |
 | epiworldR  | R        |     1 |          47 |
+| EpiModel   | R        |     1 |          59 |
 | covasim    | Python   |     1 |          65 |
 | Agents.jl  | Julia    |     1 |          68 |
 | epydemic   | Python   |     1 |          71 |
@@ -274,15 +285,18 @@ the benchmark records the daily totals.</sub>
 run uncalibrated: their medians already agree. The others use
 size-specific factors at 10,000 and 100,000 agents (in
 [`scenario.toml`](scenario.toml)): Covasim 0.715 and 0.710, ixa 0.983
-and 0.988, individual 0.951 at both, FRED 0.911 and 0.898, and Agents.jl
-0.981 and 0.982. Their uncalibrated medians sat above the target: ixa’s,
-individual’s (0.441 and 0.074), and Agents.jl’s (0.414 and 0.065)
-because they seed the initial cases infectious, individual’s also
-because its infectious period averages the full seven days, where the
-epiworld family’s competing hospitalization rate shortens it; FRED’s
-(0.519 and 0.095) because each of its generations is about a day
-shorter. Covasim’s were calibrated after restricting it to fixed
-transmission and permanent immunity.
+and 0.988, individual 0.951 at both, FRED 0.911 and 0.898, Agents.jl
+0.981 and 0.982, and EpiModel 0.948 and 0.940. Their uncalibrated
+medians sat above the target: ixa’s, individual’s (0.441 and 0.074), and
+Agents.jl’s (0.414 and 0.065) because they seed the initial cases
+infectious, individual’s also because its infectious period averages the
+full seven days, where the epiworld family’s competing hospitalization
+rate shortens it; FRED’s (0.519 and 0.095) because each of its
+generations is about a day shorter, and EpiModel’s (0.458 and 0.086)
+because its progression module runs before its infection module, so a
+new infectious case transmits on the day it turns infectious. Covasim’s
+were calibrated after restricting it to fixed transmission and permanent
+immunity.
 
 **Model lines.** They vary with how much of the model an engine
 provides. EoN describes transitions as rate graphs, Covasim overrides

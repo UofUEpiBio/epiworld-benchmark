@@ -64,8 +64,8 @@ Each engine has one of two statuses:
   no one has checked it against the criteria. Its note is an initial
   expectation, not a finding.
 
-Candidates from that list that have since been added, FRED and
-Agents.jl, are described in [Engines](engines.md).
+Candidates from that list that have since been added, FRED, Agents.jl,
+and EpiModel, are described in [Engines](engines.md).
 
 ## Summary
 
@@ -73,7 +73,6 @@ Agents.jl, are described in [Engines](engines.md).
 |:---|:---|:---|:---|:---|
 | MEmilio (Bicker et al. 2026) | C++, Python interface | Excluded after assessment | 1, 2 | Prototype one location per edge; or a showcase on its native locations |
 | Epiabm (Gallagher et al. 2024) | Python and C++ | Excluded after assessment | 1, 2 | Showcase of a CovidSim-style spatial household model |
-| EpiModel (Jenness et al. 2018) | R | Not yet assessed |  |  |
 | OpenABM-Covid19 (Hinch et al. 2021) | C, Python interface | Not yet assessed |  |  |
 | Mesa (<span class="nocase">ter Hoeven et al.</span> 2025) | Python | Not yet assessed |  |  |
 | NDlib (Rossetti et al. 2018) | Python | Not yet assessed |  |  |
@@ -146,10 +145,6 @@ The notes come from the candidate list in [issue
 state what an assessment should check first. They are expectations, not
 findings.
 
-- **EpiModel** (Jenness et al. 2018). The most used network epidemic
-  package in R and the R peer to epiworldR. Check whether a fixed edge
-  list can be used in place of the temporal exponential random graph
-  models it is built around, and the cost of a custom SEIRH module.
 - **OpenABM-Covid19** (Hinch et al. 2021). A fast network ABM with
   built-in multi-layer networks, testing, and tracing. Check whether a
   user-supplied edge list can replace its generated networks.
@@ -252,15 +247,6 @@ Hinch, Robert, William J. M. Probert, Anel Nurtay, et al. 2021.
 Interventions Against COVID-19 Including Contact Tracing.” *PLOS
 Computational Biology* 17 (7): e1009146.
 <https://doi.org/10.1371/journal.pcbi.1009146>.
-
-</div>
-
-<div id="ref-jennessEpiModel2018" class="csl-entry">
-
-Jenness, Samuel M., Steven M. Goodreau, and Martina Morris. 2018.
-“EpiModel: An R Package for Mathematical Modeling of Infectious Disease
-over Networks.” *Journal of Statistical Software* 84 (8).
-<https://doi.org/10.18637/jss.v084.i08>.
 
 </div>
 

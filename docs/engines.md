@@ -10,6 +10,7 @@
 - [ixa](#ixa)
 - [individual](#individual)
 - [ABM](#abm)
+- [EpiModel](#epimodel)
 - [FRED](#fred)
 - [Agents.jl](#agentsjl)
 - [References](#references)
@@ -54,28 +55,29 @@ a **†** are used by at least one of the benchmark’s scenarios
 plan](showcase-models.md) proposes the scenarios that would test the
 cells marked with a **†**.
 
-| Feature | epiworld family | Covasim | Starsim | EoN | epydemic | ixa | individual | ABM | FRED | Agents.jl |
-|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| Language | C++, R, Python | Python | Python | Python | Python | Rust | R | R | C++ (own model language) | Julia |
-| Ready-made disease models | ● | ● | ● | ● | ● | ○ | ○ | ○ | ● | ○ |
-| User-defined states and transitions | ● | ◐ | ● | ● | ● | ◐ | ◐ | ● | ● | ◐ |
-| Continuous-time (event-driven) simulation | ○ | ○ | ○ | ● | ● | ● | ○ | ● | ○ | ◐† |
-| Contact network from an edge list | ● | ● | ● | ● | ● | ● | ◐ | ◐ | ◐ | ◐ |
-| Vaccination | ● | ● | ● | ◐ | ◐ | ◐ | ◐ | ◐ | ● | ◐ |
-| Layered or place-based contacts (households, schools, workplaces) | ●† | ●† | ◐† | ○ | ◐† | ◐† | ◐† | ◐† | ●† | ◐† |
-| Age and other individual attributes | ◐† | ●† | ●† | ◐† | ◐† | ●† | ●† | ●† | ●† | ●† |
-| Demography (births, deaths, ageing) | ◐† | ◐† | ●† | ○ | ◐† | ◐† | ◐† | ●† | ◐† | ◐† |
-| Movement in space | ○ | ○ | ○ | ○ | ○ | ◐† | ◐† | ◐† | ◐† | ●† |
-| Testing, tracing, and quarantine | ●† | ●† | ◐† | ○ | ◐† | ◐† | ◐† | ◐† | ◐† | ◐† |
-| Several pathogens or variants | ●† | ●† | ●† | ◐† | ◐† | ◐† | ◐† | ◐† | ●† | ◐† |
-| Built-in calibration or inference | ●† | ●† | ●† | ○ | ○ | ○ | ○ | ○ | ○ | ◐† |
+| Feature | epiworld family | Covasim | Starsim | EoN | epydemic | ixa | individual | ABM | EpiModel | FRED | Agents.jl |
+|:---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
+| Language | C++, R, Python | Python | Python | Python | Python | Rust | R | R | R | C++ (own model language) | Julia |
+| Ready-made disease models | ● | ● | ● | ● | ● | ○ | ○ | ○ | ● | ● | ○ |
+| User-defined states and transitions | ● | ◐ | ● | ● | ● | ◐ | ◐ | ● | ● | ● | ◐ |
+| Continuous-time (event-driven) simulation | ○ | ○ | ○ | ● | ● | ● | ○ | ● | ○ | ○ | ◐† |
+| Contact network from an edge list | ● | ● | ● | ● | ● | ● | ◐ | ◐ | ◐ | ◐ | ◐ |
+| Vaccination | ● | ● | ● | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ | ● | ◐ |
+| Layered or place-based contacts (households, schools, workplaces) | ●† | ●† | ◐† | ○ | ◐† | ◐† | ◐† | ◐† | ●† | ●† | ◐† |
+| Age and other individual attributes | ◐† | ●† | ●† | ◐† | ◐† | ●† | ●† | ●† | ●† | ●† | ●† |
+| Demography (births, deaths, ageing) | ◐† | ◐† | ●† | ○ | ◐† | ◐† | ◐† | ●† | ●† | ◐† | ◐† |
+| Movement in space | ○ | ○ | ○ | ○ | ○ | ◐† | ◐† | ◐† | ○ | ◐† | ●† |
+| Testing, tracing, and quarantine | ●† | ●† | ◐† | ○ | ◐† | ◐† | ◐† | ◐† | ◐† | ◐† | ◐† |
+| Several pathogens or variants | ●† | ●† | ●† | ◐† | ◐† | ◐† | ◐† | ◐† | ◐† | ●† | ◐† |
+| Built-in calibration or inference | ●† | ●† | ●† | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ◐† |
 
 Notes on the cells:
 
 - **Ready-made disease models.** ixa, individual, ABM, and Agents.jl are
   frameworks: ixa, ABM, and Agents.jl document example epidemics, and
   none ships disease models as part of its API. The disease in the
-  benchmark is written for them.
+  benchmark is written for them. EpiModel ships SI, SIR, and SIS models;
+  the benchmark’s SEIRH model is written as EpiModel modules.
 - **User-defined states.** Covasim’s states follow its native COVID-19
   disease course; the benchmark restricts it to the SEIRH model with the
   severe state as the hospitalization proxy
@@ -86,11 +88,15 @@ Notes on the cells:
   write one (FRED loads the edges as properties of a network group,
   individual and Agents.jl an adjacency list). ABM’s built-in networks
   are random mixing and a configuration model, so its runner serves an
-  adjacency list through a `Contact` subclass.
+  adjacency list through a `Contact` subclass. EpiModel draws its
+  networks from exponential random graph models, so its runner fixes the
+  formation model at the network’s density and installs the edge list in
+  place of the first draw.
 - **Layered or place-based contacts.** epiworld has entities (groups of
   agents) and Covasim contact layers; FRED’s places are its central
-  concept. Scenario 04 collapses the layers of its GeoPops population
-  into one graph, so no scenario uses them as layers.
+  concept. EpiModel simulates several networks at once, each with its
+  own formation model. Scenario 04 collapses the layers of its GeoPops
+  population into one graph, so no scenario uses them as layers.
 - **Movement in space.** FRED places have locations but agents do not
   move between positions at random; ixa and individual have no space of
   their own, so movement would be a property the user maintains.
@@ -261,6 +267,30 @@ keeps no history beyond what its loggers and callbacks record. It suits
 models in which timing matters and the number of agents changes, in the
 way EoN does for networks fixed in advance.
 
+## EpiModel
+
+EpiModel (Jenness et al. 2018) is an R package for simulating epidemics
+over networks, from the Statnet project, available from CRAN. Its
+distinctive feature is that the contact network is itself a statistical
+model: a separable temporal exponential random graph model (STERGM),
+fitted to data on partnership formation and duration, from which a new
+network is drawn at every step, so partnerships form and dissolve as the
+epidemic runs. It ships SI, SIR, and SIS models in three classes
+(deterministic compartmental models, stochastic individual contact
+models, and stochastic network models), and a network model is a
+sequence of modules, R functions that each update the agents’ attributes
+once per daily step: infection, recovery, arrivals, departures, and any
+the user adds. The EpiModel Gallery collects worked extensions, such as
+SEIR models and vaccination, written as such modules.
+
+EpiModel was built for sexually transmitted infections, above all HIV,
+where who is partnered with whom and for how long drives transmission,
+and it is widely used for that work. The temporal network models are its
+strength and its main cost, so the benchmark switches them off: the
+runner holds the network fixed (see [Methods](methods.md#engines)), and
+the timings reflect EpiModel’s epidemic modules on a static network, not
+its network simulation.
+
 ## FRED
 
 FRED (a Framework for Reconstructing Epidemic Dynamics) (Grefenstette et
@@ -357,6 +387,15 @@ Hunter, Elizabeth, Brian Mac Namee, and John D. Kelleher. 2017. “A
 Taxonomy for Agent-Based Models in Human Infectious Disease
 Epidemiology.” *Journal of Artificial Societies and Social Simulation*
 20 (3): 2. <https://doi.org/10.18564/jasss.3414>.
+
+</div>
+
+<div id="ref-jennessEpiModel2018" class="csl-entry">
+
+Jenness, Samuel M., Steven M. Goodreau, and Martina Morris. 2018.
+“EpiModel: An R Package for Mathematical Modeling of Infectious Disease
+over Networks.” *Journal of Statistical Software* 84 (8).
+<https://doi.org/10.18637/jss.v084.i08>.
 
 </div>
 

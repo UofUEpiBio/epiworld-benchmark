@@ -74,6 +74,7 @@ the table, and may change as the models are refined.
 | 12 | FRED | Influenza in a synthetic population with household, school, and workplace places and reactive school closure | Place-based co-location and a policy language || W 
 | 13 | Agents.jl | Mobile agents in continuous space with proximity transmission and a movement restriction | Spatial agents, co-location by distance || ? 
 | 14 | ABM | SEIR in continuous time in an open population, with births, deaths, and Gamma-distributed periods | Event-driven agents that join and leave, with arbitrary waiting times |
+| 15 | EpiModel | SI infection on a partnership network drawn each day from a temporal ERGM fitted to degree, mixing, and duration targets | Networks as statistical models: partnerships that form and dissolve to match observed statistics |
 
 The sections below specify each model. Parameters are starting points, to be
 settled when the model is implemented; the baseline's disease values (a mean
@@ -277,6 +278,30 @@ latent period of 4 days, a mean infectious period of 7 days, $R_0$ of 2,
   by hand or fix the population), and whether EoN can handle a network that
   changes.
 
+### 15. EpiModel: a fitted temporal network
+
+- **Model.** An HIV-like SI infection (no recovery) on a partnership network
+  that is not fixed but drawn every day from a separable temporal
+  exponential random graph model (STERGM). The formation model targets the
+  mean degree, the share of agents with more than one partner (concurrency),
+  and mixing by a binary attribute; the dissolution model targets a mean
+  partnership duration. Simulated over years, with a closed population at
+  first and births and deaths as an extension.
+- **Parameters.** The target statistics and the mean duration, a
+  per-act transmission probability and the acts per partnership per day,
+  and the attribute's distribution. The fit (`netest()`) and its
+  diagnostics (`netdx()`) are part of the model.
+- **Outputs.** Prevalence over time, the final compartments, and the
+  network's statistics over the run against their targets, which show that
+  the network the epidemic ran on is the one the model describes.
+- **Why it suits EpiModel.** It was built for exactly this: an epidemic on a
+  network whose structure and turnover are estimated from partnership data.
+  The fitted network is the part the benchmark's fixed edge list turns off.
+- **To verify.** Whether any other engine can draw a network that matches
+  target statistics (Starsim's dynamic partnership networks come closest),
+  or whether the others must replay a sequence of networks that EpiModel
+  writes out, which would compare the epidemics but not the network model.
+
 ## Expected feasibility
 
 Initial assessment of how each engine would implement each showcase, to be
@@ -285,18 +310,19 @@ means expressible with code written for the benchmark, **?** means unclear,
 and **X** means likely unsupported. Rows are the showcase models, and columns
 are the engines (epiworld = the epiworld family).
 
-| Showcase | epiworld | Covasim | Starsim | EoN | epydemic | ixa | individual | ABM | FRED | Agents.jl |
-|:---------|:--------:|:-------:|:-------:|:---:|:--------:|:---:|:----------:|:---:|:----:|:---------:|
-| 05 mixing and quarantine | N | W | W | X | W | W | W | W | W | W |
-| 06 layers and test-and-trace | W | N | W | X | X | W | W | W | W | W |
-| 07 partnerships and demography | W | W | N | X | ? | W | W | W | W | W |
-| 08 continuous time, Gamma durations | X | W | W | N | W | N | W | N | W | W |
-| 09 adaptive network | ? | X | W | ? | N | W | W | W | X | W |
-| 10 infectiousness profile and isolation | ? | W | W | ? | ? | N | W | W | W | W |
-| 11 host–vector | W | ? | W | X | X | W | N | ? | ? | W |
-| 12 places and school closure | W | W | W | X | X | W | W | W | N | W |
-| 13 movement in space | X | X | ? | X | X | W | W | ? | ? | N |
-| 14 open population, continuous time | W | W | N | X | ? | W | W | N | W | W |
+| Showcase | epiworld | Covasim | Starsim | EoN | epydemic | ixa | individual | ABM | EpiModel | FRED | Agents.jl |
+|:---------|:--------:|:-------:|:-------:|:---:|:--------:|:---:|:----------:|:---:|:--------:|:----:|:---------:|
+| 05 mixing and quarantine | N | W | W | X | W | W | W | W | W | W | W |
+| 06 layers and test-and-trace | W | N | W | X | X | W | W | W | W | W | W |
+| 07 partnerships and demography | W | W | N | X | ? | W | W | W | N | W | W |
+| 08 continuous time, Gamma durations | X | W | W | N | W | N | W | N | X | W | W |
+| 09 adaptive network | ? | X | W | ? | N | W | W | W | W | X | W |
+| 10 infectiousness profile and isolation | ? | W | W | ? | ? | N | W | W | W | W | W |
+| 11 host–vector | W | ? | W | X | X | W | N | ? | ? | ? | W |
+| 12 places and school closure | W | W | W | X | X | W | W | W | W | N | W |
+| 13 movement in space | X | X | ? | X | X | W | W | ? | X | ? | N |
+| 14 open population, continuous time | W | W | N | X | ? | W | W | N | W | W | W |
+| 15 fitted temporal network | X | X | W | X | ? | W | W | W | N | X | W |
 
 The matrix is a hypothesis. Its purpose is to say where the work is: the
 cells marked **X** or **?** are those that need a decision before

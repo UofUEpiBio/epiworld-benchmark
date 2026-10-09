@@ -7,7 +7,7 @@
 # "epiworld" is the C++ library; epiworldR and epiworldpy wrap it.
 engine_levels <- c(
   "epiworld", "epiworldR", "epiworldpy", "covasim", "starsim", "EoN", "epydemic", "ixa",
-  "individual", "ABM", "FRED", "Agents.jl"
+  "individual", "ABM", "EpiModel", "FRED", "Agents.jl"
 )
 # 165,865 is scenario 04's GeoPops population once isolated people are dropped.
 size_levels <- c(10000, 100000, 165865, 1000000)

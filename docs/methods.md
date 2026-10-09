@@ -26,10 +26,10 @@ adds.
 
 ## Engines
 
-Twelve engines run every scenario ([Engines](engines.md) describes what
-each is). Each runner is a short program in the engine’s own language
-that reads the shared edge list, builds the model with the engine’s own
-tools, runs one replicate, and writes one result record.
+Thirteen engines run every scenario ([Engines](engines.md) describes
+what each is). Each runner is a short program in the engine’s own
+language that reads the shared edge list, builds the model with the
+engine’s own tools, runs one replicate, and writes one result record.
 
 | Engine | Language | Recorded version | Model as implemented | Time |
 |:---|:---|:---|:---|:---|
@@ -43,6 +43,7 @@ tools, runs one replicate, and writes one result record.
 | ixa (The Ixa Developers 2026) | Rust | 3.1.0 | One plan per day, the built-in contact network, an indexed disease-status property | Synchronous daily |
 | individual (Charles and Wu 2021) | R (C++ core) | 0.1.19 | `CategoricalVariable` and built-in transition processes; infection process written for the benchmark | Synchronous daily |
 | ABM\* (Ma 2025) | R (C++ core) | 0.4.3 | `Simulation` with exponential transitions over a `Contact` subclass serving the edge list | Continuous time; counts reported daily |
+| EpiModel (Jenness et al. 2018) | R | 2.5.0 | `netsim()` with SEIRH modules on a fixed network: no ERGM fit, the edge list installed at initialization | Daily; progression, then transmission |
 | FRED (Grefenstette et al. 2013) | C++, driven by its own model language from Python | PUB.5.7.0+gbd25f04 | A FRED condition per compartment over a `Network` group type loaded with the edges | Daily; transitions before transmission |
 | Agents.jl (Datseris et al. 2024) | Julia | 7.0.4 | `StandardABM` with a daily `model_step!` over an adjacency list written for the benchmark | Synchronous daily |
 
@@ -95,6 +96,28 @@ Implementation details that matter for interpreting results:
   vaccine puts protected agents in a state that no transition touches,
   and the scenario 02 outputs come from a callback on the infection
   transition and from counters on each pair of states.
+- **EpiModel** draws its networks from a fitted exponential random graph
+  model. The benchmark’s network is fixed, so the runner skips both the
+  fit and the draw: the formation model is an edges term held at the
+  shared network’s density (`~offset(edges)`, which leaves ergm nothing
+  to estimate), a replacement initialization module installs the edge
+  list where EpiModel would put its first draw, and the
+  network-resimulation module does nothing. EpiModel keeps the network
+  as an edge list (`tergmLite = TRUE`), its form for large models. Its
+  default, a `networkDynamic` object that records the network’s history,
+  was 30 to 40 times slower on the same fixed network in a side test at
+  10,000 and 100,000 agents, because every day it also reads the edges
+  out of that object and writes every agent’s status into it. The SEIRH
+  disease is written as modules, as in the EpiModel Gallery: infection
+  over `discord_edgelist()` with probability $1 - (1 - \beta)^k$ for $k$
+  infectious neighbours, as epiworld does, and progression with daily
+  probabilities. EpiModel runs user modules before its built-in ones, so
+  each day progression comes first and an agent that becomes infectious
+  transmits the same day. `discord_edgelist()` shuffles and scans the
+  whole edge list every day, whatever the prevalence, and it is most of
+  EpiModel’s run time. The scenario 01 vaccine is a protection attribute
+  that the infection module skips, and the scenario 02 outputs are
+  EpiModel’s transmission matrix and epidemic statistics for each flow.
 - **FRED** has no edge-list network primitive. Its runner writes a
   synthetic population of single-person households, so FRED’s household
   mixing adds no contacts, and loads the edges verbatim as
@@ -441,6 +464,15 @@ Grefenstette, John J., Shawn T. Brown, Roni Rosenfeld, et al. 2013.
 Dynamics</span>): An Open-Source Software System for Modeling Infectious
 Diseases and Control Strategies Using Census-Based Populations.” *BMC
 Public Health* 13: 940. <https://doi.org/10.1186/1471-2458-13-940>.
+
+</div>
+
+<div id="ref-jennessEpiModel2018" class="csl-entry">
+
+Jenness, Samuel M., Steven M. Goodreau, and Martina Morris. 2018.
+“EpiModel: An R Package for Mathematical Modeling of Infectious Disease
+over Networks.” *Journal of Statistical Software* 84 (8).
+<https://doi.org/10.18637/jss.v084.i08>.
 
 </div>
 
