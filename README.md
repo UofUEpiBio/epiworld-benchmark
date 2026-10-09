@@ -46,6 +46,8 @@ image.
   networks, calibration, the execution protocol, and what is measured.
 - [**Engines**](docs/engines.md): what each of the engines is, what it
   was built for, and how it represents a model.
+- [**Engines considered and not included**](docs/excluded-engines.md):
+  the inclusion criteria and why each other engine was left out.
 - [**Results**](docs/results.md): run time, scaling, the cost of each
   added feature, memory, epidemiological agreement, and implementation
   size, across every scenario.
@@ -163,6 +165,7 @@ make container-report        # this overview, docs/, and every scenario report
       results.qmd        results across scenarios (rendered to .md)
       epiworld-ixa.md    where epiworld's and ixa's time goes
       engines.md         what each engine is (rendered from engines.qmd)
+      excluded-engines.md engines left out and why (rendered from excluded-engines.qmd)
       showcase-models.md the plan for a scenario per engine
     scenario_NN/
       README.qmd         the scenario's report (rendered to README.md)
