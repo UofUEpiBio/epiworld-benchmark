@@ -287,11 +287,11 @@
     "design": [
       {
         "n": 10000,
-        "replicates": 200
+        "replicates": 100
       },
       {
         "n": 100000,
-        "replicates": 200
+        "replicates": 100
       }
     ],
     "engines": [

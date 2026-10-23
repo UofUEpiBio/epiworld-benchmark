@@ -25,7 +25,7 @@ engine uses the same graph for a given replicate.
 The [common model](../docs/methods.md#common-model) with no
 interventions, on Watts–Strogatz networks with mean degree 20 and
 rewiring probability 0.05, at 10,000 and 100,000 agents. Each engine
-runs 200 replicates per size; a deterministic, separately cached graph
+runs 100 replicates per size; a deterministic, separately cached graph
 is generated for every size/replicate pair and shared across engines for
 that pair.
 
@@ -107,7 +107,7 @@ the benchmark records the daily totals.</sub>
 **Calibration.** All engines initially run with multiplier 1.0. Scenario
 00’s factors were estimated on a fixed degree-10 graph and are not valid
 for this degree-20, graph-varying design. A later calibration will
-estimate factors against this scenario’s 200 network draws before any
+estimate factors against this scenario’s 100 network draws before any
 calibrated results are published.
 
 **Model lines.** They vary with how much of the model an engine

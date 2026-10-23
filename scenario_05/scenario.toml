@@ -6,7 +6,7 @@ description = "Scenario 00 on a separately drawn Watts--Strogatz network for eve
 # Scenario 00's population sizes, but enough independent graph draws to
 # integrate the baseline-network uncertainty alongside simulation randomness.
 population_sizes = [10000, 100000]
-replicates = 200
+replicates = 100
 workers = 1
 
 [network]
