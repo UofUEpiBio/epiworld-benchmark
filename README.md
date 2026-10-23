@@ -37,12 +37,12 @@ target="_blank">FRED</a> (Grefenstette et al. 2013), and the Julia
 package <a href="https://github.com/JuliaDynamics/Agents.jl"
 target="_blank">Agents.jl</a> (Datseris et al. 2024).
 
-The benchmark is organized as **scenarios** of increasing complexity.
-Each scenario adds a feature to an earlier one, so together they show
-how run time, memory, and implementation size grow as the model grows.
-Every engine runs the same SEIRH model on the same contact network
-within each scenario, one replicate at a time, inside one container
-image.
+The benchmark is organized as **scenarios** that vary model features or
+the experimental design. Most scenarios add a feature to an earlier one,
+so together they show how run time, memory, and implementation size grow
+as the model grows. Every engine runs the same SEIRH model on a common
+contact network within each replicate, one replicate at a time, inside
+one container image.
 
 - [**Methods**](docs/methods.md): the engines, the common model,
   networks, calibration, the execution protocol, and what is measured.
@@ -68,6 +68,7 @@ image.
 | 02 | Scenario 01 plus four outputs: transmission tree, daily incidence, reproductive number, and transition matrix | [scenario_02/README.md](scenario_02/README.md) |
 | 03 | Scenario 00 at 1,000,000 agents | [scenario_03/README.md](scenario_03/README.md) |
 | 04 | Scenario 00 on a real contact network collapsed from <a href="https://github.com/GeoPopsHub" target="_blank">GeoPops</a> | [scenario_04/README.md](scenario_04/README.md) |
+| 05 | Scenario 00 with a separately drawn Watts–Strogatz network for every replicate | [scenario_05/README.md](scenario_05/README.md) |
 
 ## Summary
 

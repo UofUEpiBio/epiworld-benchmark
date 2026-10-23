@@ -1,0 +1,34 @@
+[scenario]
+name = "SEIRH baseline with network uncertainty"
+description = "Scenario 00 on a separately drawn Watts--Strogatz network for every replicate."
+
+[design]
+# Scenario 00's population sizes, but enough independent graph draws to
+# integrate the baseline-network uncertainty alongside simulation randomness.
+population_sizes = [10000, 100000]
+replicates = 200
+workers = 1
+
+[network]
+type = "watts_strogatz"
+mean_degree = 20
+rewire_probability = 0.05
+seed = 20260907
+# The orchestrator derives a deterministic generation seed for every
+# size/replicate pair. Engines remain paired on each replicate's graph.
+per_replicate = true
+
+# Every key in [disease] (and [intervention], when present) is passed to each
+# runner as a --kebab-case flag, so runners must accept exactly these keys.
+[disease]
+target_r0 = 2.0
+initial_infected = 100
+latent_days = 4.0
+infectious_days = 7.0
+hospitalization_probability = 0.05
+hospital_days = 7.0
+
+# No calibration factors yet. Scenario 00's factors were estimated on a
+# degree-10 graph with a fixed network and do not transfer to this design.
+# Runners therefore use their uncalibrated multiplier of 1.0 until a separate
+# degree-20, per-replicate-network calibration is completed.

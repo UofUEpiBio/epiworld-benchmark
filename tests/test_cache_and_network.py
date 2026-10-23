@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import sys
 import tomllib
+
+import pytest
 
 import run
 from run import (
@@ -21,7 +24,7 @@ from run import (
     task_command,
     valid_cache,
 )
-from scripts.generate_network import ensure_network, sha256_edges, sha256_file
+from scripts.generate_network import ensure_network, ensure_network_from_config, sha256_edges, sha256_file
 
 
 def test_fingerprint_is_order_independent() -> None:
@@ -92,6 +95,44 @@ def test_network_identity_does_not_depend_on_the_compressor(tmp_path) -> None:
     assert sha256_edges(path) == metadata["sha256"]
     # The cached network is still accepted, not regenerated.
     assert ensure_network(tmp_path, 100, 10, 0.05, 42)[1] == metadata
+
+
+def test_static_network_config_ignores_replicate_number(tmp_path) -> None:
+    """Existing scenarios keep their original one-network-per-size identity."""
+    config = {
+        "type": "watts_strogatz", "mean_degree": 10,
+        "rewire_probability": 0.05, "seed": 42,
+    }
+    _, original = ensure_network_from_config(tmp_path, 100, config, size_index=1)
+    _, repeated = ensure_network_from_config(tmp_path, 100, config, size_index=1, replicate=7)
+    assert repeated == original
+    assert repeated["seed"] == 43
+
+
+def test_per_replicate_network_config_is_deterministic_and_distinct(tmp_path) -> None:
+    config = {
+        "type": "watts_strogatz", "mean_degree": 10,
+        "rewire_probability": 0.05, "seed": 42, "per_replicate": True,
+    }
+    first_path, first = ensure_network_from_config(tmp_path, 100, config, size_index=1, replicate=1)
+    repeated_path, repeated = ensure_network_from_config(
+        tmp_path, 100, config, size_index=1, replicate=1
+    )
+    _, second = ensure_network_from_config(tmp_path, 100, config, size_index=1, replicate=2)
+    assert first_path == repeated_path
+    assert first == repeated
+    assert first["seed"] == 100_043
+    assert second["seed"] == 100_044
+    assert first["sha256"] != second["sha256"]
+
+
+def test_per_replicate_network_requires_a_replicate(tmp_path) -> None:
+    config = {
+        "type": "watts_strogatz", "mean_degree": 10,
+        "rewire_probability": 0.05, "seed": 42, "per_replicate": True,
+    }
+    with pytest.raises(ValueError, match="require replicate"):
+        ensure_network_from_config(tmp_path, 100, config)
 
 
 def base_task(**overrides) -> dict:
@@ -240,6 +281,43 @@ def test_scenario_designs_replace_the_study_sizes_and_replicates() -> None:
         (1000, 2, scenarios, 1)
     ]
     assert size_plan(config, "full", ["scenario_03"], designs, sizes=[100]) == []
+
+
+def test_scenario_05_pairs_engines_on_each_replicate_network(monkeypatch, tmp_path, capsys) -> None:
+    """Network uncertainty changes only Scenario 05 task identities."""
+    identities = []
+    real_fingerprint = run.fingerprint
+
+    def remember(identity):
+        identities.append(identity.copy())
+        return real_fingerprint(identity)
+
+    def network(_cache, _n, _config, _size_index, replicate=None):
+        assert replicate in (1, 2)
+        return tmp_path / f"network-{replicate}.tsv.gz", {
+            "sha256": f"network-{replicate}", "edges": 100, "mean_degree_observed": 20.0,
+        }
+
+    monkeypatch.setattr(run, "ensure_network_from_config", network)
+    monkeypatch.setattr(run, "engine_versions", lambda engines, scenarios: {engine: "1" for engine in engines})
+    monkeypatch.setattr(run, "collect_environment", lambda *args: {"environment_id": "test"})
+    monkeypatch.setattr(run, "valid_cache", lambda *args: False)
+    monkeypatch.setattr(run, "fingerprint", remember)
+    monkeypatch.setattr(
+        sys, "argv",
+        [
+            "run.py", "--profile", "full", "--scenarios", "scenario_05", "--engines", "EoN",
+            "covasim", "--sizes", "10000", "--replicates", "2", "--dry-run",
+        ],
+    )
+    assert run.main() == 0
+    capsys.readouterr()
+    planned = {
+        (identity["engine"], identity["replicate"]): identity
+        for identity in identities
+    }
+    assert {identity["network_sha256"] for identity in planned.values() if identity["replicate"] == 1} == {"network-1"}
+    assert {identity["network_sha256"] for identity in planned.values() if identity["replicate"] == 2} == {"network-2"}
 
 
 def test_scenario_03_is_scenario_00_at_one_million_agents() -> None:

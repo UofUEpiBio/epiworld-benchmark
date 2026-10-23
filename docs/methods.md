@@ -197,9 +197,11 @@ and does not claim bit-for-bit epidemiological equivalence.
 **Watts–Strogatz.** Scenarios 00 to 03 use a Watts–Strogatz graph with
 mean degree 10 and rewiring probability 0.05 (`[network]` in
 `config.toml`), generated once per population size with NetworkX and
-seed 20260907 plus the size’s index. Mean degree is held fixed rather
-than graph density, which keeps the edge count, run time, and memory
-from growing quadratically with the population.
+seed 20260907 plus the size’s index. Scenario 05 instead uses mean
+degree 20 and a deterministic separate draw for every size/replicate
+pair; engines share the graph for a given replicate. Mean degree is held
+fixed rather than graph density, which keeps the edge count, run time,
+and memory from growing quadratically with the population.
 
 **GeoPops.** Scenario 04 uses a contact network collapsed from GeoPops’
 Spartanburg County, South Carolina synthetic population: four contact
