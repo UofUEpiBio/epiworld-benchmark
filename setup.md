@@ -118,7 +118,7 @@ image's dated CRAN snapshot) are pinned in
 the Dockerfile, the Python engines in `uv.lock`, Agents.jl in
 `julia/Manifest.toml`, and ixa in each runner's `Cargo.lock`. Each engine's
 recorded version ends in the commit it was built from where the version
-number does not change with it (for example `0.17.1+g04c4ad8`), so moving a
+number does not change with it (for example `0.19.0+gc340f87`), so moving a
 pin invalidates that engine's published results. Natively, epiworldR's
 commit is unknown and its version is recorded without it.
 

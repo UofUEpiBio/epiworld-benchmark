@@ -3,8 +3,8 @@
 [Back to the project overview](../README.md)
 
 The measurements below were taken at epiworld `a1ff20a` (0.17.0). The
-benchmark now pins 0.17.1, which revised how epiworld chooses between pushing
-and pulling transmission
+benchmark now pins 0.19.0, which retains the revision to how epiworld chooses
+between pushing and pulling transmission
 ([UofUEpiBio/epiworld#281](https://github.com/UofUEpiBio/epiworld/pull/281))
 and sped up the pull scan; this note has not been remeasured since.
 

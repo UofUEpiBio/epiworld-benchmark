@@ -103,9 +103,9 @@ RUN (curl -fsSL https://cran.r-project.org/src/contrib/ABM_0.4.3.tar.gz -o /tmp/
 RUN Rscript -e 'install.packages("EpiModel", Ncpus = parallel::detectCores())' \
     && Rscript -e 'stopifnot(packageVersion("EpiModel") == "2.5.0")'
 
-# The epiworld family last, as it changes most often. All three are pinned to
-# commits on their default branches at epiworld 0.17.1: epiworld's master and
-# epiworldR's main here, epiworldpy in pyproject.toml above.
+# The epiworld family last, as it changes most often. The C++ headers are
+# pinned to epiworld master at 0.19.0; the R and Python wrappers retain their
+# independently pinned 0.17.1-compatible commits.
 ARG EPIWORLDR_SHA=fca60f3010d5a018a11059bdf61a7ce21f4c42ca
 ENV EPIWORLDR_SHA=${EPIWORLDR_SHA}
 RUN curl -fsSL "https://github.com/UofUEpiBio/epiworldR/archive/${EPIWORLDR_SHA}.tar.gz" -o /tmp/epiworldR.tar.gz \
@@ -116,15 +116,15 @@ RUN curl -fsSL "https://github.com/UofUEpiBio/epiworldR/archive/${EPIWORLDR_SHA}
 # epiworld's C++ headers, for the epiworld (C++) runner. The library is
 # header-only; each scenario's runner is compiled by `make setup`. Keep the
 # commit in step with EPIWORLD_REF in the Makefile.
-ARG EPIWORLD_SHA=04c4ad866b1866ca88332a888d941b395c96b8a0
+ARG EPIWORLD_SHA=c340f8763da1fce11bce61a20a2e28a53a6e9f9f
 ENV EPIWORLD_SHA=${EPIWORLD_SHA} \
     EPIWORLD_INCLUDE=/opt/epiworld/include \
     EPIWORLD_BUILD_DIR=/opt/epiworld-build
 RUN mkdir -p /opt/epiworld \
     && curl -fsSL "https://github.com/UofUEpiBio/epiworld/archive/${EPIWORLD_SHA}.tar.gz" \
         | tar -xz -C /opt/epiworld --strip-components=1 \
-    && grep -q 'EPIWORLD_VERSION_MINOR 17' /opt/epiworld/include/epiworld/epiworld.hpp \
-    && grep -q 'EPIWORLD_VERSION_PATCH 1' /opt/epiworld/include/epiworld/epiworld.hpp
+    && grep -q 'EPIWORLD_VERSION_MINOR 19' /opt/epiworld/include/epiworld/epiworld.hpp \
+    && grep -q 'EPIWORLD_VERSION_PATCH 0' /opt/epiworld/include/epiworld/epiworld.hpp
 
 # FRED, for every scenario's FRED runner. Unlike epiworld, it
 # takes no bind-mounted scenario inputs (the runner drives it entirely via a
