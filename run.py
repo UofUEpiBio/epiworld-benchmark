@@ -727,9 +727,16 @@ def main() -> int:
         for scenario in size_scenarios:
             scenario_config = scenario_configs[scenario]
             network_config = scenario_config.get("network", config["network"])
-            edge_path, network_metadata = ensure_network_from_config(
-                CACHE_DIR, int(n), network_config, size_index
-            )
+            if network_config.get("per_replicate", False):
+                networks = {
+                    replicate: ensure_network_from_config(
+                        CACHE_DIR, int(n), network_config, size_index, replicate
+                    )
+                    for replicate in range(1, replicate_count + 1)
+                }
+            else:
+                network = ensure_network_from_config(CACHE_DIR, int(n), network_config, size_index)
+                networks = {replicate: network for replicate in range(1, replicate_count + 1)}
             code_hash = source_hash(scenario)
             calibration = scenario_config.get("calibration", {})
             parameters = scenario_parameters(scenario_config)
@@ -737,6 +744,7 @@ def main() -> int:
                 parameters["initial_infected"] = int(profile["initial_infected"])
             for engine in scenario_engine_map[scenario]:
                 for replicate in range(1, replicate_count + 1):
+                    edge_path, network_metadata = networks[replicate]
                     # Seeds do not depend on the scenario, so scenarios can be
                     # compared replicate by replicate.
                     seed = int(study["base_seed"]) + size_index * 100_000 + replicate

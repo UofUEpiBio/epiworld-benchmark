@@ -280,5 +280,51 @@
       "target_r0": 2.0
     },
     "workers": 1
+  },
+  "scenario_05": {
+    "calibration": {},
+    "description": "Scenario 00 on a separately drawn Watts--Strogatz network for every replicate.",
+    "design": [
+      {
+        "n": 10000,
+        "replicates": 100
+      },
+      {
+        "n": 100000,
+        "replicates": 100
+      }
+    ],
+    "engines": [
+      "epiworldR",
+      "epiworldpy",
+      "epiworld",
+      "covasim",
+      "starsim",
+      "EoN",
+      "epydemic",
+      "ixa",
+      "individual",
+      "ABM",
+      "EpiModel",
+      "FRED",
+      "Agents.jl"
+    ],
+    "name": "SEIRH baseline with network uncertainty",
+    "network": {
+      "mean_degree": 20,
+      "per_replicate": true,
+      "rewire_probability": 0.05,
+      "seed": 20260907,
+      "type": "watts_strogatz"
+    },
+    "parameters": {
+      "hospital_days": 7.0,
+      "hospitalization_probability": 0.05,
+      "infectious_days": 7.0,
+      "initial_infected": 100,
+      "latent_days": 4.0,
+      "target_r0": 2.0
+    },
+    "workers": 1
   }
 }

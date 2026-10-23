@@ -268,14 +268,30 @@ def ensure_geopops_network(cache_dir: Path, n: int, config: dict) -> tuple[Path,
 
 
 def ensure_network_from_config(
-    cache_dir: Path, n: int, config: dict, size_index: int = 0
+    cache_dir: Path,
+    n: int,
+    config: dict,
+    size_index: int = 0,
+    replicate: int | None = None,
 ) -> tuple[Path, dict]:
-    """Build the network selected by a global or scenario-level table."""
+    """Build the network selected by a global or scenario-level table.
+
+    Watts--Strogatz scenarios normally reuse one graph per population size.
+    A scenario can instead set ``per_replicate = true`` to draw one stable
+    graph for each replicate. The latter must name the replicate explicitly,
+    so an accidental call cannot silently collapse the network uncertainty.
+    """
     network_type = config.get("type")
     if network_type == "watts_strogatz":
+        if config.get("per_replicate", False):
+            if replicate is None or replicate < 1:
+                raise ValueError("per_replicate Watts--Strogatz networks require replicate >= 1")
+            seed = int(config["seed"]) + size_index * 100_000 + replicate
+        else:
+            seed = int(config["seed"]) + size_index
         return ensure_network(
             cache_dir, n, int(config["mean_degree"]),
-            float(config["rewire_probability"]), int(config["seed"]) + size_index,
+            float(config["rewire_probability"]), seed,
         )
     if network_type == "geopops_collapsed":
         return ensure_geopops_network(cache_dir, n, config)
