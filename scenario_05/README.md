@@ -47,12 +47,28 @@ every seed.
 
 ## Results
 
-> [!WARNING]
+> [!TIP]
 >
-> The full-profile cache for this scenario is incomplete. Estimates
-> below are provisional; rerun `make benchmark` to resume missing cells.
+> The complete 2,600-run design for this scenario is available.
 
-    NULL
+| Field | Value |
+|:---|:---|
+| CPU | Apple M3 Pro (container sees: Apple (model not reported)) |
+| Cores | 10 logical, 10 physical |
+| Memory | 12.7 GiB |
+| OS | Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39 |
+| Kernel | 6.12.13-200.fc41.aarch64 |
+| Container image | c043fc1a6bfe |
+| Python | 3.12.11 |
+| R | R version 4.5.1 (2025-06-13) – “Great Square Root” |
+| Julia | julia version 1.13.1 |
+| Rust | rustc 1.98.0 (88d9e12ae 2026-08-18) |
+| C++ compiler | c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0 |
+| Quarto | 1.10.18 |
+| Repository commit | 714a334 |
+| Workers | 1 |
+| Run dates | 2026-10-23 to 2026-10-23 |
+| Latest run | 1501 executed, 1099 cached, 0 failed |
 
 | Engine     | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:-----------|-------:|-----:|----------------------:|-------:|-------:|
@@ -72,13 +88,16 @@ every seed.
 | epiworldpy | 100000 |  100 |                 0.018 |  0.016 |  0.020 |
 | epiworld   | 100000 |  100 |                 0.019 |  0.018 |  0.021 |
 | epiworldR  | 100000 |  100 |                 0.020 |  0.019 |  0.023 |
+| Agents.jl  | 100000 |  100 |                 0.052 |  0.048 |  0.057 |
 | individual | 100000 |  100 |                 0.087 |  0.083 |  0.093 |
 | ixa        | 100000 |  100 |                 0.119 |  0.101 |  0.152 |
 | covasim    | 100000 |  100 |                 0.611 |  0.589 |  0.640 |
 | EoN\*      | 100000 |  100 |                 0.744 |  0.692 |  0.807 |
-| ABM\*      | 100000 |   35 |                 1.135 |  1.069 |  1.203 |
+| FRED       | 100000 |  100 |                 0.959 |  0.889 |  1.044 |
+| ABM\*      | 100000 |  100 |                 1.176 |  1.102 |  1.316 |
 | starsim    | 100000 |  100 |                 2.092 |  2.010 |  2.198 |
 | epydemic   | 100000 |  100 |                 5.148 |  4.856 |  5.603 |
+| EpiModel   | 100000 |  100 |                14.612 | 14.396 | 15.247 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -114,7 +133,10 @@ one mean that epiworldR completed the simulation call faster.
 | epydemic   | 100000 |                  258.46 | 224.33 | 293.89 |
 | ixa        | 100000 |                    5.92 |   4.96 |   7.22 |
 | individual | 100000 |                    4.33 |   3.94 |   4.71 |
-| ABM\*      | 100000 |                   57.15 |  51.28 |  67.38 |
+| ABM\*      | 100000 |                   59.65 |  50.68 |  67.03 |
+| EpiModel   | 100000 |                  727.98 | 654.68 | 820.53 |
+| FRED       | 100000 |                   46.92 |  42.76 |  53.01 |
+| Agents.jl  | 100000 |                    2.61 |   2.27 |   2.88 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -143,14 +165,17 @@ the time to a first result once the edge list is in memory
 | EpiModel   |  10000 |          0.014 |     0.214 |        1.235 |                1.464 |
 | epiworld   | 100000 |          0.101 |     0.023 |        0.019 |                0.043 |
 | epiworldR  | 100000 |          0.145 |     0.048 |        0.020 |                0.069 |
+| Agents.jl  | 100000 |          0.538 |     0.035 |        0.052 |                0.086 |
 | epiworldpy | 100000 |          0.406 |     0.090 |        0.018 |                0.107 |
 | ixa        | 100000 |          0.071 |     0.001 |        0.119 |                0.120 |
 | individual | 100000 |          0.162 |     0.067 |        0.087 |                0.155 |
 | covasim    | 100000 |          0.405 |     0.051 |        0.611 |                0.663 |
-| ABM\*      | 100000 |          0.159 |     0.062 |        1.135 |                1.196 |
+| ABM\*      | 100000 |          0.164 |     0.065 |        1.176 |                1.247 |
 | EoN\*      | 100000 |          0.407 |     0.549 |        0.744 |                1.294 |
 | starsim    | 100000 |          0.425 |     0.001 |        2.092 |                2.092 |
+| FRED       | 100000 |          4.843 |     1.781 |        0.959 |                2.767 |
 | epydemic   | 100000 |          0.379 |     0.647 |        5.148 |                5.756 |
+| EpiModel   | 100000 |          0.147 |     1.009 |       14.612 |               15.616 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -179,11 +204,14 @@ Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 | individual | 100000 | 75.0 \[75.0, 75.0\] | -15.4 \[-15.4, -15.4\] | 46.6 \[46.4, 46.9\] | 129.4 \[129.2, 129.6\] |
 | epiworldR | 100000 | 72.2 \[72.2, 72.2\] | 11.6 \[11.6, 11.6\] | 0.0 \[0.0, 0.0\] | 143.9 \[143.9, 144.1\] |
 | epiworldpy | 100000 | 46.1 \[46.1, 46.1\] | 54.7 \[54.7, 54.7\] | 0.0 \[0.0, 0.0\] | 191.8 \[191.8, 191.8\] |
-| ABM\* | 100000 | 74.6 \[74.6, 74.6\] | -15.1 \[-15.1, -15.1\] | 114.1 \[113.7, 114.3\] | 199.0 \[198.7, 199.2\] |
+| ABM\* | 100000 | 74.6 \[74.6, 74.6\] | -15.1 \[-15.1, -15.1\] | 114.1 \[113.7, 114.4\] | 199.1 \[198.8, 199.3\] |
 | covasim | 100000 | 220.7 \[220.7, 220.7\] | 2.6 \[2.6, 2.6\] | 57.1 \[56.7, 57.5\] | 312.9 \[312.9, 312.9\] |
 | EoN\* | 100000 | 118.7 \[118.6, 118.7\] | 221.5 \[221.5, 221.6\] | 24.0 \[23.8, 24.2\] | 381.2 \[380.9, 381.4\] |
 | starsim | 100000 | 256.0 \[256.0, 256.0\] | 0.0 \[0.0, 0.0\] | 123.8 \[120.5, 123.9\] | 396.8 \[393.6, 397.0\] |
+| EpiModel | 100000 | 230.7 \[230.7, 230.7\] | 166.0 \[166.0, 166.0\] | 126.2 \[126.2, 126.2\] | 545.4 \[545.4, 545.4\] |
+| Agents.jl | 100000 | 480.3 \[480.1, 480.5\] | 1.4 \[1.4, 1.5\] | 1.1 \[1.0, 1.3\] | 554.2 \[551.6, 555.6\] |
 | epydemic | 100000 | 116.3 \[116.3, 116.3\] | 221.4 \[221.2, 221.4\] | 272.4 \[272.1, 272.6\] | 627.1 \[626.9, 627.3\] |
+| FRED | 100000 |  |  |  | 779.7 \[779.7, 779.7\] |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -206,12 +234,15 @@ the benchmark records the daily totals.</sub>
 | ixa        |  10000 |                    0.496 |                     24.0 |
 | starsim    |  10000 |                    0.487 |                     26.5 |
 | ABM\*      | 100000 |                    0.088 |                     52.0 |
+| Agents.jl  | 100000 |                    0.098 |                     51.0 |
 | covasim    | 100000 |                    0.494 |                    386.5 |
 | EoN\*      | 100000 |                    0.089 |                     53.0 |
+| EpiModel   | 100000 |                    0.134 |                     87.5 |
 | epiworld   | 100000 |                    0.087 |                     47.0 |
 | epiworldpy | 100000 |                    0.087 |                     47.0 |
 | epiworldR  | 100000 |                    0.087 |                     47.0 |
 | epydemic   | 100000 |                    0.096 |                     65.0 |
+| FRED       | 100000 |                    0.155 |                     98.0 |
 | individual | 100000 |                    0.111 |                     70.5 |
 | ixa        | 100000 |                    0.099 |                     52.5 |
 | starsim    | 100000 |                    0.097 |                     59.0 |

@@ -1,0 +1,73 @@
+{
+  "cached": 1099,
+  "container_image": "c043fc1a6bfed372c284634c3ec3f1e4e5a44cf76e80e6e75f6da29fbd0ac2c4",
+  "engine_versions": {
+    "ABM": "0.4.3",
+    "Agents.jl": "7.0.4",
+    "EoN": "1.92",
+    "EpiModel": "2.5.0",
+    "FRED": "PUB.5.7.0+gbd25f04",
+    "covasim": "3.1.8",
+    "epiworld": "0.19.0+gc340f87",
+    "epiworldR": "0.17.1.0+gfca60f3",
+    "epiworldpy": "0.17.1-0+gc24b4f9",
+    "epydemic": "1.14.1",
+    "individual": "0.1.19",
+    "ixa": "3.1.0",
+    "starsim": "3.6.1"
+  },
+  "environment_id": "85a39095517b4637ea0908636f8bf556970b1c265d1891a7c1301ad4808afa5c",
+  "executed": 1501,
+  "failures": 0,
+  "finished_utc": "2026-10-23T21:10:14+00:00",
+  "hardware": {
+    "cgroup_cpu_limit": null,
+    "cgroup_memory_limit_bytes": null,
+    "cpu_model": "Apple (model not reported)",
+    "host_cpu_model": "Apple M3 Pro",
+    "logical_cores": 10,
+    "memory_bytes": 13595316224,
+    "physical_cores": 10
+  },
+  "os": {
+    "architecture": "aarch64",
+    "container": true,
+    "kernel": "6.12.13-200.fc41.aarch64",
+    "platform": "Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39"
+  },
+  "pins": {
+    "EPIWORLDR_SHA": "fca60f3010d5a018a11059bdf61a7ce21f4c42ca",
+    "EPIWORLD_SHA": "c340f8763da1fce11bce61a20a2e28a53a6e9f9f",
+    "FRED_SHA": "bd25f048f8e390ff697bdfa83a0bd3c2e19d6046",
+    "INDIVIDUAL_SHA": "50524f239e965d38b40f178290262760f252fc60"
+  },
+  "repository": {
+    "commit": "714a33439ed6e8486f11c090225fbaaf15c00b4f",
+    "dirty": false
+  },
+  "run": {
+    "environment_variables": {
+      "MKL_NUM_THREADS": "1",
+      "NUMBA_NUM_THREADS": "1",
+      "NUMEXPR_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "PYTHONHASHSEED": "0",
+      "RCPP_PARALLEL_NUM_THREADS": "1",
+      "STARSIM_INSTALL_FONTS": "0",
+      "VECLIB_MAXIMUM_THREADS": "1"
+    },
+    "profile": "full",
+    "workers": 1
+  },
+  "scenario": "scenario_05",
+  "started_utc": "2026-10-23T19:43:45+00:00",
+  "toolchains": {
+    "cxx": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+    "julia": "julia version 1.13.1",
+    "python": "3.12.11",
+    "quarto": "1.10.18",
+    "r": "R version 4.5.1 (2025-06-13) -- \"Great Square Root\"",
+    "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)"
+  }
+}
