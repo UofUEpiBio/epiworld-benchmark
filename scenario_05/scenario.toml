@@ -2,6 +2,11 @@
 name = "SEIRH baseline with network uncertainty"
 description = "Scenario 00 on a separately drawn Watts--Strogatz network for every replicate."
 
+[cache]
+# A design-only change such as the replicate count does not alter the model or
+# a completed replicate's identity apart from this file's source hash.
+accept_published_results = true
+
 [design]
 # Scenario 00's population sizes, but enough independent graph draws to
 # integrate the baseline-network uncertainty alongside simulation randomness.
