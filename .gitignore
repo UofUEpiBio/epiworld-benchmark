@@ -6,4 +6,6 @@ cache/
 report.html
 scenario_*/runners/ixa/target/
 scenario_*/runners/epiworld/build/
+scenario_*/runners/epiworld-v1/build/
 .deps
+.v1-stage

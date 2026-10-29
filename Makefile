@@ -1,4 +1,4 @@
-.PHONY: help setup check smoke benchmark collect profile report clean-cache container-image epiworld-runners fred-runner
+.PHONY: help setup check smoke benchmark collect profile report clean-cache container-image epiworld-runners fred-runner v1-stage
 
 # Inside the container, PYTHON and CARGO_TARGET_DIR come from the image.
 PYTHON ?= .venv/bin/python
@@ -14,8 +14,19 @@ IXA_MANIFESTS := $(sort $(wildcard scenario_*/runners/ixa/Cargo.toml))
 # epiworld master at 0.17.1 (the automatic push/pull cost model, UofUEpiBio/epiworld#281).
 EPIWORLD_REF := 04c4ad866b1866ca88332a888d941b395c96b8a0
 EPIWORLD_INCLUDE ?= .deps/$(EPIWORLD_REF)/include
-EPIWORLD_SOURCES := $(sort $(wildcard scenario_*/runners/epiworld/main.cpp))
 EPIWORLD_CXXFLAGS := -std=c++17 -O2 -DNDEBUG -Depiworld_double=double
+
+# The epiworld-v1 engine: epiworld 1.0.0 in progress, a merge commit of
+# epiworld's v1-layers branch (Section 8 of its contact-layers.md lists when it
+# moves). Its headers are always downloaded into .deps/, in the container too,
+# so moving this one line is the whole re-pin.
+# Phase 3d-1 (UofUEpiBio/epiworld#335, #336).
+EPIWORLD_V1_REF := 5811a28aefe233b492976b21f038229fc212096e
+EPIWORLD_V1_INCLUDE := .deps/$(EPIWORLD_V1_REF)/include
+
+# The C++ engines, each with its headers: scenario_*/runners/<engine>/main.cpp
+# builds <engine>-scenario-NN.
+CPP_ENGINES := epiworld:$(EPIWORLD_INCLUDE) epiworld-v1:$(EPIWORLD_V1_INCLUDE)
 
 # FRED, for every scenario's FRED runner. It is a single shared
 # binary, not compiled per scenario like epiworld/ixa above. The container
@@ -46,6 +57,7 @@ help:
 	@echo "  benchmark       - Run the full benchmark simulation"
 	@echo "  collect         - Rebuild results/*.csv from results/runs/ (e.g. after a git merge)"
 	@echo "  profile         - Side measurements behind docs/epiworld-ixa.md"
+	@echo "  v1-stage        - Rerun epiworld and epiworld-v1, then add STAGE to docs/epiworld-v1.md"
 	@echo "  report          - Render the overview, docs/, and every scenario report with Quarto"
 	@echo "  clean-cache     - Remove benchmark/cache manually if you really want to discard reusable runs."
 	@echo ""
@@ -62,18 +74,21 @@ setup: epiworld-runners fred-runner
 		$(CARGO) build --release --locked --manifest-path $$manifest || exit 1; \
 	done
 
-$(EPIWORLD_INCLUDE):
-	mkdir -p .deps/$(EPIWORLD_REF)
-	curl -fsSL https://github.com/UofUEpiBio/epiworld/archive/$(EPIWORLD_REF).tar.gz \
-		| tar -xz -C .deps/$(EPIWORLD_REF) --strip-components=1
+.deps/%/include:
+	mkdir -p .deps/$*
+	curl -fsSL https://github.com/UofUEpiBio/epiworld/archive/$*.tar.gz \
+		| tar -xz -C .deps/$* --strip-components=1
 
-epiworld-runners: | $(EPIWORLD_INCLUDE)
-	for source in $(EPIWORLD_SOURCES); do \
-		scenario=$${source%%/*}; \
-		out="$${EPIWORLD_BUILD_DIR:-$$scenario/runners/epiworld/build}"; \
-		mkdir -p "$$out"; \
-		$(CXX) $(EPIWORLD_CXXFLAGS) -I$(EPIWORLD_INCLUDE) $$source -lz \
-			-o "$$out/epiworld-$$(echo $$scenario | tr _ -)" || exit 1; \
+epiworld-runners: | $(EPIWORLD_INCLUDE) $(EPIWORLD_V1_INCLUDE)
+	for pair in $(CPP_ENGINES); do \
+		engine=$${pair%%:*}; include=$${pair#*:}; \
+		for source in scenario_*/runners/$$engine/main.cpp; do \
+			scenario=$${source%%/*}; \
+			out="$${EPIWORLD_BUILD_DIR:-$$scenario/runners/$$engine/build}"; \
+			mkdir -p "$$out"; \
+			$(CXX) $(EPIWORLD_CXXFLAGS) -I$$include $$source -lz \
+				-o "$$out/$$engine-$$(echo $$scenario | tr _ -)" || exit 1; \
+		done; \
 	done
 
 $(FRED_BINARY):
@@ -104,6 +119,19 @@ benchmark:
 collect:
 	$(PYTHON) run.py --collect
 
+# One stage of the epiworld 1.0.0 tracking (docs/epiworld-v1.md): both C++
+# engines at the full design, the 0.x one too, so the two share a machine and
+# its load. Run alone, like profile. The run's environment records are kept
+# with the stage (results/epiworld-v1-environments/), and the published ones,
+# which describe every engine's runs, are restored.
+STAGE ?=
+v1-stage:
+	test -n "$(STAGE)" || { echo "Set STAGE, e.g. STAGE=3d-1"; exit 1; }
+	rm -rf .v1-stage && mkdir .v1-stage && cp -R results/environments results/run-manifest.json .v1-stage/
+	$(PYTHON) run.py --profile full --engines epiworld epiworld-v1 --force
+	$(PYTHON) scripts/epiworld_v1_history.py "$(STAGE)"
+	rm -rf results/environments && mv .v1-stage/* results/ && rmdir .v1-stage
+
 # Run alone: concurrent work distorts the timings.
 profile:
 	PYTHON=$(PYTHON) bash analysis/profile.sh
@@ -124,7 +152,7 @@ container-image:
 # BENCHMARK_IMAGE_ID and BENCHMARK_HOST_CPU go into each scenario's environment record.
 container-%:
 	$(CONTAINER) run --rm -v "$(CURDIR)":/workspace -w /workspace \
-		-e N_THREADS -e SCENARIOS -e RUN_ARGS \
+		-e N_THREADS -e SCENARIOS -e RUN_ARGS -e STAGE \
 		-e BENCHMARK_IMAGE_ID=$$($(CONTAINER) image inspect -f '{{.Id}}' $(IMAGE)) \
 		-e BENCHMARK_HOST_CPU="$(HOST_CPU)" \
 		$(IMAGE) make setup $*

@@ -4,8 +4,9 @@ replicates = 100
 population_sizes = [10000, 100000]
 base_seed = 8675309
 # "epiworld" is the C++ library itself; epiworldR and epiworldpy wrap it.
+# "epiworld-v1" is epiworld 1.0.0 in progress (docs/epiworld-v1.md).
 engines = [
-  "epiworldR", "epiworldpy", "epiworld", "covasim", "starsim", "EoN", "epydemic", "ixa",
+  "epiworldR", "epiworldpy", "epiworld", "epiworld-v1", "covasim", "starsim", "EoN", "epydemic", "ixa",
   "individual", "ABM", "EpiModel", "FRED", "Agents.jl",
 ]
 # Scenario-specific settings (disease, interventions, calibration) live in

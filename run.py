@@ -60,6 +60,10 @@ R_PACKAGES = {
     "epiworldR": "epiworldR", "individual": "individual", "ABM": "ABM", "EpiModel": "EpiModel",
 }
 JULIA_RUNNERS = {"Agents.jl": "agents.jl"}
+# C++ engines, each with a runners/<engine>/main.cpp per scenario that `make
+# setup` compiles, and the pin of the headers it is compiled against.
+# epiworld-v1 is epiworld 1.0.0 in progress (docs/epiworld-v1.md).
+CPP_ENGINES = {"epiworld": "EPIWORLD_SHA", "epiworld-v1": "EPIWORLD_V1_SHA"}
 # Scenario tables whose keys are forwarded to every runner as --kebab-case flags.
 PARAMETER_TABLES = ("disease", "intervention")
 
@@ -93,12 +97,12 @@ def ixa_binary(scenario: str) -> Path:
     return target / "release" / f"ixa-{scenario.replace('_', '-')}"
 
 
-def epiworld_binary(scenario: str) -> Path:
-    """The scenario's compiled epiworld (C++) runner; `make setup` builds it."""
+def epiworld_binary(scenario: str, engine: str = "epiworld") -> Path:
+    """The scenario's compiled runner of a C++ engine; `make setup` builds it."""
     build = Path(
-        os.environ.get("EPIWORLD_BUILD_DIR", ROOT / scenario / "runners" / "epiworld" / "build")
+        os.environ.get("EPIWORLD_BUILD_DIR", ROOT / scenario / "runners" / engine / "build")
     )
-    return build / f"epiworld-{scenario.replace('_', '-')}"
+    return build / f"{engine}-{scenario.replace('_', '-')}"
 
 
 def fred_home() -> Path:
@@ -248,20 +252,20 @@ def engine_versions(engines: list[str], scenarios: list[str]) -> dict[str, str]:
             if len(found) != 1:
                 raise SystemExit(f"Scenarios pin different ixa versions: {sorted(found)}")
             versions[engine] = found.pop()
-        elif engine == "epiworld":
+        elif engine in CPP_ENGINES:
             # Each runner reports the epiworld headers it was compiled against.
             found = {
                 subprocess.run(
-                    [str(epiworld_binary(scenario)), "--version"],
+                    [str(epiworld_binary(scenario, engine)), "--version"],
                     check=True, text=True, capture_output=True,
                 ).stdout.strip()
                 for scenario in scenarios
             }
             if len(found) != 1:
                 raise SystemExit(
-                    f"Scenarios were built with different epiworld versions: {sorted(found)}"
+                    f"Scenarios were built with different {engine} versions: {sorted(found)}"
                 )
-            versions[engine] = with_commit(found.pop(), pins()["EPIWORLD_SHA"])
+            versions[engine] = with_commit(found.pop(), pins()[CPP_ENGINES[engine]])
         elif engine == "Agents.jl":
             versions[engine] = subprocess.run(
                 [
@@ -388,8 +392,8 @@ def task_command(task: dict[str, Any]) -> list[str]:
         ]
     if task["engine"] == "ixa":
         return [str(ixa_binary(task["scenario"])), *common]
-    if task["engine"] == "epiworld":
-        return [str(epiworld_binary(task["scenario"])), *common]
+    if task["engine"] in CPP_ENGINES:
+        return [str(epiworld_binary(task["scenario"], task["engine"])), *common]
     return [sys.executable, str(runner_dir / PYTHON_RUNNERS[task["engine"]]), *common]
 
 
@@ -707,13 +711,14 @@ def main() -> int:
                 raise SystemExit(
                     f"ixa runner not built at {ixa_binary(scenario)}; run `make setup`"
                 )
-    if "epiworld" in engines:
+    for engine in set(CPP_ENGINES) & set(engines):
         for scenario in scenarios:
-            if "epiworld" not in scenario_engine_map[scenario]:
+            if engine not in scenario_engine_map[scenario]:
                 continue
-            if not epiworld_binary(scenario).is_file():
+            if not epiworld_binary(scenario, engine).is_file():
                 raise SystemExit(
-                    f"epiworld runner not built at {epiworld_binary(scenario)}; run `make setup`"
+                    f"{engine} runner not built at {epiworld_binary(scenario, engine)}; "
+                    "run `make setup`"
                 )
     if "FRED" in engines and not fred_binary().is_file():
         raise SystemExit(f"FRED runner not built at {fred_binary()}; run `make setup`")
@@ -773,6 +778,10 @@ def main() -> int:
                         "output": str(output),
                         "fingerprint": task_fingerprint,
                     })
+
+    # Replicate by replicate, every engine in turn, so that a drift in the
+    # machine's load falls on every engine alike (the sort is stable).
+    tasks.sort(key=lambda task: (task["n"], task["scenario"], task["replicate"]))
 
     print(
         f"Profile={args.profile}; scenarios={','.join(scenarios)}; "

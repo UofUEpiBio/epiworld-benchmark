@@ -22,6 +22,7 @@ scenario_NN/
     epimodel.R          # EpiModel
     agents.jl           # Agents.jl
     epiworld/main.cpp   # epiworld (C++), built by `make setup`
+    epiworld-v1/main.cpp # epiworld 1.0.0 in progress (docs/epiworld-v1.md)
     run_epiworldpy.py   # one script per Python engine: run_epiworldpy.py,
     run_covasim.py      #   run_covasim.py, run_starsim.py, run_eon.py,
     run_starsim.py      #   run_epydemic.py, run_FRED.py; each holds that
