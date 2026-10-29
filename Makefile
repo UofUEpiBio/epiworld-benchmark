@@ -127,9 +127,10 @@ collect:
 STAGE ?=
 v1-stage:
 	test -n "$(STAGE)" || { echo "Set STAGE, e.g. STAGE=3d-1"; exit 1; }
+	rm -rf .v1-stage && mkdir .v1-stage && cp -R results/environments results/run-manifest.json .v1-stage/
 	$(PYTHON) run.py --profile full --engines epiworld epiworld-v1 --force
 	$(PYTHON) scripts/epiworld_v1_history.py "$(STAGE)"
-	git -c safe.directory='*' checkout HEAD -- results/environments results/run-manifest.json
+	rm -rf results/environments && mv .v1-stage/* results/ && rmdir .v1-stage
 
 # Run alone: concurrent work distorts the timings.
 profile:

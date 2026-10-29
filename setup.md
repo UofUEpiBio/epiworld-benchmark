@@ -122,6 +122,15 @@ number does not change with it (for example `0.17.1+g04c4ad8`), so moving a
 pin invalidates that engine's published results. Natively, epiworldR's
 commit is unknown and its version is recorded without it.
 
+## Tracking epiworld 1.0.0
+
+On the `v1-layers` branch, a fourteenth engine, `epiworld-v1`, is the C++
+library's 1.0.0 work in progress, pinned by `EPIWORLD_V1_REF` in the
+[Makefile](Makefile) (its headers are downloaded into `.deps/` by `make setup`,
+in the container too). `STAGE=<stage> make container-v1-stage` reruns it next
+to the 0.x `epiworld` engine and adds the stage to the history in
+[docs/epiworld-v1.md](docs/epiworld-v1.md), which says when and why.
+
 ## Environment records
 
 Timings only mean something next to the machine that produced them, so a run
