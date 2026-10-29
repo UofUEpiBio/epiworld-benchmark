@@ -70,6 +70,40 @@ memory of the process. The [methods](methods.md#measures) define each
 measure.
 
 <!-- history:begin -->
+| Stage | epiworld-v1 | Scenario | Agents | Simulate (s): 0.x, 1.0 | Ratio | Build (s): 0.x, 1.0 | Ratio | Peak (MiB): 0.x, 1.0 | Ratio | Attack rate: 0.x, 1.0 |
+|:--|:--|:--|--:|--:|--:|--:|--:|--:|--:|--:|
+| 3d-1 | 1.0.0+g5811a28 | 00 | 10,000 | 0.0051, 0.0046 | 0.90 | 0.00137, 0.00758 | 5.55 | 8, 12 | 1.48 | 0.385, 0.385 |
+| 3d-1 | 1.0.0+g5811a28 | 00 | 100,000 | 0.00967, 0.00938 | 0.97 | 0.0179, 0.105 | 5.87 | 38, 93 | 2.44 | 0.060, 0.060 |
+| 3d-1 | 1.0.0+g5811a28 | 01 | 10,000 | 0.00273, 0.00231 | 0.85 | 0.00146, 0.00767 | 5.24 | 8, 12 | 1.51 | 0.119, 0.119 |
+| 3d-1 | 1.0.0+g5811a28 | 01 | 100,000 | 0.0101, 0.00726 | 0.72 | 0.0145, 0.0964 | 6.63 | 43, 93 | 2.16 | 0.014, 0.014 |
+| 3d-1 | 1.0.0+g5811a28 | 02 | 10,000 | 0.00266, 0.00227 | 0.85 | 0.00144, 0.00764 | 5.30 | 8, 12 | 1.48 | 0.119, 0.119 |
+| 3d-1 | 1.0.0+g5811a28 | 02 | 100,000 | 0.0109, 0.00749 | 0.69 | 0.0159, 0.101 | 6.38 | 43, 93 | 2.15 | 0.014, 0.014 |
+| 3d-1 | 1.0.0+g5811a28 | 03 | 1,000,000 | 0.0318, 0.0502 | 1.58 | 0.243, 1.36 | 5.59 | 352, 901 | 2.56 | 0.006, 0.006 |
+| 3d-1 | 1.0.0+g5811a28 | 04 | 165,865 | 0.274, 0.221 | 0.81 | 0.0309, 0.278 | 8.97 | 90, 96 | 1.06 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
+
+### 3d-1 (catch-up)
+
+epiworld `v1-layers` at
+[`5811a28`](https://github.com/UofUEpiBio/epiworld/commit/5811a28aefe233b492976b21f038229fc212096e)
+(Phase 3d-1, UofUEpiBio/epiworld#335 and #336), against epiworld 0.17.1. The
+first stage, so there is no previous ratio to compare with.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **Simulation is as fast or faster**, by 3% to 31% up to 165,865 agents. At
+  1,000,000 agents the median is 1.58 times 0.x's, but on 20 replicates
+  whose 1.0 times range from 0.029 to 0.28 s (0.x: 0.027 to 0.05 s); this
+  size is rechecked at the next stage before it is read as a regression.
+- **Building the network costs more: 5 to 9 times the build time, and up to
+  2.6 times the peak memory** (1.06 on the GeoPops network). The runner builds an `AdjList` (a `std::map`
+  per agent) and the layer copies it into its ties. At 1,000,000 agents the
+  setup peaks at 901 MiB (0.x: 352). After setup the process still holds 779
+  MiB (0.x: 275); with `malloc_trim(0)` after building the layer it holds
+  314 MiB. So the layer itself costs about 40 MiB more than 0.x, and the rest
+  is the `AdjList`'s freed memory, which glibc keeps resident. A
+  `layer::network()` that takes the edge list directly (as 0.x's
+  `agents_from_edgelist()` did), without the `AdjList`, would remove both the
+  build time and the peak; that is for epiworld to decide.
