@@ -115,8 +115,8 @@ def base_task(**overrides) -> dict:
 
 def test_task_command_passes_transmission_multiplier_to_each_runner() -> None:
     engines = (
-        "covasim", "starsim", "EoN", "epydemic", "epiworldR", "epiworldpy", "epiworld", "ixa",
-        "individual", "ABM", "EpiModel", "FRED", "Agents.jl",
+        "covasim", "starsim", "EoN", "epydemic", "epiworldR", "epiworldpy", "epiworld",
+        "epiworld-v1", "ixa", "individual", "ABM", "EpiModel", "FRED", "Agents.jl",
     )
     for engine in engines:
         command = task_command(base_task(engine=engine))
@@ -142,7 +142,7 @@ def test_scenario_parameters_become_runner_flags() -> None:
     parameters = scenario_parameters(load_scenario("scenario_01"))
     assert parameters["vaccine_coverage"] == 0.30
     assert parameters["vaccine_efficacy"] == 0.80
-    for engine in ("covasim", "epiworldR", "epiworldpy", "epiworld", "ixa"):
+    for engine in ("covasim", "epiworldR", "epiworldpy", "epiworld", "epiworld-v1", "ixa"):
         command = task_command(
             base_task(engine=engine, scenario="scenario_01", parameters=parameters)
         )
@@ -165,6 +165,7 @@ def test_runners_accept_exactly_their_scenario_parameters() -> None:
             "EpiModel": (runners / "epimodel.R").read_text(),
             "ixa": (runners / "ixa" / "src" / "main.rs").read_text(),
             "C++": (runners / "epiworld" / "main.cpp").read_text(),
+            "C++ 1.0": (runners / "epiworld-v1" / "main.cpp").read_text(),
             "Julia": (runners / "agents.jl").read_text(),
         }
         for key in scenario_parameters(load_scenario(scenario)):
@@ -174,6 +175,7 @@ def test_runners_accept_exactly_their_scenario_parameters() -> None:
             assert f'"{key}"' in sources["ABM"], (scenario, key)
             assert f'"{key}"' in sources["EpiModel"], (scenario, key)
             assert f'"{key}"' in sources["C++"], (scenario, key)
+            assert f'"{key}"' in sources["C++ 1.0"], (scenario, key)
             assert f'"{key}"' in sources["Julia"], (scenario, key)
             assert f"{key}:" in sources["ixa"], (scenario, key)
 
@@ -183,7 +185,8 @@ def test_every_runner_records_the_edge_reading_time() -> None:
         runners = ROOT / scenario / "runners"
         for path in (
             runners / "runner_common.py", runners / "epiworld.R", runners / "individual.R",
-            runners / "abm.R", runners / "epimodel.R", runners / "epiworld" / "main.cpp", runners / "ixa" / "src" / "main.rs",
+            runners / "abm.R", runners / "epimodel.R", runners / "epiworld" / "main.cpp",
+            runners / "epiworld-v1" / "main.cpp", runners / "ixa" / "src" / "main.rs",
             runners / "agents.jl",
         ):
             assert "read_seconds" in path.read_text(), path
@@ -198,7 +201,8 @@ def test_every_runner_records_memory_at_the_timing_boundaries() -> None:
         runners = ROOT / scenario / "runners"
         for path in (
             runners / "runner_common.py", runners / "epiworld.R", runners / "individual.R",
-            runners / "abm.R", runners / "epimodel.R", runners / "epiworld" / "main.cpp", runners / "ixa" / "src" / "main.rs",
+            runners / "abm.R", runners / "epimodel.R", runners / "epiworld" / "main.cpp",
+            runners / "epiworld-v1" / "main.cpp", runners / "ixa" / "src" / "main.rs",
             runners / "agents.jl", runners / "run_FRED.py",
         ):
             source = path.read_text()
@@ -251,7 +255,8 @@ def test_scenario_03_is_scenario_00_at_one_million_agents() -> None:
     assert scenario_parameters(load_scenario("scenario_03")) == scenario_parameters(
         load_scenario("scenario_00")
     )
-    for runner in ("epiworld.R", "individual.R", "abm.R", "epimodel.R", "runner_common.py", "epiworld/main.cpp"):
+    for runner in ("epiworld.R", "individual.R", "abm.R", "epimodel.R", "runner_common.py", "epiworld/main.cpp",
+                   "epiworld-v1/main.cpp"):
         assert (ROOT / "scenario_03" / "runners" / runner).read_text() == (
             ROOT / "scenario_00" / "runners" / runner
         ).read_text(), runner
@@ -273,6 +278,7 @@ def test_source_paths_cover_only_the_scenario_runners() -> None:
         assert f"{scenario}/runners/abm.R" in paths
         assert f"{scenario}/runners/epimodel.R" in paths
         assert f"{scenario}/runners/epiworld/main.cpp" in paths
+        assert f"{scenario}/runners/epiworld-v1/main.cpp" in paths
         assert "config.toml" not in paths and "run.py" not in paths
         assert not any("/target/" in path or "/build/" in path for path in paths)
         assert not any(
@@ -300,6 +306,14 @@ def test_epiworld_binary_is_named_after_the_scenario(monkeypatch) -> None:
     assert binary.parent == ROOT / "scenario_01" / "runners" / "epiworld" / "build"
     monkeypatch.setenv("EPIWORLD_BUILD_DIR", "/opt/epiworld-build")
     assert str(epiworld_binary("scenario_00")) == "/opt/epiworld-build/epiworld-scenario-00"
+    # Each C++ engine has its own runner, built next to it or in the same directory.
+    assert str(epiworld_binary("scenario_00", "epiworld-v1")) == (
+        "/opt/epiworld-build/epiworld-v1-scenario-00"
+    )
+    monkeypatch.delenv("EPIWORLD_BUILD_DIR")
+    assert epiworld_binary("scenario_01", "epiworld-v1").parent == (
+        ROOT / "scenario_01" / "runners" / "epiworld-v1" / "build"
+    )
 
 
 def test_daily_series_are_medians_across_replicates(tmp_path, monkeypatch) -> None:
@@ -335,15 +349,22 @@ def test_moving_an_epiworld_pin_changes_the_recorded_version(monkeypatch) -> Non
     """epiworld and epiworldR report only 0.17.1 whatever their commit, so the
     commit is appended; otherwise a new pin would reuse published results."""
     def fake(command, **kwargs):
-        stdout = "0.17.1.0" if command[0] == "Rscript" else "0.17.1\n"
+        if command[0] == "Rscript":
+            stdout = "0.17.1.0"
+        else:
+            stdout = "1.0.0\n" if "epiworld-v1-" in command[0] else "0.17.1\n"
         return run.subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
 
     monkeypatch.setattr(run.subprocess, "run", fake)
     monkeypatch.setattr(run, "pins", lambda: {"EPIWORLD_SHA": "04c4ad8" + "0" * 33,
+                                              "EPIWORLD_V1_SHA": "5811a28" + "0" * 33,
                                               "EPIWORLDR_SHA": "fca60f3" + "0" * 33})
-    versions = run.engine_versions(["epiworld", "epiworldR", "individual"], ["scenario_00"])
+    versions = run.engine_versions(
+        ["epiworld", "epiworld-v1", "epiworldR", "individual"], ["scenario_00"]
+    )
     assert versions == {
-        "epiworld": "0.17.1+g04c4ad8", "epiworldR": "0.17.1.0+gfca60f3", "individual": "0.17.1.0",
+        "epiworld": "0.17.1+g04c4ad8", "epiworld-v1": "1.0.0+g5811a28",
+        "epiworldR": "0.17.1.0+gfca60f3", "individual": "0.17.1.0",
     }
     # Without a known commit (epiworldR natively), the version stands alone.
     monkeypatch.setattr(run, "pins", lambda: {"EPIWORLD_SHA": None, "EPIWORLDR_SHA": None})

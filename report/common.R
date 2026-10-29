@@ -5,8 +5,9 @@
 # ggplot object, or NULL when there is nothing to show yet.
 
 # "epiworld" is the C++ library; epiworldR and epiworldpy wrap it.
+# "epiworld-v1" is epiworld 1.0.0 in progress (docs/epiworld-v1.md).
 engine_levels <- c(
-  "epiworld", "epiworldR", "epiworldpy", "covasim", "starsim", "EoN", "epydemic", "ixa",
+  "epiworld", "epiworld-v1", "epiworldR", "epiworldpy", "covasim", "starsim", "EoN", "epydemic", "ixa",
   "individual", "ABM", "EpiModel", "FRED", "Agents.jl"
 )
 # 165,865 is scenario 04's GeoPops population once isolated people are dropped.

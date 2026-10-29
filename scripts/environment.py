@@ -32,7 +32,7 @@ RUNNER_ENV = {
 }
 
 # The Dockerfile persists these as ENV so they can be read at run time.
-PIN_VARIABLES = ("EPIWORLD_SHA", "EPIWORLDR_SHA", "FRED_SHA", "INDIVIDUAL_SHA")
+PIN_VARIABLES = ("EPIWORLD_SHA", "EPIWORLD_V1_SHA", "EPIWORLDR_SHA", "FRED_SHA", "INDIVIDUAL_SHA")
 
 
 def _read(path: str | Path) -> str | None:
@@ -177,12 +177,14 @@ def pins() -> dict[str, str | None]:
     The container image records them as environment variables. Natively,
     `make setup` downloads epiworld into `.deps/<EPIWORLD_REF>` and FRED into
     `$FRED_HOME`, with the commit in `COMMIT`; epiworldR and individual are
-    installed outside this repository, so their commits are unknown.
+    installed outside this repository, so their commits are unknown. The
+    epiworld-v1 headers are always in `.deps/<EPIWORLD_V1_REF>`.
     """
     found = {name: os.environ.get(name) or None for name in PIN_VARIABLES}
-    if found["EPIWORLD_SHA"] is None:
-        ref = makefile_ref("EPIWORLD_REF")
-        found["EPIWORLD_SHA"] = ref if ref and (ROOT / ".deps" / ref).is_dir() else None
+    for name, ref_name in (("EPIWORLD_SHA", "EPIWORLD_REF"), ("EPIWORLD_V1_SHA", "EPIWORLD_V1_REF")):
+        if found[name] is None:
+            ref = makefile_ref(ref_name)
+            found[name] = ref if ref and (ROOT / ".deps" / ref).is_dir() else None
     if found["FRED_SHA"] is None:
         fred_home = Path(os.environ.get("FRED_HOME", ROOT / ".deps" / "fred"))
         found["FRED_SHA"] = (_read(fred_home / "COMMIT") or "").strip() or None
