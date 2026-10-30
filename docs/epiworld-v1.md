@@ -80,6 +80,14 @@ measure.
 | 3d-1 | 1.0.0+g5811a28 | 02 | 100,000 | 0.0109, 0.00749 | 0.69 | 0.0159, 0.101 | 6.38 | 43, 93 | 2.15 | 0.014, 0.014 |
 | 3d-1 | 1.0.0+g5811a28 | 03 | 1,000,000 | 0.0318, 0.0502 | 1.58 | 0.243, 1.36 | 5.59 | 352, 901 | 2.56 | 0.006, 0.006 |
 | 3d-1 | 1.0.0+g5811a28 | 04 | 165,865 | 0.274, 0.221 | 0.81 | 0.0309, 0.278 | 8.97 | 90, 96 | 1.06 | 0.622, 0.622 |
+| 3d-1b | 1.0.0+g1b10904 | 00 | 10,000 | 0.00538, 0.00547 | 1.02 | 0.00149, 0.00131 | 0.88 | 8, 8 | 0.98 | 0.385, 0.385 |
+| 3d-1b | 1.0.0+g1b10904 | 00 | 100,000 | 0.00925, 0.00985 | 1.06 | 0.0171, 0.0122 | 0.71 | 38, 33 | 0.85 | 0.060, 0.060 |
+| 3d-1b | 1.0.0+g1b10904 | 01 | 10,000 | 0.00248, 0.00249 | 1.00 | 0.00133, 0.00112 | 0.85 | 8, 8 | 0.98 | 0.119, 0.119 |
+| 3d-1b | 1.0.0+g1b10904 | 01 | 100,000 | 0.00937, 0.00934 | 1.00 | 0.0133, 0.011 | 0.82 | 43, 41 | 0.94 | 0.014, 0.014 |
+| 3d-1b | 1.0.0+g1b10904 | 02 | 10,000 | 0.00236, 0.00245 | 1.04 | 0.00129, 0.00111 | 0.86 | 9, 8 | 0.99 | 0.119, 0.119 |
+| 3d-1b | 1.0.0+g1b10904 | 02 | 100,000 | 0.009, 0.00921 | 1.02 | 0.0136, 0.0107 | 0.79 | 44, 41 | 0.94 | 0.014, 0.014 |
+| 3d-1b | 1.0.0+g1b10904 | 03 | 1,000,000 | 0.0326, 0.0306 | 0.94 | 0.172, 0.137 | 0.80 | 352, 276 | 0.78 | 0.006, 0.006 |
+| 3d-1b | 1.0.0+g1b10904 | 04 | 165,865 | 0.185, 0.175 | 0.95 | 0.0166, 0.015 | 0.90 | 90, 88 | 0.97 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -107,3 +115,35 @@ first stage, so there is no previous ratio to compare with.
   `layer::network()` that takes the edge list directly (as 0.x's
   `agents_from_edgelist()` did), without the `AdjList`, would remove both the
   build time and the peak; that is for epiworld to decide.
+
+### 3d-1b
+
+epiworld `v1-layers` at
+[`1b10904`](https://github.com/UofUEpiBio/epiworld/commit/1b10904d8fb11e4d775a9eca154305f0b6cd9e22),
+which adds Phase 3d-2 (UofUEpiBio/epiworld#340, #345: the measles models,
+which these scenarios do not use) and 3d-1b (UofUEpiBio/epiworld#341: networks
+built without `std::map`, the fix for the 3d-1 finding,
+UofUEpiBio/epiworld#339) to the previous stage. Against epiworld 0.17.1.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size, and the same as at 3d-1.
+- **Building the network is back below 0.x:** the build ratio fell from 5.2-9.0
+  to 0.71-0.90, and peak memory from 1.06-2.56 times 0.x's to 0.78-0.99. At
+  1,000,000 agents the build takes 0.137 s (0.x: 0.172) and the setup peaks at
+  276 MiB (0.x: 352; 3d-1: 901).
+- **1,000,000 agents is no longer noisy:** the simulation ratio is 0.94
+  (median 0.031 s), against 1.58 on scattered replicates at 3d-1.
+- **The simulation ratio grew by more than 10% up to 165,865 agents** (to
+  1.00-1.06, from 0.69-0.97; 0.95 on the GeoPops network, from 0.81), so it
+  was profiled before the next phase. The time per step did not change; page
+  faults moved from the build into the simulation. The 3d-1 build freed tens
+  of MiB of map nodes that glibc kept, and the run's first allocations (the
+  reset inside `run()`, the database, the queue) reused them. Built against
+  the three commits, scenario_01's runner at 100,000 agents (40 interleaved
+  replicates in this image) takes 0.0069 s to simulate at 3d-1 (`5811a28`),
+  0.0070 s after 3d-2 (`b699adb`), and 0.0101 s now. It takes 0 minor
+  page faults inside `run()` before #341 and about 3,400 (13 MiB) after; at
+  under a microsecond each, that is the difference. So the 3d-1 ratios below 1
+  were the same artifact, and the two engines now simulate at parity. Build
+  plus simulation at 100,000 agents takes 0.020 s against 0.104 s at 3d-1.
+  Nothing to fix in epiworld.

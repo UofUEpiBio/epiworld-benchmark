@@ -1,0 +1,317 @@
+{
+  "scenario_00": {
+    "cached": 0,
+    "container_image": "9a51e13558f574ce7ab8221ca22ac937d17d7c45a4d20940cd8cf9e40d2c4042",
+    "engine_versions": {
+      "epiworld": "0.17.1+g04c4ad8",
+      "epiworld-v1": "1.0.0+g1b10904"
+    },
+    "environment_id": "751d02e995673a851e64598582450c66088fd567656c77ded364c17b64008d12",
+    "executed": 400,
+    "failures": 0,
+    "finished_utc": "2026-10-30T21:30:19+00:00",
+    "hardware": {
+      "cgroup_cpu_limit": null,
+      "cgroup_memory_limit_bytes": null,
+      "cpu_model": "Apple (model not reported)",
+      "host_cpu_model": "Apple M3 Pro",
+      "logical_cores": 10,
+      "memory_bytes": 13595316224,
+      "physical_cores": 10
+    },
+    "os": {
+      "architecture": "aarch64",
+      "container": true,
+      "kernel": "6.12.13-200.fc41.aarch64",
+      "platform": "Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39"
+    },
+    "pins": {
+      "EPIWORLDR_SHA": "fca60f3010d5a018a11059bdf61a7ce21f4c42ca",
+      "EPIWORLD_SHA": "04c4ad866b1866ca88332a888d941b395c96b8a0",
+      "EPIWORLD_V1_SHA": "1b10904d8fb11e4d775a9eca154305f0b6cd9e22",
+      "FRED_SHA": "bd25f048f8e390ff697bdfa83a0bd3c2e19d6046",
+      "INDIVIDUAL_SHA": "50524f239e965d38b40f178290262760f252fc60"
+    },
+    "repository": {
+      "commit": null,
+      "dirty": null
+    },
+    "run": {
+      "environment_variables": {
+        "MKL_NUM_THREADS": "1",
+        "NUMBA_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PYTHONHASHSEED": "0",
+        "RCPP_PARALLEL_NUM_THREADS": "1",
+        "STARSIM_INSTALL_FONTS": "0",
+        "VECLIB_MAXIMUM_THREADS": "1"
+      },
+      "profile": "full",
+      "workers": 1
+    },
+    "scenario": "scenario_00",
+    "started_utc": "2026-10-30T21:29:39+00:00",
+    "toolchains": {
+      "cxx": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+      "julia": "julia version 1.13.1",
+      "python": "3.12.11",
+      "quarto": "1.10.18",
+      "r": "R version 4.5.1 (2025-06-13) -- \"Great Square Root\"",
+      "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)"
+    }
+  },
+  "scenario_01": {
+    "cached": 0,
+    "container_image": "9a51e13558f574ce7ab8221ca22ac937d17d7c45a4d20940cd8cf9e40d2c4042",
+    "engine_versions": {
+      "epiworld": "0.17.1+g04c4ad8",
+      "epiworld-v1": "1.0.0+g1b10904"
+    },
+    "environment_id": "751d02e995673a851e64598582450c66088fd567656c77ded364c17b64008d12",
+    "executed": 400,
+    "failures": 0,
+    "finished_utc": "2026-10-30T21:30:39+00:00",
+    "hardware": {
+      "cgroup_cpu_limit": null,
+      "cgroup_memory_limit_bytes": null,
+      "cpu_model": "Apple (model not reported)",
+      "host_cpu_model": "Apple M3 Pro",
+      "logical_cores": 10,
+      "memory_bytes": 13595316224,
+      "physical_cores": 10
+    },
+    "os": {
+      "architecture": "aarch64",
+      "container": true,
+      "kernel": "6.12.13-200.fc41.aarch64",
+      "platform": "Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39"
+    },
+    "pins": {
+      "EPIWORLDR_SHA": "fca60f3010d5a018a11059bdf61a7ce21f4c42ca",
+      "EPIWORLD_SHA": "04c4ad866b1866ca88332a888d941b395c96b8a0",
+      "EPIWORLD_V1_SHA": "1b10904d8fb11e4d775a9eca154305f0b6cd9e22",
+      "FRED_SHA": "bd25f048f8e390ff697bdfa83a0bd3c2e19d6046",
+      "INDIVIDUAL_SHA": "50524f239e965d38b40f178290262760f252fc60"
+    },
+    "repository": {
+      "commit": null,
+      "dirty": null
+    },
+    "run": {
+      "environment_variables": {
+        "MKL_NUM_THREADS": "1",
+        "NUMBA_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PYTHONHASHSEED": "0",
+        "RCPP_PARALLEL_NUM_THREADS": "1",
+        "STARSIM_INSTALL_FONTS": "0",
+        "VECLIB_MAXIMUM_THREADS": "1"
+      },
+      "profile": "full",
+      "workers": 1
+    },
+    "scenario": "scenario_01",
+    "started_utc": "2026-10-30T21:29:47+00:00",
+    "toolchains": {
+      "cxx": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+      "julia": "julia version 1.13.1",
+      "python": "3.12.11",
+      "quarto": "1.10.18",
+      "r": "R version 4.5.1 (2025-06-13) -- \"Great Square Root\"",
+      "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)"
+    }
+  },
+  "scenario_02": {
+    "cached": 0,
+    "container_image": "9a51e13558f574ce7ab8221ca22ac937d17d7c45a4d20940cd8cf9e40d2c4042",
+    "engine_versions": {
+      "epiworld": "0.17.1+g04c4ad8",
+      "epiworld-v1": "1.0.0+g1b10904"
+    },
+    "environment_id": "751d02e995673a851e64598582450c66088fd567656c77ded364c17b64008d12",
+    "executed": 400,
+    "failures": 0,
+    "finished_utc": "2026-10-30T21:31:00+00:00",
+    "hardware": {
+      "cgroup_cpu_limit": null,
+      "cgroup_memory_limit_bytes": null,
+      "cpu_model": "Apple (model not reported)",
+      "host_cpu_model": "Apple M3 Pro",
+      "logical_cores": 10,
+      "memory_bytes": 13595316224,
+      "physical_cores": 10
+    },
+    "os": {
+      "architecture": "aarch64",
+      "container": true,
+      "kernel": "6.12.13-200.fc41.aarch64",
+      "platform": "Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39"
+    },
+    "pins": {
+      "EPIWORLDR_SHA": "fca60f3010d5a018a11059bdf61a7ce21f4c42ca",
+      "EPIWORLD_SHA": "04c4ad866b1866ca88332a888d941b395c96b8a0",
+      "EPIWORLD_V1_SHA": "1b10904d8fb11e4d775a9eca154305f0b6cd9e22",
+      "FRED_SHA": "bd25f048f8e390ff697bdfa83a0bd3c2e19d6046",
+      "INDIVIDUAL_SHA": "50524f239e965d38b40f178290262760f252fc60"
+    },
+    "repository": {
+      "commit": null,
+      "dirty": null
+    },
+    "run": {
+      "environment_variables": {
+        "MKL_NUM_THREADS": "1",
+        "NUMBA_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PYTHONHASHSEED": "0",
+        "RCPP_PARALLEL_NUM_THREADS": "1",
+        "STARSIM_INSTALL_FONTS": "0",
+        "VECLIB_MAXIMUM_THREADS": "1"
+      },
+      "profile": "full",
+      "workers": 1
+    },
+    "scenario": "scenario_02",
+    "started_utc": "2026-10-30T21:29:52+00:00",
+    "toolchains": {
+      "cxx": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+      "julia": "julia version 1.13.1",
+      "python": "3.12.11",
+      "quarto": "1.10.18",
+      "r": "R version 4.5.1 (2025-06-13) -- \"Great Square Root\"",
+      "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)"
+    }
+  },
+  "scenario_03": {
+    "cached": 0,
+    "container_image": "9a51e13558f574ce7ab8221ca22ac937d17d7c45a4d20940cd8cf9e40d2c4042",
+    "engine_versions": {
+      "epiworld": "0.17.1+g04c4ad8",
+      "epiworld-v1": "1.0.0+g1b10904"
+    },
+    "environment_id": "751d02e995673a851e64598582450c66088fd567656c77ded364c17b64008d12",
+    "executed": 40,
+    "failures": 0,
+    "finished_utc": "2026-10-30T21:31:46+00:00",
+    "hardware": {
+      "cgroup_cpu_limit": null,
+      "cgroup_memory_limit_bytes": null,
+      "cpu_model": "Apple (model not reported)",
+      "host_cpu_model": "Apple M3 Pro",
+      "logical_cores": 10,
+      "memory_bytes": 13595316224,
+      "physical_cores": 10
+    },
+    "os": {
+      "architecture": "aarch64",
+      "container": true,
+      "kernel": "6.12.13-200.fc41.aarch64",
+      "platform": "Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39"
+    },
+    "pins": {
+      "EPIWORLDR_SHA": "fca60f3010d5a018a11059bdf61a7ce21f4c42ca",
+      "EPIWORLD_SHA": "04c4ad866b1866ca88332a888d941b395c96b8a0",
+      "EPIWORLD_V1_SHA": "1b10904d8fb11e4d775a9eca154305f0b6cd9e22",
+      "FRED_SHA": "bd25f048f8e390ff697bdfa83a0bd3c2e19d6046",
+      "INDIVIDUAL_SHA": "50524f239e965d38b40f178290262760f252fc60"
+    },
+    "repository": {
+      "commit": null,
+      "dirty": null
+    },
+    "run": {
+      "environment_variables": {
+        "MKL_NUM_THREADS": "1",
+        "NUMBA_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PYTHONHASHSEED": "0",
+        "RCPP_PARALLEL_NUM_THREADS": "1",
+        "STARSIM_INSTALL_FONTS": "0",
+        "VECLIB_MAXIMUM_THREADS": "1"
+      },
+      "profile": "full",
+      "workers": 1
+    },
+    "scenario": "scenario_03",
+    "started_utc": "2026-10-30T21:31:13+00:00",
+    "toolchains": {
+      "cxx": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+      "julia": "julia version 1.13.1",
+      "python": "3.12.11",
+      "quarto": "1.10.18",
+      "r": "R version 4.5.1 (2025-06-13) -- \"Great Square Root\"",
+      "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)"
+    }
+  },
+  "scenario_04": {
+    "cached": 0,
+    "container_image": "9a51e13558f574ce7ab8221ca22ac937d17d7c45a4d20940cd8cf9e40d2c4042",
+    "engine_versions": {
+      "epiworld": "0.17.1+g04c4ad8",
+      "epiworld-v1": "1.0.0+g1b10904"
+    },
+    "environment_id": "751d02e995673a851e64598582450c66088fd567656c77ded364c17b64008d12",
+    "executed": 40,
+    "failures": 0,
+    "finished_utc": "2026-10-30T21:31:13+00:00",
+    "hardware": {
+      "cgroup_cpu_limit": null,
+      "cgroup_memory_limit_bytes": null,
+      "cpu_model": "Apple (model not reported)",
+      "host_cpu_model": "Apple M3 Pro",
+      "logical_cores": 10,
+      "memory_bytes": 13595316224,
+      "physical_cores": 10
+    },
+    "os": {
+      "architecture": "aarch64",
+      "container": true,
+      "kernel": "6.12.13-200.fc41.aarch64",
+      "platform": "Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39"
+    },
+    "pins": {
+      "EPIWORLDR_SHA": "fca60f3010d5a018a11059bdf61a7ce21f4c42ca",
+      "EPIWORLD_SHA": "04c4ad866b1866ca88332a888d941b395c96b8a0",
+      "EPIWORLD_V1_SHA": "1b10904d8fb11e4d775a9eca154305f0b6cd9e22",
+      "FRED_SHA": "bd25f048f8e390ff697bdfa83a0bd3c2e19d6046",
+      "INDIVIDUAL_SHA": "50524f239e965d38b40f178290262760f252fc60"
+    },
+    "repository": {
+      "commit": null,
+      "dirty": null
+    },
+    "run": {
+      "environment_variables": {
+        "MKL_NUM_THREADS": "1",
+        "NUMBA_NUM_THREADS": "1",
+        "NUMEXPR_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PYTHONHASHSEED": "0",
+        "RCPP_PARALLEL_NUM_THREADS": "1",
+        "STARSIM_INSTALL_FONTS": "0",
+        "VECLIB_MAXIMUM_THREADS": "1"
+      },
+      "profile": "full",
+      "workers": 1
+    },
+    "scenario": "scenario_04",
+    "started_utc": "2026-10-30T21:31:00+00:00",
+    "toolchains": {
+      "cxx": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+      "julia": "julia version 1.13.1",
+      "python": "3.12.11",
+      "quarto": "1.10.18",
+      "r": "R version 4.5.1 (2025-06-13) -- \"Great Square Root\"",
+      "rust": "rustc 1.98.0 (88d9e12ae 2026-08-18)"
+    }
+  }
+}
