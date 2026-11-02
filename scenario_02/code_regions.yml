@@ -37,6 +37,15 @@ epiworld:
     - {from: '^    Model<> model;', to: '^    model.verbose_off\(\);'}
     - {from: '^    model.run\(days'}
     - {from: '^    const auto & db = model.get_db', to: 'reproductive_number\[day\] = rt_sum'}
+epiworld-v1:
+  language: C++
+  files: [runners/epiworld-v1/main.cpp]
+  regions:
+    - {from: 'double vaccine_coverage = number', to: 'double vaccine_efficacy = number'}
+    - {from: '^    double recovery = 1.0', to: '^        \(1.0 - hospital_probability'}
+    - {from: '^    Model<> model\(n\);', to: '^    model.verbose_off\(\);'}
+    - {from: '^    model.run\(days'}
+    - {from: '^    const auto & db = model.get_db', to: 'reproductive_number\[day\] = rt_sum'}
 covasim:
   language: Python
   files: [runners/run_covasim.py]

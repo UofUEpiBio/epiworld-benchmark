@@ -1,6 +1,6 @@
 ---
 title: "Network epidemic ABM speed benchmark"
-subtitle: "epiworld (C++, R, and Python), Covasim, Starsim, EoN, epydemic, ixa, individual, ABM, EpiModel, FRED, and Agents.jl"
+subtitle: "epiworld (C++, R, Python, and 1.0.0 preview), Covasim, Starsim, EoN, epydemic, ixa, individual, ABM, EpiModel, FRED, and Agents.jl"
 format:
   gfm:
     toc: true
@@ -17,9 +17,10 @@ source("report/common.R")
 all <- load_all(".")
 ```
 
-This project compares how fast thirteen epidemic simulation engines run the same
-agent-based model on the same contact network, and how much code each engine
-needs to express that model. Three of them are the epiworld family: the
+This project compares how fast thirteen released epidemic simulation engines,
+plus the in-development epiworld 1.0.0 C++ preview, run the same agent-based
+model on the same contact network, and how much code each engine needs to
+express that model. The released epiworld family has three runners: the
 header-only C++ library
 [epiworld](https://github.com/UofUEpiBio/epiworld){target="_blank"} [@vegayonEpiworld2026]
 and its two wrappers,
@@ -39,6 +40,11 @@ and its successor
 [FRED](https://github.com/PublicHealthDynamicsLab/FRED){target="_blank"} [@grefenstetteFRED2013],
 and the Julia package
 [Agents.jl](https://github.com/JuliaDynamics/Agents.jl){target="_blank"} [@datserisAgentsjl2024].
+
+**epiworld 1.0.0 preview.** The C++ `epiworld-v1` series appears in the
+figures and tables while contact layers are under development. It is a staged
+snapshot of the `v1-layers` branch, not a released engine; its exact commit
+and comparison history are in [epiworld 1.0.0: tracking the refactor](docs/epiworld-v1.md).
 
 The benchmark is organized as **scenarios** of increasing complexity. Each
 scenario adds a feature to an earlier one, so together they show how run time,

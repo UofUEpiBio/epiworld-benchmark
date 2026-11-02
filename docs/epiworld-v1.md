@@ -88,6 +88,14 @@ measure.
 | 3d-1b | 1.0.0+g1b10904 | 02 | 100,000 | 0.009, 0.00921 | 1.02 | 0.0136, 0.0107 | 0.79 | 44, 41 | 0.94 | 0.014, 0.014 |
 | 3d-1b | 1.0.0+g1b10904 | 03 | 1,000,000 | 0.0326, 0.0306 | 0.94 | 0.172, 0.137 | 0.80 | 352, 276 | 0.78 | 0.006, 0.006 |
 | 3d-1b | 1.0.0+g1b10904 | 04 | 165,865 | 0.185, 0.175 | 0.95 | 0.0166, 0.015 | 0.90 | 90, 88 | 0.97 | 0.622, 0.622 |
+| 3d-3a | 1.0.0+g93b9781 | 00 | 10,000 | 0.00476, 0.0048 | 1.01 | 0.00136, 0.00113 | 0.83 | 8, 8 | 0.95 | 0.385, 0.385 |
+| 3d-3a | 1.0.0+g93b9781 | 00 | 100,000 | 0.00908, 0.00931 | 1.03 | 0.0153, 0.0106 | 0.69 | 38, 30 | 0.79 | 0.060, 0.060 |
+| 3d-3a | 1.0.0+g93b9781 | 01 | 10,000 | 0.00248, 0.00245 | 0.99 | 0.00135, 0.00108 | 0.80 | 8, 8 | 0.94 | 0.119, 0.119 |
+| 3d-3a | 1.0.0+g93b9781 | 01 | 100,000 | 0.0111, 0.0115 | 1.04 | 0.0196, 0.0137 | 0.70 | 43, 38 | 0.88 | 0.014, 0.014 |
+| 3d-3a | 1.0.0+g93b9781 | 02 | 10,000 | 0.00237, 0.00237 | 1.00 | 0.00128, 0.00102 | 0.80 | 9, 8 | 0.95 | 0.119, 0.119 |
+| 3d-3a | 1.0.0+g93b9781 | 02 | 100,000 | 0.0123, 0.0113 | 0.92 | 0.0177, 0.0134 | 0.76 | 44, 38 | 0.88 | 0.014, 0.014 |
+| 3d-3a | 1.0.0+g93b9781 | 03 | 1,000,000 | 0.0391, 0.0317 | 0.81 | 0.307, 0.197 | 0.64 | 352, 253 | 0.72 | 0.006, 0.006 |
+| 3d-3a | 1.0.0+g93b9781 | 04 | 165,865 | 0.254, 0.232 | 0.91 | 0.0222, 0.0175 | 0.79 | 90, 84 | 0.93 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -147,3 +155,17 @@ UofUEpiBio/epiworld#339) to the previous stage. Against epiworld 0.17.1.
   were the same artifact, and the two engines now simulate at parity. Build
   plus simulation at 100,000 agents takes 0.020 s against 0.104 s at 3d-1.
   Nothing to fix in epiworld.
+
+### 3d-3a
+
+epiworld `v1-layers` at
+[`93b9781d`](https://github.com/UofUEpiBio/epiworld/commit/93b9781df42e4e51818cf960da20274f359452cd)
+(Phase 3d-3a, UofUEpiBio/epiworld#349, plus the `master` merge #351),
+against epiworld 0.17.1.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **No ratio grew by more than 10% from 3d-1b.** Simulation ratios range from
+  0.81 to 1.04 (previously 0.94 to 1.06), and peak-memory ratios all fell.
+  The 1,000,000-agent simulation ratio is 0.81 (0.032 s versus 0.039 s), so
+  the row remains stable rather than reproducing the earlier noise.

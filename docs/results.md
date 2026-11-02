@@ -20,6 +20,11 @@ The results across every scenario, from `results/results.csv`. The
 [methods](methods.md) define each measure; each scenario’s report has
 its full tables, including interquartile ranges.
 
+`epiworld-v1` is a pre-release C++ snapshot of the layer refactor,
+included in the figures and tables for an ongoing comparison with the
+released C++ engine. Its stage history and pinned commits are in
+[epiworld 1.0.0: tracking the refactor](epiworld-v1.md).
+
 ## Run time
 
 ### Where the time goes
@@ -37,7 +42,8 @@ in seconds, in every scenario and size:
 
 | Engine | 00 (10k) | 00 (100k) | 01 (10k) | 01 (100k) | 02 (10k) | 02 (100k) | 03 (1M) | 04 (165,865) |
 |:---|---:|---:|---:|---:|---:|---:|---:|---:|
-| epiworld | 0.0043 | 0.0077 | 0.0022 | 0.0072 | 0.0021 | 0.0071 | 0.0257 | 0.1557 |
+| epiworld | 0.0048 | 0.0091 | 0.0025 | 0.0111 | 0.0024 | 0.0123 | 0.0391 | 0.2536 |
+| epiworld-v1 | 0.0048 | 0.0093 | 0.0025 | 0.0115 | 0.0024 | 0.0113 | 0.0317 | 0.2320 |
 | epiworldR | 0.0040 | 0.0080 | 0.0020 | 0.0070 | 0.0020 | 0.0070 | 0.0235 | 0.1570 |
 | epiworldpy | 0.0041 | 0.0073 | 0.0020 | 0.0060 | 0.0020 | 0.0060 | 0.0271 | 0.1516 |
 | covasim | 0.0624 | 0.3241 | 0.0619 | 0.3337 | 0.0613 | 0.3338 | 3.1438 | 0.5624 |
@@ -62,23 +68,23 @@ seed:
 
 | Wrapper | 00 (10k) | 00 (100k) | 01 (10k) | 01 (100k) | 02 (10k) | 02 (100k) | 03 (1M) | 04 (165,865) |
 |:---|---:|---:|---:|---:|---:|---:|---:|---:|
-| epiworldpy | 0.95 | 0.95 | 0.94 | 0.83 | 0.91 | 0.84 | 1.06 | 0.97 |
-| epiworldR | 1.05 | 1.05 | 0.95 | 0.96 | 0.97 | 0.93 | 0.91 | 1.00 |
+| epiworldpy | 0.85 | 0.84 | 0.81 | 0.54 | 0.82 | 0.50 | 0.68 | 0.60 |
+| epiworldR | 0.93 | 0.92 | 0.83 | 0.60 | 0.89 | 0.53 | 0.60 | 0.61 |
 
 In the simulation itself the language layer costs nothing measurable:
-neither wrapper is ever more than 6% slower than the C++ runner, and
+neither wrapper is ever more than -7% slower than the C++ runner, and
 epiworldpy is often faster. Where the C++ runner is slowest, in
 scenarios 01 and 02 at 100,000 agents, the cause is memory allocation in
 the C++ runner, not the wrappers (see scenario 01’s report). Outside the
 simulation the wrappers cost something: at 100,000 agents, building the
-model takes the C++ runner 0.011 seconds, against 0.028 for epiworldR
+model takes the C++ runner 0.015 seconds, against 0.028 for epiworldR
 and 0.033 for epiworldpy, which first convert the edge list into their
 own types.
 
 ### Why the two fastest engines differ
 
 In scenarios 00 to 02, epiworld and ixa are the two fastest engines, and
-epiworld is faster per replicate: in scenario 00, ixa takes 1.6 and 4.3
+epiworld is faster per replicate: in scenario 00, ixa takes 1.4 and 3.7
 times as long as the C++ runner at 10,000 and 100,000 agents. Both
 engines’ daily work follows the outbreak, through push-based
 transmission in epiworld (since 0.16.1, with the push/pull choice
@@ -132,7 +138,7 @@ down about tenfold per decade.
 
 From 100,000 to 1,000,000 agents:
 
-- **The epiworld runners** grow by 3.3 (C++), 2.9 (epiworldR), and 3.7
+- **The epiworld runners** grow by 4.3 (C++), 2.9 (epiworldR), and 3.7
   (epiworldpy) times. Their daily work follows the outbreak; what grows
   is `reset()`, which re-initializes every agent at the start of
   `run()`.
@@ -159,7 +165,7 @@ From 100,000 to 1,000,000 agents:
   every day.
 
 Building the model once from the edge list, which a user pays once per
-network however many replicates follow, takes the C++ runner 0.13
+network however many replicates follow, takes the C++ runner 0.31
 seconds at 1,000,000 agents, several times one of its replicates, and
 EoN and epydemic 3.6 and 3.6 seconds for their NetworkX graphs.
 
@@ -172,7 +178,8 @@ scenario:
 
 | Engine | Vaccine (01 / 00), 10k | Vaccine (01 / 00), 100k | Outputs (02 / 01), 10k | Outputs (02 / 01), 100k |
 |:---|---:|---:|---:|---:|
-| epiworld | 0.50 | 0.94 | 1.00 | 1.00 |
+| epiworld | 0.52 | 1.23 | 0.96 | 1.06 |
+| epiworld-v1 | 0.51 | 1.21 | 0.97 | 0.99 |
 | epiworldR | 0.50 | 0.87 | 1.00 | 1.00 |
 | epiworldpy | 0.50 | 0.81 | 1.00 | 1.00 |
 | covasim | 0.99 | 1.03 | 1.00 | 1.00 |
@@ -222,7 +229,8 @@ MiB:
 
 | Engine | 00 (10k) | 00 (100k) | 01 (10k) | 01 (100k) | 02 (10k) | 02 (100k) | 03 (1M) | 04 (165,865) |
 |:---|---:|---:|---:|---:|---:|---:|---:|---:|
-| epiworld | 2 | 4 | 2 | 12 | 2 | 12 | 29 | 54 |
+| epiworld | 2 | 5 | 2 | 12 | 2 | 12 | 29 | 54 |
+| epiworld-v1 | 2 | 5 | 2 | 13 | 2 | 13 | 36 | 56 |
 | epiworldR | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 36 |
 | epiworldpy | 1 | 0 | 0 | 1 | 0 | 1 | 43 | 42 |
 | covasim | 5 | 33 | 5 | 42 | 5 | 42 | 289 | 71 |
@@ -256,6 +264,7 @@ epiworldR’s in parentheses:
 | Engine | 00 (10k) | 00 (100k) | 01 (10k) | 01 (100k) | 02 (10k) | 02 (100k) | 03 (1M) | 04 (165,865) |
 |:---|---:|---:|---:|---:|---:|---:|---:|---:|
 | epiworld | 0.385 (+0.000) | 0.060 (+0.000) | 0.119 (+0.004) | 0.014 (-0.000) | 0.119 (+0.004) | 0.014 (-0.000) | 0.006 (+0.000) | 0.622 (+0.000) |
+| epiworld-v1 | 0.385 (+0.000) | 0.060 (+0.000) | 0.119 (+0.004) | 0.014 (-0.000) | 0.119 (+0.004) | 0.014 (-0.000) | 0.006 (+0.000) | 0.622 (+0.000) |
 | epiworldR | 0.385 | 0.060 | 0.115 | 0.014 | 0.115 | 0.014 | 0.006 | 0.622 |
 | epiworldpy | 0.385 (+0.000) | 0.060 (+0.000) | 0.117 (+0.002) | 0.014 (-0.000) | 0.117 (+0.002) | 0.014 (-0.000) | 0.006 (+0.000) | 0.622 (+0.000) |
 | covasim | 0.392 (+0.007) | 0.061 (+0.001) | 0.105 (-0.010) | 0.012 (-0.002) | 0.105 (-0.010) | 0.012 (-0.002) | 0.007 (+0.000) | 0.699 (+0.077) |
@@ -308,21 +317,22 @@ Model lines of every engine in every scenario (see [Implementation
 size](methods.md#implementation-size)). Scenarios 03 and 04 reuse
 scenario 00’s runners.
 
-| Engine     | Language |  00 |  01 |  02 |  03 |  04 |
-|:-----------|:---------|----:|----:|----:|----:|----:|
-| epiworld   | C++      |  26 |  34 |  57 |  26 |  26 |
-| epiworldR  | R        |  47 |  62 |  66 |  47 |  47 |
-| epiworldpy | Python   |  35 |  39 |  53 |  35 |  35 |
-| covasim    | Python   |  65 |  76 | 110 |  65 |  65 |
-| starsim    | Python   |  84 |  95 | 137 |  84 |  84 |
-| EoN\*      | Python   |  38 |  45 |  77 |  38 |  38 |
-| epydemic   | Python   |  71 |  89 | 122 |  71 |  71 |
-| ixa        | Rust     | 138 | 168 | 220 | 138 | 138 |
-| individual | R        |  32 |  37 |  80 |  32 |  32 |
-| ABM\*      | R        |  42 |  45 |  59 |  42 |  42 |
-| EpiModel   | R        |  59 |  73 |  99 |  59 |  59 |
-| FRED       | Python   |  92 | 123 | 165 |  92 |  92 |
-| Agents.jl  | Julia    |  68 |  83 | 115 |  68 |  68 |
+| Engine      | Language |  00 |  01 |  02 |  03 |  04 |
+|:------------|:---------|----:|----:|----:|----:|----:|
+| epiworld    | C++      |  26 |  34 |  57 |  26 |  26 |
+| epiworld-v1 | C++      |  27 |  35 |  61 |  27 |  27 |
+| epiworldR   | R        |  47 |  62 |  66 |  47 |  47 |
+| epiworldpy  | Python   |  35 |  39 |  53 |  35 |  35 |
+| covasim     | Python   |  65 |  76 | 110 |  65 |  65 |
+| starsim     | Python   |  84 |  95 | 137 |  84 |  84 |
+| EoN\*       | Python   |  38 |  45 |  77 |  38 |  38 |
+| epydemic    | Python   |  71 |  89 | 122 |  71 |  71 |
+| ixa         | Rust     | 138 | 168 | 220 | 138 | 138 |
+| individual  | R        |  32 |  37 |  80 |  32 |  32 |
+| ABM\*       | R        |  42 |  45 |  59 |  42 |  42 |
+| EpiModel    | R        |  59 |  73 |  99 |  59 |  59 |
+| FRED        | Python   |  92 | 123 | 165 |  92 |  92 |
+| Agents.jl   | Julia    |  68 |  83 | 115 |  68 |  68 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -336,6 +346,7 @@ completes every scenario.
 | Engine                  |    00 |    01 |    02 |   03 |   04 |
 |:------------------------|------:|------:|------:|-----:|-----:|
 | epiworld                | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
+| epiworld-v1             | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | epiworldR               | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | epiworldpy              | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
 | covasim                 | ✓ 200 | ✓ 200 | ✓ 200 | ✓ 20 | ✓ 20 |
