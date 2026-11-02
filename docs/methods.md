@@ -26,14 +26,16 @@ adds.
 
 ## Engines
 
-Thirteen engines run every scenario ([Engines](engines.md) describes
-what each is). Each runner is a short program in the engine’s own
-language that reads the shared edge list, builds the model with the
-engine’s own tools, runs one replicate, and writes one result record.
+Thirteen released engines and the in-development `epiworld-v1` C++
+preview run every scenario ([Engines](engines.md) describes the released
+engines). Each runner is a short program in the engine’s own language
+that reads the shared edge list, builds the model with the engine’s own
+tools, runs one replicate, and writes one result record.
 
 | Engine | Language | Recorded version | Model as implemented | Time |
 |:---|:---|:---|:---|:---|
 | epiworld (Vega Yon 2026) | C++ | 0.17.1+g04c4ad8 | Custom model from `add_state()` and the update-function factories | Synchronous daily |
+| epiworld-v1 (1.0.0 preview) | C++ | 1.0.0+g93b9781 | The same model through the in-development layer API; versioned staged snapshots | Synchronous daily |
 | epiworldR (Meyer and Vega Yon 2023) | R (C++ core) | 0.17.1.0+gfca60f3 | The same model through the R wrapper (`update_fun_susceptible()`, `update_fun_rate()`) | Synchronous daily |
 | epiworldpy (Vega Yon and Banks 2026) | Python (C++ core) | 0.17.1-0+gc24b4f9 | The same model through the Python wrapper (`UpdateFun.susceptible()`, `UpdateFun.rate()`) | Synchronous daily |
 | Covasim (Kerr et al. 2021) | Python | 3.1.8 | Native disease progression, restricted to SEIRH; severe state as the hospitalization proxy | Daily, native |
@@ -54,6 +56,12 @@ figure and table.
 The recorded version is the one each result record carries. Versions
 built from a pinned commit end in that commit (`+g…`), so moving a pin
 invalidates the engine’s published results.
+
+`epiworld-v1` is not a fourteenth released engine: it is included in the
+comparison figures and tables so that the layer refactor can be watched
+as it progresses. Its C++ records are rerun together with the 0.x C++
+runner at each stage; see [epiworld 1.0.0: tracking the
+refactor](epiworld-v1.md) for the stage-specific comparisons.
 
 Implementation details that matter for interpreting results:
 

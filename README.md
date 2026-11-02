@@ -7,10 +7,11 @@
 - [Repository layout](#repository-layout)
 - [References](#references)
 
-This project compares how fast thirteen epidemic simulation engines run
-the same agent-based model on the same contact network, and how much
-code each engine needs to express that model. Three of them are the
-epiworld family: the header-only C++ library
+This project compares how fast thirteen released epidemic simulation
+engines, plus the in-development epiworld 1.0.0 C++ preview, run the
+same agent-based model on the same contact network, and how much code
+each engine needs to express that model. The released epiworld family
+has three runners: the header-only C++ library
 <a href="https://github.com/UofUEpiBio/epiworld"
 target="_blank">epiworld</a> (Vega Yon 2026) and its two wrappers,
 <a href="https://uofuepibio.github.io/epiworldR/"
@@ -36,6 +37,12 @@ target="_blank">individual</a> (Charles and Wu 2021), the R package
 target="_blank">FRED</a> (Grefenstette et al. 2013), and the Julia
 package <a href="https://github.com/JuliaDynamics/Agents.jl"
 target="_blank">Agents.jl</a> (Datseris et al. 2024).
+
+**epiworld 1.0.0 preview.** The C++ `epiworld-v1` series appears in the
+figures and tables while contact layers are under development. It is a
+staged snapshot of the `v1-layers` branch, not a released engine; its
+exact commit and comparison history are in [epiworld 1.0.0: tracking the
+refactor](docs/epiworld-v1.md).
 
 The benchmark is organized as **scenarios** of increasing complexity.
 Each scenario adds a feature to an earlier one, so together they show
@@ -91,21 +98,22 @@ and scenario.](README_files/figure-commonmark/summary-time-plot-1.png)
 The same medians as a table (seconds)
 </summary>
 
-| Engine     | 00 (100k) | 01 (100k) | 02 (100k) | 03 (1M) | 04 (165,865) |
-|:-----------|----------:|----------:|----------:|--------:|-------------:|
-| epiworldpy |   0.00732 |   0.00597 |   0.00602 |  0.0271 |        0.152 |
-| epiworldR  |     0.008 |     0.007 |     0.007 |  0.0235 |        0.157 |
-| epiworld   |   0.00772 |    0.0072 |   0.00714 |  0.0257 |        0.156 |
-| ixa        |    0.0334 |    0.0289 |    0.0284 |   0.373 |        0.149 |
-| Agents.jl  |    0.0366 |    0.0374 |    0.0366 |   0.727 |        0.133 |
-| individual |     0.053 |     0.049 |      0.07 |   0.272 |        0.136 |
-| covasim    |     0.324 |     0.334 |     0.334 |    3.14 |        0.562 |
-| EoN\*      |     0.285 |     0.211 |      0.45 |    2.27 |         3.53 |
-| FRED       |     0.485 |     0.587 |     0.706 |     7.2 |         2.66 |
-| starsim    |     0.905 |     0.908 |     0.715 |    11.0 |        0.822 |
-| ABM\*      |     0.936 |     0.868 |     0.827 |    11.0 |         14.3 |
-| epydemic   |      1.71 |      1.07 |      1.08 |    13.3 |         12.5 |
-| EpiModel   |      7.03 |      6.96 |      7.66 |    79.3 |         5.91 |
+| Engine      | 00 (100k) | 01 (100k) | 02 (100k) | 03 (1M) | 04 (165,865) |
+|:------------|----------:|----------:|----------:|--------:|-------------:|
+| epiworldpy  |   0.00732 |   0.00597 |   0.00602 |  0.0271 |        0.152 |
+| epiworldR   |     0.008 |     0.007 |     0.007 |  0.0235 |        0.157 |
+| epiworld-v1 |   0.00931 |    0.0115 |    0.0113 |  0.0317 |        0.232 |
+| epiworld    |   0.00908 |    0.0111 |    0.0123 |  0.0391 |        0.254 |
+| ixa         |    0.0334 |    0.0289 |    0.0284 |   0.373 |        0.149 |
+| Agents.jl   |    0.0366 |    0.0374 |    0.0366 |   0.727 |        0.133 |
+| individual  |     0.053 |     0.049 |      0.07 |   0.272 |        0.136 |
+| covasim     |     0.324 |     0.334 |     0.334 |    3.14 |        0.562 |
+| EoN\*       |     0.285 |     0.211 |      0.45 |    2.27 |         3.53 |
+| FRED        |     0.485 |     0.587 |     0.706 |     7.2 |         2.66 |
+| starsim     |     0.905 |     0.908 |     0.715 |    11.0 |        0.822 |
+| ABM\*       |     0.936 |     0.868 |     0.827 |    11.0 |         14.3 |
+| epydemic    |      1.71 |      1.07 |      1.08 |    13.3 |         12.5 |
+| EpiModel    |      7.03 |      6.96 |      7.66 |    79.3 |         5.91 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>
@@ -125,21 +133,22 @@ and scenario.](README_files/figure-commonmark/summary-memory-plot-1.png)
 The same medians as a table (MiB)
 </summary>
 
-| Engine     | 00 (100k) | 01 (100k) | 02 (100k) | 03 (1M) | 04 (165,865) |
-|:-----------|----------:|----------:|----------:|--------:|-------------:|
-| ixa        |        42 |        42 |        42 |     409 |           46 |
-| epiworld   |        38 |        43 |        43 |     352 |           90 |
-| individual |       127 |       127 |       142 |     282 |          130 |
-| epiworldR  |       113 |       113 |       113 |     479 |          150 |
-| epiworldpy |       127 |       132 |       132 |     854 |          137 |
-| ABM\*      |       192 |       191 |       191 |   1,344 |          313 |
-| covasim    |       272 |       281 |       281 |     684 |          307 |
-| starsim    |       339 |       339 |       341 |     905 |          331 |
-| EoN\*      |       284 |       286 |       313 |   1,671 |          350 |
-| epydemic   |       413 |       413 |       413 |   3,020 |          416 |
-| EpiModel   |       485 |       487 |       477 |   1,893 |          495 |
-| Agents.jl  |       574 |       585 |       586 |     971 |          569 |
-| FRED       |       581 |       597 |       599 |   5,847 |          784 |
+| Engine      | 00 (100k) | 01 (100k) | 02 (100k) | 03 (1M) | 04 (165,865) |
+|:------------|----------:|----------:|----------:|--------:|-------------:|
+| epiworld-v1 |        30 |        38 |        38 |     253 |           84 |
+| ixa         |        42 |        42 |        42 |     409 |           46 |
+| epiworld    |        38 |        43 |        44 |     352 |           90 |
+| individual  |       127 |       127 |       142 |     282 |          130 |
+| epiworldR   |       113 |       113 |       113 |     479 |          150 |
+| epiworldpy  |       127 |       132 |       132 |     854 |          137 |
+| ABM\*       |       192 |       191 |       191 |   1,344 |          313 |
+| covasim     |       272 |       281 |       281 |     684 |          307 |
+| starsim     |       339 |       339 |       341 |     905 |          331 |
+| EoN\*       |       284 |       286 |       313 |   1,671 |          350 |
+| epydemic    |       413 |       413 |       413 |   3,020 |          416 |
+| EpiModel    |       485 |       487 |       477 |   1,893 |          495 |
+| Agents.jl   |       574 |       585 |       586 |     971 |          569 |
+| FRED        |       581 |       597 |       599 |   5,847 |          784 |
 
 <sub>\* Continuous-time engine: it simulates events at exact times, and
 the benchmark records the daily totals.</sub>

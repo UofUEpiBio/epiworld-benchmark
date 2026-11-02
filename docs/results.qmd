@@ -41,6 +41,11 @@ The results across every scenario, from `results/results.csv`. The
 [methods](methods.md) define each measure; each scenario's report has its
 full tables, including interquartile ranges.
 
+`epiworld-v1` is a pre-release C++ snapshot of the layer refactor, included in
+the figures and tables for an ongoing comparison with the released C++ engine.
+Its stage history and pinned commits are in [epiworld 1.0.0: tracking the
+refactor](epiworld-v1.md).
+
 ## Run time
 
 ### Where the time goes

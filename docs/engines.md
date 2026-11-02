@@ -131,7 +131,10 @@ epiworldR (Meyer and Vega Yon 2023) and epiworldpy (Vega Yon and Banks
 2026) wrap the C++ core for R and Python, so a model written in any of
 the three runs the same code. The benchmark treats the three as one
 engine family and runs all of them, so that it also measures what the
-language layer costs.
+language layer costs. The benchmark also shows `epiworld-v1`, the C++
+1.0.0 contact-layer preview, alongside them while it is developed; its
+stage-specific measurements are tracked separately in [epiworld 1.0.0:
+tracking the refactor](epiworld-v1.md).
 
 ## Covasim
 
