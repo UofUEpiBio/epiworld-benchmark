@@ -1,12 +1,15 @@
 {
   "cached": 0,
-  "container_image": "6ab6f982c445cc73a56fa1f64615fbce6f2cc2cfeb2f9809d780cd5c6d729122",
+  "container_image": "9a51e13558f574ce7ab8221ca22ac937d17d7c45a4d20940cd8cf9e40d2c4042",
   "engine_versions": {
+    "ABM": "0.4.3",
     "Agents.jl": "7.0.4",
     "EoN": "1.92",
+    "EpiModel": "2.5.0",
     "FRED": "PUB.5.7.0+gbd25f04",
     "covasim": "3.1.8",
     "epiworld": "0.17.1+g04c4ad8",
+    "epiworld-v1": "1.0.0+g384c89f",
     "epiworldR": "0.17.1.0+gfca60f3",
     "epiworldpy": "0.17.1-0+gc24b4f9",
     "epydemic": "1.14.1",
@@ -14,10 +17,10 @@
     "ixa": "3.1.0",
     "starsim": "3.6.1"
   },
-  "environment_id": "3d274ee67f1fa05b770322d983782b244f1b178b538b1a5add5acc84aa63bc55",
-  "executed": 220,
+  "environment_id": "4a7920fd7c72ad24b4896c549d23be292f1658d1ea85628f45f432d6b08d6ba9",
+  "executed": 14,
   "failures": 0,
-  "finished_utc": "2026-09-30T23:35:46+00:00",
+  "finished_utc": "2026-11-07T23:14:14+00:00",
   "hardware": {
     "cgroup_cpu_limit": null,
     "cgroup_memory_limit_bytes": null,
@@ -36,12 +39,13 @@
   "pins": {
     "EPIWORLDR_SHA": "fca60f3010d5a018a11059bdf61a7ce21f4c42ca",
     "EPIWORLD_SHA": "04c4ad866b1866ca88332a888d941b395c96b8a0",
+    "EPIWORLD_V1_SHA": "384c89feb46484177f4a1ea88a70de7de380aadf",
     "FRED_SHA": "bd25f048f8e390ff697bdfa83a0bd3c2e19d6046",
     "INDIVIDUAL_SHA": "50524f239e965d38b40f178290262760f252fc60"
   },
   "repository": {
-    "commit": "467d6500faaf3c153509222b8187474ad22e40cf",
-    "dirty": false
+    "commit": null,
+    "dirty": null
   },
   "run": {
     "environment_variables": {
@@ -55,11 +59,11 @@
       "STARSIM_INSTALL_FONTS": "0",
       "VECLIB_MAXIMUM_THREADS": "1"
     },
-    "profile": "full",
+    "profile": "smoke",
     "workers": 1
   },
   "scenario": "scenario_04",
-  "started_utc": "2026-09-30T23:25:15+00:00",
+  "started_utc": "2026-11-07T23:14:05+00:00",
   "toolchains": {
     "cxx": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
     "julia": "julia version 1.13.1",

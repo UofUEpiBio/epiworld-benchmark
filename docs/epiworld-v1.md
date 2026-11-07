@@ -112,6 +112,14 @@ measure.
 | nh-2-v2 | 1.0.0+gd571d3e | 02 | 100,000 | 0.00893, 0.00885 | 0.99 | 0.0132, 0.0103 | 0.78 | 44, 40 | 0.91 | 0.014, 0.014 |
 | nh-2-v2 | 1.0.0+gd571d3e | 03 | 1,000,000 | 0.0259, 0.0404 | 1.56 | 0.134, 0.112 | 0.84 | 352, 294 | 0.84 | 0.006, 0.006 |
 | nh-2-v2 | 1.0.0+gd571d3e | 04 | 165,865 | 0.218, 0.232 | 1.07 | 0.0195, 0.0139 | 0.71 | 90, 52 | 0.57 | 0.622, 0.622 |
+| reset-fix | 1.0.0+g384c89f | 00 | 10,000 | 0.00488, 0.00535 | 1.10 | 0.00135, 0.00109 | 0.81 | 8, 7 | 0.80 | 0.385, 0.385 |
+| reset-fix | 1.0.0+g384c89f | 00 | 100,000 | 0.00958, 0.0109 | 1.13 | 0.015, 0.0115 | 0.77 | 38, 29 | 0.77 | 0.060, 0.060 |
+| reset-fix | 1.0.0+g384c89f | 01 | 10,000 | 0.00245, 0.00263 | 1.07 | 0.00132, 0.00109 | 0.82 | 8, 7 | 0.90 | 0.119, 0.119 |
+| reset-fix | 1.0.0+g384c89f | 01 | 100,000 | 0.0103, 0.0097 | 0.94 | 0.0146, 0.0114 | 0.78 | 43, 37 | 0.85 | 0.014, 0.014 |
+| reset-fix | 1.0.0+g384c89f | 02 | 10,000 | 0.00244, 0.00264 | 1.08 | 0.0013, 0.0011 | 0.85 | 9, 8 | 0.92 | 0.119, 0.119 |
+| reset-fix | 1.0.0+g384c89f | 02 | 100,000 | 0.011, 0.00998 | 0.90 | 0.016, 0.0121 | 0.75 | 44, 37 | 0.86 | 0.014, 0.014 |
+| reset-fix | 1.0.0+g384c89f | 03 | 1,000,000 | 0.0292, 0.0274 | 0.94 | 0.159, 0.12 | 0.76 | 352, 253 | 0.72 | 0.006, 0.006 |
+| reset-fix | 1.0.0+g384c89f | 04 | 165,865 | 0.249, 0.231 | 0.93 | 0.0195, 0.0138 | 0.71 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -219,3 +227,30 @@ and use the plain classes.
   - To fix in epiworld before the next C++ phase: a placement of a few agents
     should not cost passes and fresh allocations over the whole population at
     every reset.
+
+### Reset fix
+
+epiworld `v1-layers` at
+[`384c89fe`](https://github.com/UofUEpiBio/epiworld/commit/384c89feb46484177f4a1ea88a70de7de380aadf)
+(the reset without population-sized allocations, UofUEpiBio/epiworld#367,
+after the docs of #366), against epiworld 0.17.1. The runners are unchanged.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **No ratio grew by more than 10% from the previous stage.** At 1,000,000
+  agents the simulation ratio is back from 1.56 to 0.94 (3d-3b: 0.91): the
+  natural history's per-agent records had made each run first-touch about
+  40 MB (page faults during `run()`: 9,350 at 3d-3b, 20,348 at NH-2/V-2, 10,536
+  now, in this image).
+- **At 100,000 agents in scenario_00 (1.13) and on the GeoPops network (0.93)
+  the ratios fell, but only because this run's 0.x times were slower**: the
+  1.0 times did not change from the previous stage (0.0108 to 0.0109 s; 0.232 to
+  0.231 s), and stay about 15% above 3d-3b (0.00947 s; 0.202 s).
+  - scenario_00's runner at 100,000 agents (20 interleaved replicates in this
+    image): 0.00922 s at 3d-3b (`07ed7a0`), 0.01026 s now, with identical
+    epidemics and fewer page faults (1,373 and 1,141).
+  - Callgrind on `run()` (one replicate): 121.5M instructions at 3d-3b, 130.0M
+    now; `reset()` is 8.1M and 9.4M. The rest is the natural history's step:
+    each day's proposal (`nh_step()`, `nh_propose()`, the transitions' values,
+    `Value::eval()`), which grows with the agents that move (GeoPops' attack
+    rate is 62%).
