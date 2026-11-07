@@ -20,8 +20,8 @@ EPIWORLD_CXXFLAGS := -std=c++17 -O2 -DNDEBUG -Depiworld_double=double
 # epiworld's v1-layers branch (Section 8 of its contact-layers.md lists when it
 # moves). Its headers are always downloaded into .deps/, in the container too,
 # so moving this one line is the whole re-pin.
-# Phase 3d-3a (UofUEpiBio/epiworld#349, #351).
-EPIWORLD_V1_REF := 07ed7a0d6243653c5c197cb8c7420baad6d279c5
+# NH-1, NH-2 (UofUEpiBio/epiworld#363), V-1 (#364), V-2 (#365).
+EPIWORLD_V1_REF := d571d3e978b54d0e3a8e7a82147dcf39103ba124
 EPIWORLD_V1_INCLUDE := .deps/$(EPIWORLD_V1_REF)/include
 
 # The C++ engines, each with its headers: scenario_*/runners/<engine>/main.cpp
