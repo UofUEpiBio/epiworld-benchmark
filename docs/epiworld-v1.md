@@ -104,6 +104,14 @@ measure.
 | 3d-3b | 1.0.0+g07ed7a0 | 02 | 100,000 | 0.01, 0.00964 | 0.96 | 0.0142, 0.0112 | 0.79 | 44, 38 | 0.88 | 0.014, 0.014 |
 | 3d-3b | 1.0.0+g07ed7a0 | 03 | 1,000,000 | 0.033, 0.0301 | 0.91 | 0.167, 0.129 | 0.77 | 352, 253 | 0.72 | 0.006, 0.006 |
 | 3d-3b | 1.0.0+g07ed7a0 | 04 | 165,865 | 0.24, 0.202 | 0.84 | 0.0192, 0.0136 | 0.71 | 90, 84 | 0.93 | 0.622, 0.622 |
+| nh-2-v2 | 1.0.0+gd571d3e | 00 | 10,000 | 0.00488, 0.00529 | 1.08 | 0.00137, 0.00109 | 0.79 | 8, 7 | 0.81 | 0.385, 0.385 |
+| nh-2-v2 | 1.0.0+gd571d3e | 00 | 100,000 | 0.00821, 0.0108 | 1.31 | 0.013, 0.01 | 0.77 | 38, 33 | 0.87 | 0.060, 0.060 |
+| nh-2-v2 | 1.0.0+gd571d3e | 01 | 10,000 | 0.00253, 0.00257 | 1.02 | 0.00127, 0.00104 | 0.82 | 8, 7 | 0.91 | 0.119, 0.119 |
+| nh-2-v2 | 1.0.0+gd571d3e | 01 | 100,000 | 0.00859, 0.00838 | 0.98 | 0.0123, 0.00977 | 0.80 | 43, 39 | 0.90 | 0.014, 0.014 |
+| nh-2-v2 | 1.0.0+gd571d3e | 02 | 10,000 | 0.00236, 0.00258 | 1.09 | 0.00126, 0.00103 | 0.82 | 9, 8 | 0.95 | 0.119, 0.119 |
+| nh-2-v2 | 1.0.0+gd571d3e | 02 | 100,000 | 0.00893, 0.00885 | 0.99 | 0.0132, 0.0103 | 0.78 | 44, 40 | 0.91 | 0.014, 0.014 |
+| nh-2-v2 | 1.0.0+gd571d3e | 03 | 1,000,000 | 0.0259, 0.0404 | 1.56 | 0.134, 0.112 | 0.84 | 352, 294 | 0.84 | 0.006, 0.006 |
+| nh-2-v2 | 1.0.0+gd571d3e | 04 | 165,865 | 0.218, 0.232 | 1.07 | 0.0195, 0.0139 | 0.71 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -177,3 +185,37 @@ against epiworld 0.17.1.
   0.81 to 1.04 (previously 0.94 to 1.06), and peak-memory ratios all fell.
   The 1,000,000-agent simulation ratio is 0.81 (0.032 s versus 0.039 s), so
   the row remains stable rather than reproducing the earlier noise.
+
+### NH-2, V-1, V-2
+
+epiworld `v1-layers` at
+[`d571d3e9`](https://github.com/UofUEpiBio/epiworld/commit/d571d3e978b54d0e3a8e7a82147dcf39103ba124)
+(natural histories, UofUEpiBio/epiworld#363; variants by id, #364; no `TSeq`
+template, #365), against epiworld 0.17.1. The runners declare the SEIRH as a
+natural history (the same rates, the two out of Infected competing as before)
+and use the plain classes.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **The simulation ratio grew by more than 10% at 100,000 agents in
+  scenario_00 (1.03 to 1.31), at 1,000,000 (0.91 to 1.56) and on the GeoPops
+  network (0.84 to 1.07)**, so it was profiled. Build and peak-memory ratios
+  did not grow (the GeoPops peak fell from 84 to 52 MiB).
+  - Built against the three merges, scenario_03's runner (10 interleaved
+    replicates in this image) simulates in 0.0378 s after #363, 0.0383 s after
+    #364 and 0.0381 s after #365, with identical epidemics: V-1 and V-2 change
+    nothing. Against 3d-3b (`07ed7a0`, the previous runner) it simulates in
+    0.0253 s, and the current one in 0.0375 s, interleaved.
+  - Callgrind on `run()` (one replicate): 444M instructions at 3d-3b, 526M
+    now, of which `reset()` (inside `run()`, so inside the simulation time) is
+    79M and 153M. The steps changed little (+8M). The reset now makes several
+    passes over the population and allocates new vectors of its size at every
+    run: the eligibility of each agent for the virus (a stage lookup per
+    agent), a label per agent and a pool of the eligible ones
+    (`assign::detail::draw_counts()`), and the natural history's per-agent
+    records; the extra allocations (about 30M instructions in `operator new`,
+    and their page faults, which callgrind does not count) explain why the
+    time grew more than the instructions.
+  - To fix in epiworld before the next C++ phase: a placement of a few agents
+    should not cost passes and fresh allocations over the whole population at
+    every reset.
