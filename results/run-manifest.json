@@ -1,22 +1,19 @@
 {
   "cached_before_run": 0,
-  "executed": 70,
+  "executed": 7040,
   "failures": 0,
-  "profile": "smoke",
+  "profile": "full",
   "python": "3.12.11",
   "requested_engines": [
     "epiworldR",
     "epiworldpy",
     "epiworld",
-    "epiworld-v1",
     "covasim",
     "starsim",
     "EoN",
     "epydemic",
     "ixa",
     "individual",
-    "ABM",
-    "EpiModel",
     "FRED",
     "Agents.jl"
   ],
@@ -27,6 +24,6 @@
     "scenario_03",
     "scenario_04"
   ],
-  "result_rows_available": 8960,
+  "result_rows_available": 7040,
   "workers": 1
 }
