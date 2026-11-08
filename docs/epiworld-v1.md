@@ -120,6 +120,14 @@ measure.
 | reset-fix | 1.0.0+g384c89f | 02 | 100,000 | 0.011, 0.00998 | 0.90 | 0.016, 0.0121 | 0.75 | 44, 37 | 0.86 | 0.014, 0.014 |
 | reset-fix | 1.0.0+g384c89f | 03 | 1,000,000 | 0.0292, 0.0274 | 0.94 | 0.159, 0.12 | 0.76 | 352, 253 | 0.72 | 0.006, 0.006 |
 | reset-fix | 1.0.0+g384c89f | 04 | 165,865 | 0.249, 0.231 | 0.93 | 0.0195, 0.0138 | 0.71 | 90, 52 | 0.57 | 0.622, 0.622 |
+| step-trim | 1.0.0+g3944abd | 00 | 10,000 | 0.00473, 0.00507 | 1.07 | 0.00134, 0.00109 | 0.82 | 8, 7 | 0.80 | 0.385, 0.385 |
+| step-trim | 1.0.0+g3944abd | 00 | 100,000 | 0.00958, 0.0108 | 1.13 | 0.0164, 0.012 | 0.73 | 38, 29 | 0.77 | 0.060, 0.060 |
+| step-trim | 1.0.0+g3944abd | 01 | 10,000 | 0.00242, 0.00254 | 1.05 | 0.0013, 0.00109 | 0.84 | 8, 7 | 0.90 | 0.119, 0.119 |
+| step-trim | 1.0.0+g3944abd | 01 | 100,000 | 0.0112, 0.0101 | 0.90 | 0.0153, 0.0118 | 0.77 | 43, 37 | 0.85 | 0.014, 0.014 |
+| step-trim | 1.0.0+g3944abd | 02 | 10,000 | 0.00246, 0.0026 | 1.06 | 0.00133, 0.00111 | 0.84 | 9, 8 | 0.92 | 0.119, 0.119 |
+| step-trim | 1.0.0+g3944abd | 02 | 100,000 | 0.011, 0.00995 | 0.90 | 0.0156, 0.0121 | 0.78 | 44, 37 | 0.86 | 0.014, 0.014 |
+| step-trim | 1.0.0+g3944abd | 03 | 1,000,000 | 0.0382, 0.0339 | 0.89 | 0.253, 0.159 | 0.63 | 352, 253 | 0.72 | 0.006, 0.006 |
+| step-trim | 1.0.0+g3944abd | 04 | 165,865 | 0.269, 0.257 | 0.95 | 0.0223, 0.0176 | 0.79 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -254,3 +262,37 @@ after the docs of #366), against epiworld 0.17.1. The runners are unchanged.
     each day's proposal (`nh_step()`, `nh_propose()`, the transitions' values,
     `Value::eval()`), which grows with the agents that move (GeoPops' attack
     rate is 62%).
+
+### Step trim
+
+epiworld `v1-layers` at
+[`3944abd`](https://github.com/UofUEpiBio/epiworld/commit/3944abd3b322392b002c47f4949383695593e417)
+(the natural history's daily step trimmed, UofUEpiBio/epiworld#368), against
+epiworld 0.17.1. The runners are unchanged.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **No ratio grew by more than 10% from the previous stage.** The largest
+  change is the GeoPops network's, 0.93 to 0.95.
+- **This run cannot see #368's gain.** It removed about 4% of `run()`'s
+  instructions at 100,000 agents in scenario_00 (130.0M to 124.6M; 3d-3b:
+  121.5M), within the noise of a stage. At that size the 1.0 time did not move
+  (0.0109 to 0.0108 s) and the ratio stays 1.13 (3d-3b: 1.03). On GeoPops both
+  engines were slower in this run (0.x 0.249 to 0.269 s, 1.0 0.231 to 0.257 s).
+  - Runners compared directly (16 interleaved seeds in this image): 0.00893 s
+    at 3d-3b and 0.00926 s at #368 for scenario_00 at 100,000 agents; 0.156 s
+    and 0.179 s on GeoPops. The epidemics are identical.
+- **The remaining cost is per infected agent, not per contact or layer.**
+  Callgrind on `run()` (one seed; 32 KiB L1 and 8 MiB last-level caches),
+  #368 against 3d-3b:
+  - GeoPops: +3.5% instructions, +17% last-level data misses.
+  - A synthetic population of the same size with twice GeoPops' mean degree
+    (9.2: households, random groups of about 30 and local community contacts;
+    73% infected by day 100): +2.2% instructions and +4% data misses, both as
+    one network and as three network layers.
+  - The extra work is about the same in both (+34M and +32M instructions, about
+    300 per infection), so denser networks dilute it. GeoPops, sparse with a
+    62% attack rate, is the worst case.
+  - Most of GeoPops' extra misses come from reading each infected agent's own
+    copy of its virus during the daily step. Reserving the natural history's
+    records at reset changed nothing.
