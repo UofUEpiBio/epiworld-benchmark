@@ -1,7 +1,8 @@
 // Single-replicate runner for epiworld 1.0.0 (the `v1-layers` branch), the
 // `epiworld-v1` engine. It builds the model of ../epiworld/main.cpp through
 // the 1.0.0 API: the population is set in the constructor, the network is a
-// contact layer, and the infectious states are a model property.
+// contact layer, and the disease is a natural history declared on the virus
+// (its stages and the transitions between them).
 //
 // The model is the one epiworldR's runner builds, written against the C++ API
 // that epiworldR wraps. Scenario 02 extracts the transmission tree, daily
@@ -132,41 +133,44 @@ int main(int argc, char ** argv) {
     double read_seconds = seconds_since(total_started);
     Memory memory_after_read = memory_status();
 
-    Model<> model(n);
+    Model model(n);
     model.add_param(beta, "Transmission rate");
     model.add_param(1.0 / latent_days, "Incubation rate");
     model.add_param(hospital_rate, "Hospitalization rate");
     model.add_param(recovery, "Recovery rate");
     model.add_param(1.0 / hospital_days, "Hospital recovery rate");
 
-    // Only infected agents (state 2) transmit.
-    model.add_state("Susceptible", default_update_susceptible<>);
-    model.add_state("Exposed", new_state_update_transition<>({"Incubation rate"}, {2}));
-    model.add_state("Infected", new_state_update_transition<>(
-        {"Hospitalization rate", "Recovery rate"}, {3, 4}
-    ));
-    model.add_state("Hospitalized", new_state_update_transition<>({"Hospital recovery rate"}, {4}));
-    model.add_state("Recovered");
-    model.set_infectious_states({2});
+    // The SEIRH natural history. Only Infected agents transmit; Exposed and
+    // Hospitalized agents carry the virus without transmitting. The two rates
+    // out of Infected compete (one draw a day picks one, or none).
+    Virus pathogen("Benchmark pathogen");
+    const int susceptible = pathogen.add_stage("Susceptible");
+    const int exposed = pathogen.add_stage("Exposed", stage::carrier);
+    const int infected = pathogen.add_stage("Infected", stage::infectious);
+    const int hospitalized = pathogen.add_stage("Hospitalized", stage::carrier);
+    const int recovered = pathogen.add_stage("Recovered");
+    pathogen.infection(susceptible, exposed, "Transmission rate");
+    pathogen.rate(exposed, infected, "Incubation rate");
+    pathogen.rate(infected, hospitalized, "Hospitalization rate");
+    pathogen.rate(infected, recovered, "Recovery rate");
+    pathogen.rate(hospitalized, recovered, "Hospital recovery rate");
 
-    // New infections enter Exposed (state 1). The initial cases start there
-    // too, as in the epiworldR runner.
-    Virus<> pathogen("Benchmark pathogen", std::min(integer("initial_infected"), n), false);
-    pathogen.set_state(1, 4, 4);
-    pathogen.set_prob_infecting("Transmission rate");
-    model.add_virus(pathogen);
+    // New infections enter Exposed. The initial cases start there too, as in
+    // the epiworldR runner.
+    model.add_virus(pathogen, assign::count(std::min(integer("initial_infected"), n)));
 
     // All-or-nothing vaccine, drawn as in the epiworldR runner: unprotected
     // vaccinees behave exactly like unvaccinated agents, so only the protected
-    // ones get a tool, which epiworld places on that many agents at random.
+    // ones get a tool, which epiworld places on that many agents at random
+    // (at every reset).
     std::mt19937 rng(integer("seed"));
     int vaccinated = static_cast<int>(std::nearbyint(vaccine_coverage * n));
     int protected_ = std::binomial_distribution<int>(vaccinated, vaccine_efficacy)(rng);
-    Tool<> vaccine("Vaccine", protected_, false);
+    Tool vaccine("Vaccine");
     vaccine.set_susceptibility_reduction(1.0);
-    model.add_tool(vaccine);
+    model.add_tool(vaccine, assign::count(static_cast<size_t>(protected_)));
 
-    model.add_layer(layer::network<>("contacts", AdjList(source, target, n, false)));
+    model.add_layer(layer::network("contacts", AdjList(source, target, n, false)));
     model.verbose_off();
     source = {};
     target = {};
@@ -190,10 +194,12 @@ int main(int argc, char ** argv) {
     );
 
     // The transition matrix: counts for every pair of states on every day.
-    std::vector<std::string> transition_from, transition_to;
+    // A state is a (status, stage) pair; with no statuses, the stage names it.
+    std::vector<std::string> status_from, transition_from, status_to, transition_to;
     std::vector<int> transition_date, transition_counts;
     db.get_hist_transition_matrix(
-        transition_from, transition_to, transition_date, transition_counts, false
+        status_from, transition_from, status_to, transition_to,
+        transition_date, transition_counts, false
     );
 
     // Daily incidence is the matrix's Susceptible -> Exposed entry.
@@ -219,19 +225,18 @@ int main(int argc, char ** argv) {
     double extract_seconds = seconds_since(extract_started);
     double total_seconds = seconds_since(total_started);
 
-    std::vector<std::string> states;
-    std::vector<int> counts;
-    model.get_db().get_today_total(&states, &counts);
+    // The model has no statuses (every agent is "Free"), so a stage's total is
+    // its count.
     std::map<std::string, int> today;
-    for (size_t i = 0; i < states.size(); ++i)
-        today[states[i]] = counts[i];
+    for (const auto & stage : {"Susceptible", "Exposed", "Infected", "Hospitalized", "Recovered"})
+        today[stage] = model.get_db().get_today_total_stage(stage);
 
     std::vector<int> hist_dates, hist_counts;
-    std::vector<std::string> hist_states;
-    model.get_db().get_hist_total(&hist_dates, &hist_states, &hist_counts);
+    std::vector<std::string> hist_stages;
+    model.get_db().get_hist_total(&hist_dates, nullptr, &hist_stages, &hist_counts);
     int peak_hospitalized = 0;
-    for (size_t i = 0; i < hist_states.size(); ++i)
-        if (hist_states[i] == "Hospitalized")
+    for (size_t i = 0; i < hist_stages.size(); ++i)
+        if (hist_stages[i] == "Hospitalized")
             peak_hospitalized = std::max(peak_hospitalized, hist_counts[i]);
 
     // Summaries of the outputs for the result record.
