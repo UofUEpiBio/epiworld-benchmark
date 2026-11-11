@@ -128,6 +128,14 @@ measure.
 | step-trim | 1.0.0+g3944abd | 02 | 100,000 | 0.011, 0.00995 | 0.90 | 0.0156, 0.0121 | 0.78 | 44, 37 | 0.86 | 0.014, 0.014 |
 | step-trim | 1.0.0+g3944abd | 03 | 1,000,000 | 0.0382, 0.0339 | 0.89 | 0.253, 0.159 | 0.63 | 352, 253 | 0.72 | 0.006, 0.006 |
 | step-trim | 1.0.0+g3944abd | 04 | 165,865 | 0.269, 0.257 | 0.95 | 0.0223, 0.0176 | 0.79 | 90, 52 | 0.57 | 0.622, 0.622 |
+| tracks | 1.0.0+g9e42b2d | 00 | 10,000 | 0.00451, 0.00487 | 1.08 | 0.00119, 0.000996 | 0.84 | 8, 7 | 0.80 | 0.385, 0.385 |
+| tracks | 1.0.0+g9e42b2d | 00 | 100,000 | 0.008, 0.00896 | 1.12 | 0.0112, 0.00882 | 0.79 | 38, 29 | 0.77 | 0.060, 0.060 |
+| tracks | 1.0.0+g9e42b2d | 01 | 10,000 | 0.0023, 0.00243 | 1.06 | 0.00118, 0.000991 | 0.84 | 8, 7 | 0.90 | 0.119, 0.119 |
+| tracks | 1.0.0+g9e42b2d | 01 | 100,000 | 0.00814, 0.00785 | 0.96 | 0.0114, 0.00915 | 0.80 | 43, 37 | 0.85 | 0.014, 0.014 |
+| tracks | 1.0.0+g9e42b2d | 02 | 10,000 | 0.00225, 0.00243 | 1.08 | 0.00116, 0.000996 | 0.86 | 8, 8 | 0.92 | 0.119, 0.119 |
+| tracks | 1.0.0+g9e42b2d | 02 | 100,000 | 0.00813, 0.00807 | 0.99 | 0.0115, 0.00944 | 0.82 | 43, 37 | 0.86 | 0.014, 0.014 |
+| tracks | 1.0.0+g9e42b2d | 03 | 1,000,000 | 0.0279, 0.031 | 1.11 | 0.159, 0.12 | 0.75 | 352, 253 | 0.72 | 0.006, 0.006 |
+| tracks | 1.0.0+g9e42b2d | 04 | 165,865 | 0.206, 0.21 | 1.02 | 0.0144, 0.0124 | 0.86 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -296,3 +304,26 @@ epiworld 0.17.1. The runners are unchanged.
   - Most of GeoPops' extra misses come from reading each infected agent's own
     copy of its virus during the daily step. Reserving the natural history's
     records at reset changed nothing.
+
+### Tracks
+
+epiworld `v1-layers` at
+[`9e42b2d`](https://github.com/UofUEpiBio/epiworld/commit/9e42b2dce88ce4fdd9c82bba285d77a0a0c58c25)
+(NH-5a, the engine's per-disease state in a `Track`, UofUEpiBio/epiworld#372,
+and the database in parts, #373; both refactors with identical results),
+against epiworld 0.17.1. The runners are unchanged.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **One ratio grew by more than 10%, and it is the 0.x run's doing.**
+  scenario_03 (1,000,000 agents) went from 0.89 to 1.11, and scenario_02 at
+  100,000 agents from 0.90 to 0.99. In every row the 1.0 engine was faster
+  than in the previous stage (scenario_03: 0.0339 to 0.0310 s), but 0.x was
+  faster still (0.0382 to 0.0279 s, 27%), with the same 0.x code; the
+  environment's fingerprint changed too.
+- **The cost of the two refactors, counted:** callgrind on the same SEIR
+  model on a small-world network (degree 10, 100 days), #368's commit against
+  this one, with the benchmark's flags: +1.7% instructions at 100,000 agents
+  (1.179 to 1.199 billion) and +1.8% at 1,000,000 (11.84 to 12.05 billion),
+  with identical epidemics. That is the cost of looping over the tracks in the
+  daily step, and it does not grow with the population.
