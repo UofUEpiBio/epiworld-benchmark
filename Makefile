@@ -21,7 +21,7 @@ EPIWORLD_CXXFLAGS := -std=c++17 -O2 -DNDEBUG -Depiworld_double=double
 # moves). Its headers are always downloaded into .deps/, in the container too,
 # so moving this one line is the whole re-pin.
 # NH-1, NH-2 (UofUEpiBio/epiworld#363), V-1 (#364), V-2 (#365).
-EPIWORLD_V1_REF := 9e42b2dce88ce4fdd9c82bba285d77a0a0c58c25
+EPIWORLD_V1_REF := 883546adb4e8ed8fc485cbf45d3ff02f4e7cfed1
 EPIWORLD_V1_INCLUDE := .deps/$(EPIWORLD_V1_REF)/include
 
 # The C++ engines, each with its headers: scenario_*/runners/<engine>/main.cpp

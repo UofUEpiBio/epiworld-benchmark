@@ -136,6 +136,14 @@ measure.
 | tracks | 1.0.0+g9e42b2d | 02 | 100,000 | 0.00813, 0.00807 | 0.99 | 0.0115, 0.00944 | 0.82 | 43, 37 | 0.86 | 0.014, 0.014 |
 | tracks | 1.0.0+g9e42b2d | 03 | 1,000,000 | 0.0279, 0.031 | 1.11 | 0.159, 0.12 | 0.75 | 352, 253 | 0.72 | 0.006, 0.006 |
 | tracks | 1.0.0+g9e42b2d | 04 | 165,865 | 0.206, 0.21 | 1.02 | 0.0144, 0.0124 | 0.86 | 90, 52 | 0.57 | 0.622, 0.622 |
+| nh-5b-1 | 1.0.0+g883546a | 00 | 10,000 | 0.00434, 0.00476 | 1.10 | 0.00116, 0.000993 | 0.86 | 8, 7 | 0.80 | 0.385, 0.385 |
+| nh-5b-1 | 1.0.0+g883546a | 00 | 100,000 | 0.00784, 0.00888 | 1.13 | 0.0112, 0.00921 | 0.82 | 38, 29 | 0.77 | 0.060, 0.060 |
+| nh-5b-1 | 1.0.0+g883546a | 01 | 10,000 | 0.00226, 0.00244 | 1.08 | 0.00118, 0.000986 | 0.84 | 8, 7 | 0.90 | 0.119, 0.119 |
+| nh-5b-1 | 1.0.0+g883546a | 01 | 100,000 | 0.00746, 0.00748 | 1.00 | 0.011, 0.00887 | 0.81 | 43, 37 | 0.85 | 0.014, 0.014 |
+| nh-5b-1 | 1.0.0+g883546a | 02 | 10,000 | 0.00224, 0.00244 | 1.09 | 0.00118, 0.000984 | 0.83 | 8, 8 | 0.92 | 0.119, 0.119 |
+| nh-5b-1 | 1.0.0+g883546a | 02 | 100,000 | 0.00739, 0.00763 | 1.03 | 0.011, 0.00891 | 0.81 | 43, 37 | 0.86 | 0.014, 0.014 |
+| nh-5b-1 | 1.0.0+g883546a | 03 | 1,000,000 | 0.0281, 0.0281 | 1.00 | 0.135, 0.108 | 0.80 | 352, 253 | 0.72 | 0.006, 0.006 |
+| nh-5b-1 | 1.0.0+g883546a | 04 | 165,865 | 0.172, 0.167 | 0.97 | 0.0142, 0.0122 | 0.86 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -327,3 +335,24 @@ against epiworld 0.17.1. The runners are unchanged.
   (1.179 to 1.199 billion) and +1.8% at 1,000,000 (11.84 to 12.05 billion),
   with identical epidemics. That is the cost of looping over the tracks in the
   daily step, and it does not grow with the population.
+
+### NH-5b-1
+
+epiworld `v1-layers` at
+[`883546a`](https://github.com/UofUEpiBio/epiworld/commit/883546adb4e8ed8fc485cbf45d3ff02f4e7cfed1)
+(NH-5b-1, the outputs by disease and the transition matrices by margin,
+UofUEpiBio/epiworld#375, identical numbers; and #376, a standard constant
+instead of `M_PI`), against epiworld 0.17.1. The runners are unchanged: the
+database functions they call only gained defaulted arguments.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **No ratio grew by more than 10%.** The largest change is scenario_01 at
+  100,000 agents, 0.96 to 1.00; scenario_03 went back from 1.11 to 1.00 (the
+  0.x run's time is back to the earlier stages').
+- **The cost, counted:** callgrind with the benchmark's flags, #373's commit
+  against this one: the SEIR model on a small-world network (degree 10, 100
+  days, 100,000 agents) takes 1,123,456,122 and 1,123,456,167 instructions
+  (+45), and the measles mixing model 10,848,004,469 and 10,848,004,597.
+- A first run of this stage shared the machine with other work (every row,
+  0.x's too, about 2.5 times slower); it was discarded and rerun alone.
