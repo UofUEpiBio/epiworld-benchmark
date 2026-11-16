@@ -144,6 +144,14 @@ measure.
 | nh-5b-1 | 1.0.0+g883546a | 02 | 100,000 | 0.00739, 0.00763 | 1.03 | 0.011, 0.00891 | 0.81 | 43, 37 | 0.86 | 0.014, 0.014 |
 | nh-5b-1 | 1.0.0+g883546a | 03 | 1,000,000 | 0.0281, 0.0281 | 1.00 | 0.135, 0.108 | 0.80 | 352, 253 | 0.72 | 0.006, 0.006 |
 | nh-5b-1 | 1.0.0+g883546a | 04 | 165,865 | 0.172, 0.167 | 0.97 | 0.0142, 0.0122 | 0.86 | 90, 52 | 0.57 | 0.622, 0.622 |
+| nh-5b-2 | 1.0.0+g83b9110 | 00 | 10,000 | 0.00436, 0.00482 | 1.11 | 0.00114, 0.000958 | 0.84 | 8, 7 | 0.80 | 0.385, 0.385 |
+| nh-5b-2 | 1.0.0+g83b9110 | 00 | 100,000 | 0.00801, 0.00896 | 1.12 | 0.0113, 0.00902 | 0.80 | 38, 29 | 0.77 | 0.060, 0.060 |
+| nh-5b-2 | 1.0.0+g83b9110 | 01 | 10,000 | 0.00225, 0.00245 | 1.09 | 0.00115, 0.000965 | 0.84 | 8, 7 | 0.91 | 0.119, 0.119 |
+| nh-5b-2 | 1.0.0+g83b9110 | 01 | 100,000 | 0.00804, 0.00804 | 1.00 | 0.0114, 0.00911 | 0.80 | 43, 38 | 0.87 | 0.014, 0.014 |
+| nh-5b-2 | 1.0.0+g83b9110 | 02 | 10,000 | 0.00223, 0.00244 | 1.09 | 0.00116, 0.000969 | 0.84 | 8, 8 | 0.96 | 0.119, 0.119 |
+| nh-5b-2 | 1.0.0+g83b9110 | 02 | 100,000 | 0.00783, 0.00788 | 1.01 | 0.0113, 0.00903 | 0.80 | 43, 38 | 0.88 | 0.014, 0.014 |
+| nh-5b-2 | 1.0.0+g83b9110 | 03 | 1,000,000 | 0.0267, 0.0275 | 1.03 | 0.133, 0.108 | 0.81 | 352, 253 | 0.72 | 0.006, 0.006 |
+| nh-5b-2 | 1.0.0+g83b9110 | 04 | 165,865 | 0.169, 0.183 | 1.08 | 0.0145, 0.0128 | 0.88 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -356,3 +364,31 @@ database functions they call only gained defaulted arguments.
   (+45), and the measles mixing model 10,848,004,469 and 10,848,004,597.
 - A first run of this stage shared the machine with other work (every row,
   0.x's too, about 2.5 times slower); it was discarded and rerun alone.
+
+### NH-5b-2
+
+epiworld `v1-layers` at
+[`83b9110`](https://github.com/UofUEpiBio/epiworld/commit/83b91100ec8428a5105bd8ad8541d50f42d821a2)
+(NH-5b-2, several diseases in the engine, UofUEpiBio/epiworld#377; identical
+results with one disease), against epiworld 0.17.1. The runners are
+unchanged.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **One ratio grew by more than 10%: scenario_04 (GeoPops, 165,865 agents),
+  0.97 to 1.08** (1.0's simulation time 0.167 to 0.183 s; 0.x's 0.172 to
+  0.169). The other rows moved by at most 0.03.
+- **The cost, counted:** callgrind of scenario_04's runner (benchmark flags,
+  the first replicate's seed), #376's commit against this one: 1,922,890,089
+  and 1,978,285,429 instructions for the whole process (+2.9%; the epidemics
+  are identical). The difference is in the simulation: the one-disease stage
+  update, which the compiler inlined into the state's update function, is now
+  a call to the general `nh_step_stage()` (about +40 million), and
+  `nh_react()` and the database update are calls too (about +15 million).
+  The time grew more than the instructions (about +4.5% of the
+  simulation's), as at NH-2 on this network.
+- **Next:** an epiworld PR that gives one disease its own inlinable stage step,
+  then a rerun of this stage.
+- A first run of this stage shared the machine with other work (examples
+  compiled and run in another container); it was discarded and rerun alone.
+  Its scenario_04 ratio was 1.10.
