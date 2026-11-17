@@ -152,6 +152,14 @@ measure.
 | nh-5b-2 | 1.0.0+g83b9110 | 02 | 100,000 | 0.00783, 0.00788 | 1.01 | 0.0113, 0.00903 | 0.80 | 43, 38 | 0.88 | 0.014, 0.014 |
 | nh-5b-2 | 1.0.0+g83b9110 | 03 | 1,000,000 | 0.0267, 0.0275 | 1.03 | 0.133, 0.108 | 0.81 | 352, 253 | 0.72 | 0.006, 0.006 |
 | nh-5b-2 | 1.0.0+g83b9110 | 04 | 165,865 | 0.169, 0.183 | 1.08 | 0.0145, 0.0128 | 0.88 | 90, 52 | 0.57 | 0.622, 0.622 |
+| nh-5b-3 | 1.0.0+gd2df4d9 | 00 | 10,000 | 0.00452, 0.00501 | 1.11 | 0.00121, 0.001 | 0.83 | 8, 7 | 0.79 | 0.385, 0.385 |
+| nh-5b-3 | 1.0.0+gd2df4d9 | 00 | 100,000 | 0.00809, 0.00922 | 1.14 | 0.011, 0.0089 | 0.81 | 38, 29 | 0.77 | 0.060, 0.060 |
+| nh-5b-3 | 1.0.0+gd2df4d9 | 01 | 10,000 | 0.00236, 0.0026 | 1.10 | 0.00123, 0.00103 | 0.83 | 8, 7 | 0.91 | 0.119, 0.119 |
+| nh-5b-3 | 1.0.0+gd2df4d9 | 01 | 100,000 | 0.00784, 0.00791 | 1.01 | 0.0111, 0.00896 | 0.81 | 43, 38 | 0.87 | 0.014, 0.014 |
+| nh-5b-3 | 1.0.0+gd2df4d9 | 02 | 10,000 | 0.0023, 0.00256 | 1.11 | 0.00122, 0.00101 | 0.83 | 8, 8 | 0.96 | 0.119, 0.119 |
+| nh-5b-3 | 1.0.0+gd2df4d9 | 02 | 100,000 | 0.0089, 0.00858 | 0.96 | 0.0126, 0.00994 | 0.79 | 43, 38 | 0.88 | 0.014, 0.014 |
+| nh-5b-3 | 1.0.0+gd2df4d9 | 03 | 1,000,000 | 0.0266, 0.0281 | 1.06 | 0.142, 0.108 | 0.76 | 352, 253 | 0.72 | 0.006, 0.006 |
+| nh-5b-3 | 1.0.0+gd2df4d9 | 04 | 165,865 | 0.209, 0.2 | 0.96 | 0.0152, 0.0124 | 0.81 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -392,3 +400,25 @@ unchanged.
 - A first run of this stage shared the machine with other work (examples
   compiled and run in another container); it was discarded and rerun alone.
   Its scenario_04 ratio was 1.10.
+
+### NH-5b-3
+
+epiworld `v1-layers` at
+[`d2df4d9`](https://github.com/UofUEpiBio/epiworld/commit/d2df4d9302ddb5c169918a3ddeeb27f0b2b072e3):
+NH-5b-3 (transitions by strain, UofUEpiBio/epiworld#378) and the fix of
+NH-5b-2's regression (an inlinable stage step for one disease,
+UofUEpiBio/epiworld#379), against epiworld 0.17.1. The runners are
+unchanged.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **No ratio grew by more than 10%.** The largest growths are scenario_03
+  (1,000,000 agents), 1.03 to 1.06, and scenario_00 at 100,000, 1.12 to 1.14.
+- **Scenario_04 (GeoPops, 165,865 agents) went back down, 1.08 to 0.96.**
+  This is more than #379's own measurement predicted (about 1.01; it measured
+  scenario_04's simulation at +4.3% against #376's commit). Both engines were
+  slower in this run (0.x's median 0.169 to 0.209 s, 1.0's 0.183 to 0.200 s),
+  and the replicates interleave the two engines, so the ratio is the
+  measure; read it as "within the rule", not as 1.0 being faster here.
+- Scenario_00 has been at 1.10–1.14 since NH-2 (`nh-2-v2`); no stage since
+  moved it by more than 3%.
