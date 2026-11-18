@@ -160,6 +160,14 @@ measure.
 | nh-5b-3 | 1.0.0+gd2df4d9 | 02 | 100,000 | 0.0089, 0.00858 | 0.96 | 0.0126, 0.00994 | 0.79 | 43, 38 | 0.88 | 0.014, 0.014 |
 | nh-5b-3 | 1.0.0+gd2df4d9 | 03 | 1,000,000 | 0.0266, 0.0281 | 1.06 | 0.142, 0.108 | 0.76 | 352, 253 | 0.72 | 0.006, 0.006 |
 | nh-5b-3 | 1.0.0+gd2df4d9 | 04 | 165,865 | 0.209, 0.2 | 0.96 | 0.0152, 0.0124 | 0.81 | 90, 52 | 0.57 | 0.622, 0.622 |
+| 4a | 1.0.0+g6dc373a | 00 | 10,000 | 0.0045, 0.00512 | 1.14 | 0.00126, 0.00106 | 0.84 | 8, 7 | 0.79 | 0.385, 0.385 |
+| 4a | 1.0.0+g6dc373a | 00 | 100,000 | 0.00909, 0.00987 | 1.09 | 0.0133, 0.01 | 0.76 | 38, 29 | 0.77 | 0.060, 0.060 |
+| 4a | 1.0.0+g6dc373a | 01 | 10,000 | 0.00234, 0.00258 | 1.10 | 0.00128, 0.00106 | 0.83 | 8, 7 | 0.91 | 0.119, 0.119 |
+| 4a | 1.0.0+g6dc373a | 01 | 100,000 | 0.00899, 0.00841 | 0.94 | 0.0127, 0.00996 | 0.79 | 43, 38 | 0.87 | 0.014, 0.014 |
+| 4a | 1.0.0+g6dc373a | 02 | 10,000 | 0.00234, 0.00262 | 1.12 | 0.00128, 0.00107 | 0.84 | 8, 8 | 0.97 | 0.119, 0.119 |
+| 4a | 1.0.0+g6dc373a | 02 | 100,000 | 0.00849, 0.00826 | 0.97 | 0.0125, 0.00983 | 0.79 | 43, 38 | 0.88 | 0.014, 0.014 |
+| 4a | 1.0.0+g6dc373a | 03 | 1,000,000 | 0.0284, 0.0271 | 0.95 | 0.162, 0.118 | 0.73 | 352, 253 | 0.72 | 0.006, 0.006 |
+| 4a | 1.0.0+g6dc373a | 04 | 165,865 | 0.179, 0.189 | 1.05 | 0.0155, 0.0125 | 0.81 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -422,3 +430,30 @@ unchanged.
   measure; read it as "within the rule", not as 1.0 being faster here.
 - Scenario_00 has been at 1.10–1.14 since NH-2 (`nh-2-v2`); no stage since
   moved it by more than 3%.
+
+### 4a
+
+epiworld `v1-layers` at
+[`6dc373a`](https://github.com/UofUEpiBio/epiworld/commit/6dc373af646fe3cbdcd871b43037f8992d6e84c3)
+(Phase 4a, participation: a layer excludes statuses, closing a layer,
+UofUEpiBio/epiworld#380; identical results for models that use neither),
+against epiworld 0.17.1. The runners are unchanged.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **One ratio grew by just over 10%: scenario_04 (GeoPops, 165,865 agents),
+  0.96 to 1.05** (1.100 times). It was profiled, as the rule asks:
+  - callgrind of scenario_04's runner (benchmark flags, the first
+    replicate's seed), #379's merge against #380's: 1,960,098,919 and
+    1,992,677,213 instructions for the whole process (+1.7%; identical
+    epidemics). The push loop grew, and the compiler stopped inlining
+    `transmission_reduction_mixer()` into it, plus a redundant exclusion check
+    per carrier and layer. The 4b PR uses the layer's own mask there:
+    1,987,736,912 (+1.4%).
+  - **Timed, interleaved** (30 replicates, the three builds in turn, the same
+    seeds): the simulation's median is 0.2435 s before #380, 0.2362 s at #380
+    and 0.2419 s with 4b's change; the median of the paired ratios against
+    before #380 is 0.99 and 1.01. No slowdown: the stage's jump is run-to-run
+    noise on top of the previous stage's low 0.96 (NH-5b-2 had 1.08).
+- The other rows moved within their usual noise (largest: scenario_03,
+  1,000,000 agents, 1.06 to 0.96; scenario_01 at 100,000, 1.01 to 0.94).
