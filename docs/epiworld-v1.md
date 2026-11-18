@@ -168,6 +168,14 @@ measure.
 | 4a | 1.0.0+g6dc373a | 02 | 100,000 | 0.00849, 0.00826 | 0.97 | 0.0125, 0.00983 | 0.79 | 43, 38 | 0.88 | 0.014, 0.014 |
 | 4a | 1.0.0+g6dc373a | 03 | 1,000,000 | 0.0284, 0.0271 | 0.95 | 0.162, 0.118 | 0.73 | 352, 253 | 0.72 | 0.006, 0.006 |
 | 4a | 1.0.0+g6dc373a | 04 | 165,865 | 0.179, 0.189 | 1.05 | 0.0155, 0.0125 | 0.81 | 90, 52 | 0.57 | 0.622, 0.622 |
+| 4b | 1.0.0+ga4cb34d | 00 | 10,000 | 0.00523, 0.00569 | 1.09 | 0.0015, 0.00123 | 0.82 | 8, 7 | 0.80 | 0.385, 0.385 |
+| 4b | 1.0.0+ga4cb34d | 00 | 100,000 | 0.00874, 0.0105 | 1.21 | 0.0145, 0.0107 | 0.74 | 38, 29 | 0.77 | 0.060, 0.060 |
+| 4b | 1.0.0+ga4cb34d | 01 | 10,000 | 0.00261, 0.00285 | 1.09 | 0.0014, 0.00118 | 0.84 | 8, 7 | 0.91 | 0.119, 0.119 |
+| 4b | 1.0.0+ga4cb34d | 01 | 100,000 | 0.00981, 0.0103 | 1.05 | 0.0144, 0.0111 | 0.77 | 43, 38 | 0.89 | 0.014, 0.014 |
+| 4b | 1.0.0+ga4cb34d | 02 | 10,000 | 0.00242, 0.00281 | 1.16 | 0.00136, 0.00111 | 0.82 | 8, 8 | 0.97 | 0.119, 0.119 |
+| 4b | 1.0.0+ga4cb34d | 02 | 100,000 | 0.0096, 0.00978 | 1.02 | 0.0141, 0.0109 | 0.78 | 43, 39 | 0.90 | 0.014, 0.014 |
+| 4b | 1.0.0+ga4cb34d | 03 | 1,000,000 | 0.029, 0.03 | 1.03 | 0.203, 0.132 | 0.65 | 352, 253 | 0.72 | 0.006, 0.006 |
+| 4b | 1.0.0+ga4cb34d | 04 | 165,865 | 0.235, 0.261 | 1.11 | 0.0259, 0.0137 | 0.53 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -457,3 +465,26 @@ against epiworld 0.17.1. The runners are unchanged.
     noise on top of the previous stage's low 0.96 (NH-5b-2 had 1.08).
 - The other rows moved within their usual noise (largest: scenario_03,
   1,000,000 agents, 1.06 to 0.96; scenario_01 at 100,000, 1.01 to 0.94).
+
+### 4b
+
+epiworld `v1-layers` at
+[`a4cb34d`](https://github.com/UofUEpiBio/epiworld/commit/a4cb34dc28b3e681c1b13002a8378a8d8ebadd44)
+(Phase 4b, tools that target layers, UofUEpiBio/epiworld#381; identical
+results for every registered model), against epiworld 0.17.1. The runners are
+unchanged.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **Two ratios grew by more than 10%: scenario_00 at 100,000 agents, 1.09 to
+  1.21, and scenario_01 at 100,000, 0.94 to 1.05.** They were profiled, as the
+  rule asks: callgrind of each runner (benchmark flags at 100,000 agents, the
+  first replicate's seed), #380's merge against #381's, gives 1,216,316,319
+  and 1,217,754,473 instructions for scenario_00 (+0.12%) and 1,196,233,047
+  and 1,198,277,601 for scenario_01 (+0.17%), with identical epidemics. 4b
+  adds a layer check per tool in the contact mixers; scenario_00 has no tools,
+  so it does not run there. No slowdown: scenario_00 sat at 1.12 to 1.14 over
+  the previous eight stages (4a's 1.09 was low), and scenario_01 at 0.90 to
+  1.04.
+- The other rows moved within their usual noise (scenario_04, 1.05 to 1.11;
+  scenario_03, 0.95 to 1.03).
