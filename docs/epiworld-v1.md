@@ -176,6 +176,14 @@ measure.
 | 4b | 1.0.0+ga4cb34d | 02 | 100,000 | 0.0096, 0.00978 | 1.02 | 0.0141, 0.0109 | 0.78 | 43, 39 | 0.90 | 0.014, 0.014 |
 | 4b | 1.0.0+ga4cb34d | 03 | 1,000,000 | 0.029, 0.03 | 1.03 | 0.203, 0.132 | 0.65 | 352, 253 | 0.72 | 0.006, 0.006 |
 | 4b | 1.0.0+ga4cb34d | 04 | 165,865 | 0.235, 0.261 | 1.11 | 0.0259, 0.0137 | 0.53 | 90, 52 | 0.57 | 0.622, 0.622 |
+| 4c | 1.0.0+gfe1e229 | 00 | 10,000 | 0.00491, 0.00547 | 1.11 | 0.00141, 0.00114 | 0.81 | 8, 7 | 0.81 | 0.385, 0.385 |
+| 4c | 1.0.0+gfe1e229 | 00 | 100,000 | 0.00849, 0.00989 | 1.17 | 0.014, 0.0104 | 0.74 | 38, 29 | 0.77 | 0.060, 0.060 |
+| 4c | 1.0.0+gfe1e229 | 01 | 10,000 | 0.00256, 0.00289 | 1.13 | 0.00138, 0.00118 | 0.86 | 8, 8 | 0.92 | 0.119, 0.119 |
+| 4c | 1.0.0+gfe1e229 | 01 | 100,000 | 0.01, 0.0101 | 1.01 | 0.0148, 0.0108 | 0.73 | 43, 38 | 0.89 | 0.014, 0.014 |
+| 4c | 1.0.0+gfe1e229 | 02 | 10,000 | 0.00244, 0.00285 | 1.17 | 0.00136, 0.00113 | 0.83 | 8, 8 | 0.96 | 0.119, 0.119 |
+| 4c | 1.0.0+gfe1e229 | 02 | 100,000 | 0.00926, 0.00923 | 1.00 | 0.0133, 0.0103 | 0.77 | 43, 39 | 0.90 | 0.014, 0.014 |
+| 4c | 1.0.0+gfe1e229 | 03 | 1,000,000 | 0.0344, 0.0318 | 0.92 | 0.192, 0.147 | 0.77 | 352, 253 | 0.72 | 0.006, 0.006 |
+| 4c | 1.0.0+gfe1e229 | 04 | 165,865 | 0.212, 0.223 | 1.06 | 0.0189, 0.0158 | 0.83 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -488,3 +496,25 @@ unchanged.
   1.04.
 - The other rows moved within their usual noise (scenario_04, 1.05 to 1.11;
   scenario_03, 0.95 to 1.03).
+
+### 4c
+
+epiworld `v1-layers` at
+[`fe1e229`](https://github.com/UofUEpiBio/epiworld/commit/fe1e229d7a653945a126b195a6014344e9010a9d)
+(Phase 4c, schedules, persistence and parameter cycles,
+UofUEpiBio/epiworld#383; identical results for every registered model),
+against epiworld 0.17.1. The runners are unchanged.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **No simulate ratio grew by more than 10%.** They moved within -11% and
+  +3% (scenario_03 at 1,000,000 agents, 1.03 to 0.92).
+- **Two build ratios grew by more than 10%: scenario_04, 0.53 to 0.83, and
+  scenario_03, 0.65 to 0.77.** Most of scenario_04's change is the 0.x
+  engine's build time falling (0.0259 s to 0.0189 s, with no code change);
+  v1's own build times rose by 11-15% (2-15 ms). Profiled: callgrind of each
+  runner (benchmark flags, the first replicate's seed), #381's merge against
+  #383's, gives 11,865,920,197 and 11,866,898,000 instructions for
+  scenario_03 (+0.008%) and 1,244,365,383 and 1,244,572,297 for scenario_04
+  (+0.017%), whole runs included. 4c adds, per run, an empty loop over the
+  parameter cycles each day and a check for persistence at reset; noise.
