@@ -184,6 +184,14 @@ measure.
 | 4c | 1.0.0+gfe1e229 | 02 | 100,000 | 0.00926, 0.00923 | 1.00 | 0.0133, 0.0103 | 0.77 | 43, 39 | 0.90 | 0.014, 0.014 |
 | 4c | 1.0.0+gfe1e229 | 03 | 1,000,000 | 0.0344, 0.0318 | 0.92 | 0.192, 0.147 | 0.77 | 352, 253 | 0.72 | 0.006, 0.006 |
 | 4c | 1.0.0+gfe1e229 | 04 | 165,865 | 0.212, 0.223 | 1.06 | 0.0189, 0.0158 | 0.83 | 90, 52 | 0.57 | 0.622, 0.622 |
+| 4d | 1.0.0+g493382b | 00 | 10,000 | 0.00497, 0.00551 | 1.11 | 0.0014, 0.00111 | 0.80 | 8, 7 | 0.79 | 0.385, 0.385 |
+| 4d | 1.0.0+g493382b | 00 | 100,000 | 0.00915, 0.0109 | 1.19 | 0.017, 0.0115 | 0.68 | 38, 29 | 0.77 | 0.060, 0.060 |
+| 4d | 1.0.0+g493382b | 01 | 10,000 | 0.00253, 0.00294 | 1.16 | 0.00135, 0.00113 | 0.84 | 8, 8 | 0.92 | 0.119, 0.119 |
+| 4d | 1.0.0+g493382b | 01 | 100,000 | 0.0105, 0.0102 | 0.97 | 0.0162, 0.0114 | 0.70 | 43, 38 | 0.89 | 0.014, 0.014 |
+| 4d | 1.0.0+g493382b | 02 | 10,000 | 0.00242, 0.00283 | 1.17 | 0.00132, 0.0011 | 0.84 | 8, 8 | 0.96 | 0.119, 0.119 |
+| 4d | 1.0.0+g493382b | 02 | 100,000 | 0.0117, 0.011 | 0.94 | 0.0164, 0.0119 | 0.73 | 43, 39 | 0.90 | 0.014, 0.014 |
+| 4d | 1.0.0+g493382b | 03 | 1,000,000 | 0.0305, 0.0298 | 0.98 | 0.166, 0.133 | 0.80 | 352, 253 | 0.72 | 0.006, 0.006 |
+| 4d | 1.0.0+g493382b | 04 | 165,865 | 0.292, 0.318 | 1.09 | 0.0242, 0.0177 | 0.73 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -518,3 +526,21 @@ against epiworld 0.17.1. The runners are unchanged.
   scenario_03 (+0.008%) and 1,244,365,383 and 1,244,572,297 for scenario_04
   (+0.017%), whole runs included. 4c adds, per run, an empty loop over the
   parameter cycles each day and a check for persistence at reset; noise.
+
+### 4d
+
+epiworld `v1-layers` at
+[`493382b`](https://github.com/UofUEpiBio/epiworld/commit/493382b97f299d283386888b649a0eb37b6a2d76)
+(Phase 4d: the STERGM rewirer example, and `Model::run()` clearing its
+running flag with a `try`/`catch`, UofUEpiBio/epiworld#384; identical
+results), against epiworld 0.17.1. The runners are unchanged; the reports
+are re-rendered.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **No ratio grew by more than 10%** from 4c (simulate: -6% to +7%; build:
+  -12% to +4%).
+- **Against 3d-3b** (the last stage at parity with 0.x), the small scenarios
+  stay 10-17% slower (scenario_00 at 10,000 and 100,000, 01 and 02 at
+  10,000), as at 4c; instruction counts put the gap at a few percent (see
+  4c). The others are within noise of 3d-3b.

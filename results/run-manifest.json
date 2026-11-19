@@ -1,6 +1,6 @@
 {
-  "cached_before_run": 0,
-  "executed": 70,
+  "cached_before_run": 65,
+  "executed": 5,
   "failures": 0,
   "profile": "smoke",
   "python": "3.12.11",
