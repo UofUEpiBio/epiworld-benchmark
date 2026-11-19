@@ -39,7 +39,7 @@ epiworld-v1:
   regions:
     - {from: 'double vaccine_coverage = number', to: 'double vaccine_efficacy = number'}
     - {from: '^    double recovery = 1.0', to: '^        \(1.0 - hospital_probability'}
-    - {from: '^    Model<> model\(n\);', to: '^    model.verbose_off\(\);'}
+    - {from: '^    Model model\(n\);', to: '^    model.verbose_off\(\);'}
     - {from: '^    model.run\(days'}
 covasim:
   language: Python

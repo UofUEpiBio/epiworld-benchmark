@@ -1,6 +1,6 @@
 # Scenario 03: SEIRH at 1,000,000 agents
 
-2026-11-02
+2026-11-18
 
 - [Model](#model)
 - [Engine notes](#engine-notes)
@@ -66,24 +66,24 @@ None: every runner is scenario 00’s.
 | Memory | 12.7 GiB |
 | OS | Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39 |
 | Kernel | 6.12.13-200.fc41.aarch64 |
-| Container image | 6ab6f982c445 |
+| Container image | 9a51e13558f5 |
 | Python | 3.12.11 |
 | R | R version 4.5.1 (2025-06-13) – “Great Square Root” |
 | Julia | julia version 1.13.1 |
 | Rust | rustc 1.98.0 (88d9e12ae 2026-08-18) |
 | C++ compiler | c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0 |
 | Quarto | 1.10.18 |
-| Repository commit | 467d650 |
+| Repository commit | unknown |
 | Workers | 1 |
-| Run dates | 2026-09-30 to 2026-10-01 |
-| Latest run | 220 executed, 0 cached, 0 failed |
+| Run dates | 2026-11-19 to 2026-11-19 |
+| Latest run | 14 executed, 0 cached, 0 failed |
 
 | Engine      |  Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:------------|--------:|-----:|----------------------:|-------:|-------:|
 | epiworldR   | 1000000 |   20 |                 0.024 |  0.023 |  0.024 |
 | epiworldpy  | 1000000 |   20 |                 0.027 |  0.026 |  0.028 |
-| epiworld-v1 | 1000000 |   20 |                 0.032 |  0.028 |  0.037 |
-| epiworld    | 1000000 |   20 |                 0.039 |  0.036 |  0.048 |
+| epiworld-v1 | 1000000 |   20 |                 0.032 |  0.029 |  0.039 |
+| epiworld    | 1000000 |   20 |                 0.034 |  0.031 |  0.038 |
 | individual  | 1000000 |   20 |                 0.272 |  0.270 |  0.273 |
 | ixa         | 1000000 |   20 |                 0.373 |  0.359 |  0.390 |
 | Agents.jl   | 1000000 |   20 |                 0.727 |  0.688 |  0.802 |
@@ -109,8 +109,8 @@ epiworldR completed the simulation call faster.
 
 | Engine      |  Agents | Median time / epiworldR |      Q1 |      Q3 |
 |:------------|--------:|------------------------:|--------:|--------:|
-| epiworld    | 1000000 |                    1.67 |    1.46 |    2.17 |
-| epiworld-v1 | 1000000 |                    1.38 |    1.19 |    1.48 |
+| epiworld    | 1000000 |                    1.41 |    1.34 |    1.52 |
+| epiworld-v1 | 1000000 |                    1.31 |    1.23 |    1.55 |
 | epiworldpy  | 1000000 |                    1.15 |    1.10 |    1.21 |
 | covasim     | 1000000 |                  134.64 |  131.19 |  139.52 |
 | starsim     | 1000000 |                  471.29 |  453.60 |  484.84 |
@@ -132,9 +132,9 @@ the benchmark records the daily totals.</sub>
 
 | Engine | Agents | Read edges (s) | Build (s) | Simulate (s) | Build + simulate (s) |
 |:---|---:|---:|---:|---:|---:|
+| epiworld-v1 | 1000000 | 0.541 | 0.147 | 0.032 | 0.176 |
 | epiworldR | 1000000 | 0.815 | 0.155 | 0.024 | 0.178 |
-| epiworld-v1 | 1000000 | 0.632 | 0.197 | 0.032 | 0.250 |
-| epiworld | 1000000 | 0.618 | 0.307 | 0.039 | 0.354 |
+| epiworld | 1000000 | 0.541 | 0.192 | 0.034 | 0.232 |
 | ixa | 1000000 | 0.288 | 0.003 | 0.373 | 0.376 |
 | epiworldpy | 1000000 | 1.531 | 0.365 | 0.027 | 0.392 |
 | individual | 1000000 | 0.823 | 0.263 | 0.272 | 0.534 |
@@ -156,9 +156,9 @@ Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 
 | Engine | Agents | Baseline (MiB) | Model footprint (MiB) | Simulation memory (MiB) | Overall peak (MiB) |
 |:---|:---|---:|---:|---:|---:|
-| epiworld-v1 | 1000000 | 3.0 \[3.0, 3.0\] | 172.9 \[172.9, 172.9\] | 36.5 \[36.5, 36.5\] | 252.7 \[252.7, 252.7\] |
+| epiworld-v1 | 1000000 | 3.1 \[3.1, 3.1\] | 173.1 \[173.1, 173.1\] | 38.1 \[38.1, 38.1\] | 253.1 \[253.1, 253.1\] |
 | individual | 1000000 | 74.8 \[74.8, 74.8\] | 7.0 \[7.0, 7.0\] | 125.7 \[125.3, 125.8\] | 282.3 \[282.3, 282.3\] |
-| epiworld | 1000000 | 3.0 \[3.0, 3.0\] | 233.9 \[233.9, 233.9\] | 29.0 \[29.0, 29.0\] | 351.7 \[351.7, 351.7\] |
+| epiworld | 1000000 | 3.0 \[3.0, 3.0\] | 233.9 \[233.9, 233.9\] | 28.9 \[28.9, 28.9\] | 351.8 \[351.8, 351.8\] |
 | ixa | 1000000 | 2.2 \[2.2, 2.2\] | 0.0 \[0.0, 0.0\] | 329.9 \[329.9, 329.9\] | 408.7 \[408.7, 408.7\] |
 | epiworldR | 1000000 | 72.1 \[72.1, 72.1\] | 210.5 \[210.5, 210.5\] | 0.0 \[0.0, 0.0\] | 478.6 \[478.5, 478.6\] |
 | covasim | 1000000 | 225.1 \[225.1, 225.1\] | 16.2 \[16.1, 16.3\] | 288.8 \[288.6, 288.8\] | 684.5 \[684.5, 684.8\] |
