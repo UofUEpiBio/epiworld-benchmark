@@ -192,6 +192,14 @@ measure.
 | 4d | 1.0.0+g493382b | 02 | 100,000 | 0.0117, 0.011 | 0.94 | 0.0164, 0.0119 | 0.73 | 43, 39 | 0.90 | 0.014, 0.014 |
 | 4d | 1.0.0+g493382b | 03 | 1,000,000 | 0.0305, 0.0298 | 0.98 | 0.166, 0.133 | 0.80 | 352, 253 | 0.72 | 0.006, 0.006 |
 | 4d | 1.0.0+g493382b | 04 | 165,865 | 0.292, 0.318 | 1.09 | 0.0242, 0.0177 | 0.73 | 90, 52 | 0.57 | 0.622, 0.622 |
+| 5 | 1.0.0+gda6bdcb | 00 | 10,000 | 0.00453, 0.00558 | 1.23 | 0.00126, 0.00104 | 0.83 | 8, 7 | 0.79 | 0.385, 0.385 |
+| 5 | 1.0.0+gda6bdcb | 00 | 100,000 | 0.00848, 0.0104 | 1.23 | 0.0141, 0.0107 | 0.76 | 38, 29 | 0.77 | 0.060, 0.060 |
+| 5 | 1.0.0+gda6bdcb | 01 | 10,000 | 0.00248, 0.00292 | 1.18 | 0.00132, 0.00109 | 0.83 | 8, 7 | 0.91 | 0.119, 0.119 |
+| 5 | 1.0.0+gda6bdcb | 01 | 100,000 | 0.00909, 0.00923 | 1.02 | 0.0136, 0.0101 | 0.74 | 43, 38 | 0.89 | 0.014, 0.014 |
+| 5 | 1.0.0+gda6bdcb | 02 | 10,000 | 0.00239, 0.0029 | 1.22 | 0.00128, 0.00106 | 0.83 | 8, 8 | 0.96 | 0.119, 0.119 |
+| 5 | 1.0.0+gda6bdcb | 02 | 100,000 | 0.00917, 0.00947 | 1.03 | 0.0132, 0.0103 | 0.78 | 43, 39 | 0.90 | 0.014, 0.014 |
+| 5 | 1.0.0+gda6bdcb | 03 | 1,000,000 | 0.0323, 0.0316 | 0.98 | 0.208, 0.175 | 0.84 | 352, 253 | 0.72 | 0.006, 0.006 |
+| 5 | 1.0.0+gda6bdcb | 04 | 165,865 | 0.219, 0.231 | 1.06 | 0.0212, 0.0141 | 0.66 | 90, 52 | 0.57 | 0.622, 0.622 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -544,3 +552,29 @@ are re-rendered.
   stay 10-17% slower (scenario_00 at 10,000 and 100,000, 01 and 02 at
   10,000), as at 4c; instruction counts put the gap at a few percent (see
   4c). The others are within noise of 3d-3b.
+
+### 5
+
+epiworld `v1-layers` at
+[`da6bdcb`](https://github.com/UofUEpiBio/epiworld/commit/da6bdcb67ee15dc6d9b9f6973d51c29499089aca)
+(Phase 5: models with a mixing layer can push, UofUEpiBio/epiworld#386;
+identical results for network-only models), against epiworld 0.17.1. The
+runners are unchanged; the reports are re-rendered.
+
+- **Results agree.** The median attack rates are the same in every scenario
+  and size.
+- **Two simulate ratios grew by more than 10% from 4d: scenario_00 at 10,000
+  (1.11 to 1.23) and scenario_02 at 100,000 (0.94 to 1.03).** The others
+  moved within -3% and +5%. Build ratios: -10% to +12%, each within a few
+  milliseconds.
+- **Profiled, and it is real, if small.** Callgrind of each runner
+  (benchmark flags, the first replicate's seed), 4d against 5: scenario_00
+  at 10,000 goes from 162,915,496 to 173,010,497 instructions (+6.2%), and
+  scenario_01 at 10,000 +2.4%. At 100,000 the gaps are +1.4% and +0.2%.
+  Final sizes are identical. The push loop now handles each reached agent in
+  a lambda that both kinds of layer share, and the compiler no longer
+  inlines it, or the tool reductions it calls. The fix (one loop over a span
+  of reached agents) goes in with Phase 6.
+- **Against 3d-3b** (the last stage at parity with 0.x), the small scenarios
+  are 15-21% slower (scenario_00 at 10,000 and 100,000, 01 and 02 at
+  10,000). The others are within noise of 3d-3b (-4% to +14%).
