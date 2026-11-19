@@ -35,7 +35,7 @@ tools, runs one replicate, and writes one result record.
 | Engine | Language | Recorded version | Model as implemented | Time |
 |:---|:---|:---|:---|:---|
 | epiworld (Vega Yon 2026) | C++ | 0.17.1+g04c4ad8 | Custom model from `add_state()` and the update-function factories | Synchronous daily |
-| epiworld-v1 (1.0.0 preview) | C++ | 1.0.0+g93b9781 | The same model through the in-development layer API; versioned staged snapshots | Synchronous daily |
+| epiworld-v1 (1.0.0 preview) | C++ | 1.0.0+gfe1e229 | The same model through the in-development layer API; versioned staged snapshots | Synchronous daily |
 | epiworldR (Meyer and Vega Yon 2023) | R (C++ core) | 0.17.1.0+gfca60f3 | The same model through the R wrapper (`update_fun_susceptible()`, `update_fun_rate()`) | Synchronous daily |
 | epiworldpy (Vega Yon and Banks 2026) | Python (C++ core) | 0.17.1-0+gc24b4f9 | The same model through the Python wrapper (`UpdateFun.susceptible()`, `UpdateFun.rate()`) | Synchronous daily |
 | Covasim (Kerr et al. 2021) | Python | 3.1.8 | Native disease progression, restricted to SEIRH; severe state as the hospitalization proxy | Daily, native |
@@ -390,17 +390,17 @@ published results:
 | Memory | 12.7 GiB |
 | OS | Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39 |
 | Kernel | 6.12.13-200.fc41.aarch64 |
-| Container image | 6ab6f982c445 |
+| Container image | 9a51e13558f5 |
 | Python | 3.12.11 |
 | R | R version 4.5.1 (2025-06-13) – “Great Square Root” |
 | Julia | julia version 1.13.1 |
 | Rust | rustc 1.98.0 (88d9e12ae 2026-08-18) |
 | C++ compiler | c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0 |
 | Quarto | 1.10.18 |
-| Repository commit | 467d650 |
+| Repository commit | unknown |
 | Workers | 1 |
-| Run dates | 2026-09-30 to 2026-10-01 |
-| Latest run | 7040 executed, 0 cached, 0 failed |
+| Run dates | 2026-11-19 to 2026-11-19 |
+| Latest run | 70 executed, 0 cached, 0 failed |
 
 Scenarios 00, 01, 02, 03, 04 ran in this one environment.
 

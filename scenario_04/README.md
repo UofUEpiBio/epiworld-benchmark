@@ -1,6 +1,6 @@
 # Scenario 04: SEIRH on a GeoPops contact network
 
-2026-11-02
+2026-11-18
 
 - [Model](#model)
   - [The network](#the-network)
@@ -100,17 +100,17 @@ None: every engine runs scenario 00’s runner on this edge list.
 | Memory | 12.7 GiB |
 | OS | Linux-6.12.13-200.fc41.aarch64-aarch64-with-glibc2.39 |
 | Kernel | 6.12.13-200.fc41.aarch64 |
-| Container image | 6ab6f982c445 |
+| Container image | 9a51e13558f5 |
 | Python | 3.12.11 |
 | R | R version 4.5.1 (2025-06-13) – “Great Square Root” |
 | Julia | julia version 1.13.1 |
 | Rust | rustc 1.98.0 (88d9e12ae 2026-08-18) |
 | C++ compiler | c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0 |
 | Quarto | 1.10.18 |
-| Repository commit | 467d650 |
+| Repository commit | unknown |
 | Workers | 1 |
-| Run dates | 2026-09-30 to 2026-09-30 |
-| Latest run | 220 executed, 0 cached, 0 failed |
+| Run dates | 2026-11-19 to 2026-11-19 |
+| Latest run | 14 executed, 0 cached, 0 failed |
 
 | Engine      | Agents | Runs | Median simulation (s) | Q1 (s) | Q3 (s) |
 |:------------|-------:|-----:|----------------------:|-------:|-------:|
@@ -119,8 +119,8 @@ None: every engine runs scenario 00’s runner on this edge list.
 | ixa         | 165865 |   20 |                 0.149 |  0.147 |  0.153 |
 | epiworldpy  | 165865 |   20 |                 0.152 |  0.151 |  0.153 |
 | epiworldR   | 165865 |   20 |                 0.157 |  0.155 |  0.158 |
-| epiworld-v1 | 165865 |   20 |                 0.232 |  0.193 |  0.310 |
-| epiworld    | 165865 |   20 |                 0.254 |  0.229 |  0.338 |
+| epiworld    | 165865 |   20 |                 0.212 |  0.198 |  0.222 |
+| epiworld-v1 | 165865 |   20 |                 0.223 |  0.212 |  0.248 |
 | covasim     | 165865 |   20 |                 0.562 |  0.548 |  0.609 |
 | starsim     | 165865 |   20 |                 0.822 |  0.814 |  0.830 |
 | FRED        | 165865 |   20 |                 2.658 |  2.579 |  2.710 |
@@ -143,8 +143,8 @@ epiworldR completed the simulation call faster.
 
 | Engine      | Agents | Median time / epiworldR |    Q1 |    Q3 |
 |:------------|-------:|------------------------:|------:|------:|
-| epiworld    | 165865 |                    1.63 |  1.46 |  2.15 |
-| epiworld-v1 | 165865 |                    1.50 |  1.22 |  1.95 |
+| epiworld    | 165865 |                    1.36 |  1.23 |  1.41 |
+| epiworld-v1 | 165865 |                    1.41 |  1.33 |  1.60 |
 | epiworldpy  | 165865 |                    0.97 |  0.96 |  0.99 |
 | covasim     | 165865 |                    3.57 |  3.51 |  3.85 |
 | starsim     | 165865 |                    5.26 |  5.22 |  5.37 |
@@ -171,8 +171,8 @@ the benchmark records the daily totals.</sub>
 | individual  | 165865 |          0.064 |     0.034 |        0.136 |                0.169 |
 | epiworldR   | 165865 |          0.064 |     0.032 |        0.157 |                0.188 |
 | epiworldpy  | 165865 |          0.129 |     0.070 |        0.152 |                0.221 |
-| epiworld-v1 | 165865 |          0.052 |     0.017 |        0.232 |                0.248 |
-| epiworld    | 165865 |          0.053 |     0.022 |        0.254 |                0.299 |
+| epiworld    | 165865 |          0.049 |     0.019 |        0.212 |                0.229 |
+| epiworld-v1 | 165865 |          0.049 |     0.016 |        0.223 |                0.243 |
 | covasim     | 165865 |          0.134 |     0.043 |        0.562 |                0.605 |
 | starsim     | 165865 |          0.130 |     0.000 |        0.822 |                0.822 |
 | FRED        | 165865 |          2.420 |     0.664 |        2.658 |                3.318 |
@@ -191,8 +191,8 @@ Median \[Q1, Q3\] in MiB ([Memory](../docs/methods.md#memory)).
 | Engine | Agents | Baseline (MiB) | Model footprint (MiB) | Simulation memory (MiB) | Overall peak (MiB) |
 |:---|:---|---:|---:|---:|---:|
 | ixa | 165865 | 2.2 \[2.2, 2.2\] | 0.0 \[0.0, 0.0\] | 37.5 \[37.2, 37.5\] | 45.7 \[45.6, 45.9\] |
-| epiworld-v1 | 165865 | 3.0 \[3.0, 3.0\] | 20.9 \[20.9, 20.9\] | 56.4 \[56.3, 56.4\] | 83.8 \[83.7, 83.8\] |
-| epiworld | 165865 | 3.0 \[3.0, 3.0\] | 29.7 \[29.7, 29.7\] | 54.4 \[54.2, 54.4\] | 90.5 \[90.4, 90.5\] |
+| epiworld-v1 | 165865 | 3.1 \[3.1, 3.1\] | 21.0 \[21.0, 21.0\] | 24.1 \[24.0, 24.1\] | 51.7 \[51.6, 51.7\] |
+| epiworld | 165865 | 3.0 \[3.0, 3.0\] | 29.7 \[29.7, 29.7\] | 54.2 \[54.1, 54.2\] | 90.4 \[90.4, 90.4\] |
 | individual | 165865 | 74.8 \[74.8, 74.8\] | 6.1 \[6.1, 6.1\] | 38.9 \[38.7, 39.7\] | 130.4 \[130.2, 131.2\] |
 | epiworldpy | 165865 | 46.6 \[46.6, 46.7\] | 41.1 \[40.6, 41.1\] | 41.5 \[41.5, 41.5\] | 136.9 \[136.8, 137.0\] |
 | epiworldR | 165865 | 72.1 \[72.1, 72.1\] | 31.3 \[31.3, 31.3\] | 36.2 \[36.2, 36.4\] | 149.6 \[149.6, 149.7\] |
