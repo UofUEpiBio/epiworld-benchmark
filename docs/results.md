@@ -42,8 +42,8 @@ in seconds, in every scenario and size:
 
 | Engine | 00 (10k) | 00 (100k) | 01 (10k) | 01 (100k) | 02 (10k) | 02 (100k) | 03 (1M) | 04 (165,865) |
 |:---|---:|---:|---:|---:|---:|---:|---:|---:|
-| epiworld | 0.0049 | 0.0085 | 0.0026 | 0.0100 | 0.0024 | 0.0093 | 0.0344 | 0.2115 |
-| epiworld-v1 | 0.0055 | 0.0099 | 0.0029 | 0.0101 | 0.0029 | 0.0092 | 0.0318 | 0.2232 |
+| epiworld | 0.0050 | 0.0091 | 0.0025 | 0.0105 | 0.0024 | 0.0117 | 0.0305 | 0.2917 |
+| epiworld-v1 | 0.0055 | 0.0109 | 0.0029 | 0.0102 | 0.0028 | 0.0110 | 0.0298 | 0.3177 |
 | epiworldR | 0.0040 | 0.0080 | 0.0020 | 0.0070 | 0.0020 | 0.0070 | 0.0235 | 0.1570 |
 | epiworldpy | 0.0041 | 0.0073 | 0.0020 | 0.0060 | 0.0020 | 0.0060 | 0.0271 | 0.1516 |
 | covasim | 0.0624 | 0.3241 | 0.0619 | 0.3337 | 0.0613 | 0.3338 | 3.1438 | 0.5624 |
@@ -68,23 +68,23 @@ seed:
 
 | Wrapper | 00 (10k) | 00 (100k) | 01 (10k) | 01 (100k) | 02 (10k) | 02 (100k) | 03 (1M) | 04 (165,865) |
 |:---|---:|---:|---:|---:|---:|---:|---:|---:|
-| epiworldpy | 0.85 | 0.87 | 0.77 | 0.60 | 0.79 | 0.63 | 0.79 | 0.71 |
-| epiworldR | 0.90 | 0.96 | 0.82 | 0.66 | 0.85 | 0.70 | 0.71 | 0.74 |
+| epiworldpy | 0.84 | 0.81 | 0.81 | 0.57 | 0.79 | 0.52 | 0.92 | 0.53 |
+| epiworldR | 0.88 | 0.89 | 0.81 | 0.66 | 0.87 | 0.58 | 0.77 | 0.54 |
 
 In the simulation itself the language layer costs nothing measurable:
-neither wrapper is ever more than -4% slower than the C++ runner, and
+neither wrapper is ever more than -8% slower than the C++ runner, and
 epiworldpy is often faster. Where the C++ runner is slowest, in
 scenarios 01 and 02 at 100,000 agents, the cause is memory allocation in
 the C++ runner, not the wrappers (see scenario 01’s report). Outside the
 simulation the wrappers cost something: at 100,000 agents, building the
-model takes the C++ runner 0.014 seconds, against 0.028 for epiworldR
+model takes the C++ runner 0.017 seconds, against 0.028 for epiworldR
 and 0.033 for epiworldpy, which first convert the edge list into their
 own types.
 
 ### Why the two fastest engines differ
 
 In scenarios 00 to 02, epiworld and ixa are the two fastest engines, and
-epiworld is faster per replicate: in scenario 00, ixa takes 1.4 and 3.9
+epiworld is faster per replicate: in scenario 00, ixa takes 1.3 and 3.6
 times as long as the C++ runner at 10,000 and 100,000 agents. Both
 engines’ daily work follows the outbreak, through push-based
 transmission in epiworld (since 0.16.1, with the push/pull choice
@@ -138,7 +138,7 @@ down about tenfold per decade.
 
 From 100,000 to 1,000,000 agents:
 
-- **The epiworld runners** grow by 4.1 (C++), 2.9 (epiworldR), and 3.7
+- **The epiworld runners** grow by 3.3 (C++), 2.9 (epiworldR), and 3.7
   (epiworldpy) times. Their daily work follows the outbreak; what grows
   is `reset()`, which re-initializes every agent at the start of
   `run()`.
@@ -165,7 +165,7 @@ From 100,000 to 1,000,000 agents:
   every day.
 
 Building the model once from the edge list, which a user pays once per
-network however many replicates follow, takes the C++ runner 0.19
+network however many replicates follow, takes the C++ runner 0.17
 seconds at 1,000,000 agents, several times one of its replicates, and
 EoN and epydemic 3.6 and 3.6 seconds for their NetworkX graphs.
 
@@ -178,8 +178,8 @@ scenario:
 
 | Engine | Vaccine (01 / 00), 10k | Vaccine (01 / 00), 100k | Outputs (02 / 01), 10k | Outputs (02 / 01), 100k |
 |:---|---:|---:|---:|---:|
-| epiworld | 0.51 | 1.16 | 0.97 | 0.95 |
-| epiworld-v1 | 0.53 | 1.02 | 0.99 | 0.94 |
+| epiworld | 0.51 | 1.15 | 0.95 | 1.10 |
+| epiworld-v1 | 0.53 | 0.95 | 0.98 | 1.08 |
 | epiworldR | 0.50 | 0.87 | 1.00 | 1.00 |
 | epiworldpy | 0.50 | 0.81 | 1.00 | 1.00 |
 | covasim | 0.99 | 1.03 | 1.00 | 1.00 |
@@ -229,8 +229,8 @@ MiB:
 
 | Engine | 00 (10k) | 00 (100k) | 01 (10k) | 01 (100k) | 02 (10k) | 02 (100k) | 03 (1M) | 04 (165,865) |
 |:---|---:|---:|---:|---:|---:|---:|---:|---:|
-| epiworld | 2 | 4 | 2 | 12 | 2 | 12 | 29 | 54 |
-| epiworld-v1 | 1 | 4 | 2 | 13 | 2 | 13 | 38 | 24 |
+| epiworld | 2 | 5 | 2 | 12 | 2 | 12 | 29 | 54 |
+| epiworld-v1 | 1 | 4 | 2 | 14 | 2 | 13 | 38 | 24 |
 | epiworldR | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 36 |
 | epiworldpy | 1 | 0 | 0 | 1 | 0 | 1 | 43 | 42 |
 | covasim | 5 | 33 | 5 | 42 | 5 | 42 | 289 | 71 |
