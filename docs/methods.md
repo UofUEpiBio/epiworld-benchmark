@@ -35,7 +35,7 @@ tools, runs one replicate, and writes one result record.
 | Engine | Language | Recorded version | Model as implemented | Time |
 |:---|:---|:---|:---|:---|
 | epiworld (Vega Yon 2026) | C++ | 0.17.1+g04c4ad8 | Custom model from `add_state()` and the update-function factories | Synchronous daily |
-| epiworld-v1 (1.0.0 preview) | C++ | 1.0.0+g493382b | The same model through the in-development layer API; versioned staged snapshots | Synchronous daily |
+| epiworld-v1 (1.0.0 preview) | C++ | 1.0.0+gda6bdcb | The same model through the in-development layer API; versioned staged snapshots | Synchronous daily |
 | epiworldR (Meyer and Vega Yon 2023) | R (C++ core) | 0.17.1.0+gfca60f3 | The same model through the R wrapper (`update_fun_susceptible()`, `update_fun_rate()`) | Synchronous daily |
 | epiworldpy (Vega Yon and Banks 2026) | Python (C++ core) | 0.17.1-0+gc24b4f9 | The same model through the Python wrapper (`UpdateFun.susceptible()`, `UpdateFun.rate()`) | Synchronous daily |
 | Covasim (Kerr et al. 2021) | Python | 3.1.8 | Native disease progression, restricted to SEIRH; severe state as the hospitalization proxy | Daily, native |
