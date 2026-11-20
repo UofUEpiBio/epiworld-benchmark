@@ -121,8 +121,8 @@ counted as model code.
 | EpiModel    |  10000 |  100 |                 0.615 |  0.604 |  0.633 |
 | epiworldpy  | 100000 |  100 |                 0.006 |  0.006 |  0.006 |
 | epiworldR   | 100000 |  100 |                 0.007 |  0.006 |  0.007 |
-| epiworld    | 100000 |  100 |                 0.009 |  0.008 |  0.010 |
-| epiworld-v1 | 100000 |  100 |                 0.009 |  0.009 |  0.011 |
+| epiworld    | 100000 |  100 |                 0.009 |  0.009 |  0.010 |
+| epiworld-v1 | 100000 |  100 |                 0.010 |  0.009 |  0.011 |
 | ixa         | 100000 |  100 |                 0.028 |  0.028 |  0.029 |
 | Agents.jl   | 100000 |  100 |                 0.037 |  0.036 |  0.037 |
 | individual  | 100000 |  100 |                 0.070 |  0.069 |  0.071 |
@@ -148,8 +148,8 @@ one mean that epiworldR completed the simulation call faster.
 
 | Engine      | Agents | Median time / epiworldR |      Q1 |      Q3 |
 |:------------|-------:|------------------------:|--------:|--------:|
-| epiworld    |  10000 |                    1.12 |    0.89 |    1.25 |
-| epiworld-v1 |  10000 |                    1.39 |    1.10 |    1.54 |
+| epiworld    |  10000 |                    1.11 |    0.93 |    1.21 |
+| epiworld-v1 |  10000 |                    1.37 |    1.12 |    1.48 |
 | epiworldpy  |  10000 |                    0.92 |    0.77 |    1.04 |
 | covasim     |  10000 |                   30.46 |   21.77 |   30.99 |
 | starsim     |  10000 |                   84.61 |   59.49 |   86.67 |
@@ -161,8 +161,8 @@ one mean that epiworldR completed the simulation call faster.
 | EpiModel    |  10000 |                  302.50 |  223.83 |  314.12 |
 | FRED        |  10000 |                   33.57 |   24.07 |   34.76 |
 | Agents.jl   |  10000 |                    9.57 |    7.05 |    9.73 |
-| epiworld    | 100000 |                    1.41 |    1.28 |    1.58 |
-| epiworld-v1 | 100000 |                    1.45 |    1.34 |    1.61 |
+| epiworld    | 100000 |                    1.41 |    1.30 |    1.58 |
+| epiworld-v1 | 100000 |                    1.51 |    1.37 |    1.72 |
 | epiworldpy  | 100000 |                    0.91 |    0.83 |    1.02 |
 | covasim     | 100000 |                   49.45 |   47.52 |   55.64 |
 | starsim     | 100000 |                  115.69 |  101.75 |  118.69 |
@@ -184,8 +184,8 @@ the benchmark records the daily totals.</sub>
 
 | Engine      | Agents | Read edges (s) | Build (s) | Simulate (s) | Build + simulate (s) |
 |:------------|-------:|---------------:|----------:|-------------:|---------------------:|
-| epiworld    |  10000 |          0.006 |     0.001 |        0.002 |                0.004 |
-| epiworld-v1 |  10000 |          0.006 |     0.001 |        0.003 |                0.004 |
+| epiworld    |  10000 |          0.005 |     0.001 |        0.002 |                0.004 |
+| epiworld-v1 |  10000 |          0.005 |     0.001 |        0.003 |                0.004 |
 | ixa         |  10000 |          0.003 |     0.000 |        0.004 |                0.005 |
 | epiworldpy  |  10000 |          0.016 |     0.007 |        0.002 |                0.009 |
 | epiworldR   |  10000 |          0.007 |     0.016 |        0.002 |                0.018 |
@@ -198,8 +198,8 @@ the benchmark records the daily totals.</sub>
 | FRED        |  10000 |          0.240 |     0.128 |        0.069 |                0.197 |
 | epydemic    |  10000 |          0.015 |     0.016 |        0.203 |                0.219 |
 | EpiModel    |  10000 |          0.008 |     0.197 |        0.615 |                0.814 |
-| epiworld-v1 | 100000 |          0.051 |     0.010 |        0.009 |                0.020 |
-| epiworld    | 100000 |          0.051 |     0.013 |        0.009 |                0.022 |
+| epiworld-v1 | 100000 |          0.057 |     0.010 |        0.010 |                0.020 |
+| epiworld    | 100000 |          0.057 |     0.013 |        0.009 |                0.022 |
 | ixa         | 100000 |          0.028 |     0.000 |        0.028 |                0.029 |
 | epiworldR   | 100000 |          0.070 |     0.030 |        0.007 |                0.037 |
 | epiworldpy  | 100000 |          0.151 |     0.041 |        0.006 |                0.047 |
@@ -225,8 +225,8 @@ of the simulation time.
 |:---|---:|---:|---:|---:|
 | epiworldR | 10000 | 0.002 | 0.025 | 12.00 |
 | epiworldpy | 10000 | 0.002 | 0.000 | 0.18 |
-| epiworld | 10000 | 0.002 | 0.000 | 0.10 |
-| epiworld-v1 | 10000 | 0.003 | 0.000 | 0.14 |
+| epiworld | 10000 | 0.002 | 0.000 | 0.09 |
+| epiworld-v1 | 10000 | 0.003 | 0.000 | 0.13 |
 | ixa | 10000 | 0.004 | 0.000 | 0.02 |
 | Agents.jl | 10000 | 0.019 | 0.006 | 0.32 |
 | individual | 10000 | 0.040 | 0.001 | 0.03 |
@@ -240,7 +240,7 @@ of the simulation time.
 | epiworldpy | 100000 | 0.006 | 0.000 | 0.08 |
 | epiworldR | 100000 | 0.007 | 0.026 | 4.00 |
 | epiworld | 100000 | 0.009 | 0.000 | 0.03 |
-| epiworld-v1 | 100000 | 0.009 | 0.000 | 0.05 |
+| epiworld-v1 | 100000 | 0.010 | 0.000 | 0.04 |
 | ixa | 100000 | 0.028 | 0.000 | 0.00 |
 | Agents.jl | 100000 | 0.037 | 0.007 | 0.19 |
 | individual | 100000 | 0.070 | 0.001 | 0.01 |
@@ -336,7 +336,7 @@ is an S → E transition, every recovered agent came from I or H):
 | Engine | Agents | Median transmissions | Share of runs: tree matches counts | Share of runs: matrix matches counts |
 |:---|---:|---:|---:|---:|
 | epiworld | 10000 | 1090 | 1 | 1 |
-| epiworld-v1 | 10000 | 1090 | 1 | 1 |
+| epiworld-v1 | 10000 | 1094 | 1 | 1 |
 | epiworldR | 10000 | 1050 | 1 | 1 |
 | epiworldpy | 10000 | 1067 | 1 | 1 |
 | covasim | 10000 | 947 | 1 | 1 |
@@ -350,7 +350,7 @@ is an S → E transition, every recovered agent came from I or H):
 | FRED | 10000 | 1046 | 1 | 1 |
 | Agents.jl | 10000 | 1081 | 1 | 1 |
 | epiworld | 100000 | 1288 | 1 | 1 |
-| epiworld-v1 | 100000 | 1288 | 1 | 1 |
+| epiworld-v1 | 100000 | 1286 | 1 | 1 |
 | epiworldR | 100000 | 1293 | 1 | 1 |
 | epiworldpy | 100000 | 1264 | 1 | 1 |
 | covasim | 100000 | 1084 | 1 | 1 |

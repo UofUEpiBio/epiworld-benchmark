@@ -200,6 +200,14 @@ measure.
 | 5 | 1.0.0+gda6bdcb | 02 | 100,000 | 0.00917, 0.00947 | 1.03 | 0.0132, 0.0103 | 0.78 | 43, 39 | 0.90 | 0.014, 0.014 |
 | 5 | 1.0.0+gda6bdcb | 03 | 1,000,000 | 0.0323, 0.0316 | 0.98 | 0.208, 0.175 | 0.84 | 352, 253 | 0.72 | 0.006, 0.006 |
 | 5 | 1.0.0+gda6bdcb | 04 | 165,865 | 0.219, 0.231 | 1.06 | 0.0212, 0.0141 | 0.66 | 90, 52 | 0.57 | 0.622, 0.622 |
+| 6a | 1.0.0+gbb78cbb | 00 | 10,000 | 0.00465, 0.00602 | 1.30 | 0.00122, 0.00105 | 0.86 | 8, 7 | 0.80 | 0.385, 0.397 |
+| 6a | 1.0.0+gbb78cbb | 00 | 100,000 | 0.00891, 0.0117 | 1.31 | 0.013, 0.0101 | 0.77 | 38, 29 | 0.77 | 0.060, 0.060 |
+| 6a | 1.0.0+gbb78cbb | 01 | 10,000 | 0.00254, 0.00304 | 1.19 | 0.00125, 0.00106 | 0.85 | 8, 7 | 0.91 | 0.119, 0.119 |
+| 6a | 1.0.0+gbb78cbb | 01 | 100,000 | 0.00896, 0.00956 | 1.07 | 0.013, 0.00995 | 0.76 | 43, 38 | 0.89 | 0.014, 0.014 |
+| 6a | 1.0.0+gbb78cbb | 02 | 10,000 | 0.00232, 0.00285 | 1.23 | 0.00118, 0.00099 | 0.84 | 8, 8 | 0.96 | 0.119, 0.119 |
+| 6a | 1.0.0+gbb78cbb | 02 | 100,000 | 0.00927, 0.00983 | 1.06 | 0.013, 0.0104 | 0.80 | 43, 39 | 0.90 | 0.014, 0.014 |
+| 6a | 1.0.0+gbb78cbb | 03 | 1,000,000 | 0.0289, 0.0313 | 1.08 | 0.154, 0.112 | 0.73 | 352, 253 | 0.72 | 0.006, 0.007 |
+| 6a | 1.0.0+gbb78cbb | 04 | 165,865 | 0.235, 0.301 | 1.28 | 0.0202, 0.0141 | 0.70 | 90, 52 | 0.57 | 0.622, 0.623 |
 <!-- history:end -->
 
 ## Notes by stage
@@ -578,3 +586,42 @@ runners are unchanged; the reports are re-rendered.
 - **Against 3d-3b** (the last stage at parity with 0.x), the small scenarios
   are 15-21% slower (scenario_00 at 10,000 and 100,000, 01 and 02 at
   10,000). The others are within noise of 3d-3b (-4% to +14%).
+
+### 6a
+
+epiworld `v1-layers` at
+[`bb78cbb`](https://github.com/UofUEpiBio/epiworld/commit/bb78cbbd4398ddf78a48831e678d40b1d5aa25f4)
+(Phase 6a: exposures are independent, UofUEpiBio/epiworld#388), against
+epiworld 0.17.1. The runners are unchanged; the reports are re-rendered.
+
+- **Results change, as planned, and stay within the other engines'.** A
+  susceptible agent now escapes infection with probability `prod(1 - p)`;
+  0.x conditioned the draw on at most one transmission. The median attack
+  rates move up where agents have several infectious contacts a day. The
+  largest move is scenario_00 at 10,000 (0.385 to 0.397). scenario_03 goes
+  from 0.0062 to 0.0067; the rest move by 0.001 or less. Each stays within
+  the range of the other engines' medians except scenario_00 at 10,000,
+  which is just above it: 0.39695 against epydemic's 0.39575 (uncalibrated),
+  with the others between 0.378 and 0.392.
+- **No calibration factor.** The protocol gives a factor to an engine that
+  leaves the agreement the others meet with epiworldR. epiworld-v1 is about
+  as far from epiworldR as epydemic, which needs none (scenario_00 at
+  10,000: +0.012 and +0.010).
+- **Two simulate ratios grew by more than 10% from 5: scenario_04, 1.06 to
+  1.28, and scenario_03, 0.98 to 1.08.** The others moved within +1% and
+  +7%.
+- **Profiled: `log1p` per contact.** Callgrind of scenario_04 (the first
+  replicate's seed), Phase 5 with #388's loop fix against 6a:
+  - 1,247,920,467 to 1,334,118,010 instructions;
+  - `log1p` alone is 34,000,461 of them;
+  - the rest grow with the outbreak, which has 6.8% more recoveries in this
+    replicate (15,472 to 16,525).
+
+  Contacts usually share their probability, so caching the last hazard
+  gives identical results with one `log1p` per distinct probability. With
+  the cache, the same run takes 1,294,927,791 instructions and ends with the
+  same 16,525 recoveries. The fix goes in with Phase 6b
+  (UofUEpiBio/epiworld, branch `phase-6b`), and the next rerun will show it.
+- **Against 3d-3b**, the last stage at parity, the simulate ratios are now
+  between +9% and +52%. Part of that is the larger outbreaks, which
+  independent exposures cause by design.

@@ -9,7 +9,7 @@
     "FRED": "PUB.5.7.0+gbd25f04",
     "covasim": "3.1.8",
     "epiworld": "0.17.1+g04c4ad8",
-    "epiworld-v1": "1.0.0+gda6bdcb",
+    "epiworld-v1": "1.0.0+gbb78cbb",
     "epiworldR": "0.17.1.0+gfca60f3",
     "epiworldpy": "0.17.1-0+gc24b4f9",
     "epydemic": "1.14.1",
@@ -17,10 +17,10 @@
     "ixa": "3.1.0",
     "starsim": "3.6.1"
   },
-  "environment_id": "ab9b00b56bfd6033121c944ed41b9383346199555c092ae197e8d36af6b4ba63",
+  "environment_id": "fbc7e5e3e668ce645bc6025b2e3351dd4294d0d2862b7c921f0cd1243c30fd38",
   "executed": 1,
   "failures": 0,
-  "finished_utc": "2026-11-19T06:14:41+00:00",
+  "finished_utc": "2026-11-19T17:47:55+00:00",
   "hardware": {
     "cgroup_cpu_limit": null,
     "cgroup_memory_limit_bytes": null,
@@ -39,7 +39,7 @@
   "pins": {
     "EPIWORLDR_SHA": "fca60f3010d5a018a11059bdf61a7ce21f4c42ca",
     "EPIWORLD_SHA": "04c4ad866b1866ca88332a888d941b395c96b8a0",
-    "EPIWORLD_V1_SHA": "da6bdcb67ee15dc6d9b9f6973d51c29499089aca",
+    "EPIWORLD_V1_SHA": "bb78cbbd4398ddf78a48831e678d40b1d5aa25f4",
     "FRED_SHA": "bd25f048f8e390ff697bdfa83a0bd3c2e19d6046",
     "INDIVIDUAL_SHA": "50524f239e965d38b40f178290262760f252fc60"
   },
@@ -63,7 +63,7 @@
     "workers": 1
   },
   "scenario": "scenario_04",
-  "started_utc": "2026-11-19T06:14:41+00:00",
+  "started_utc": "2026-11-19T17:47:55+00:00",
   "toolchains": {
     "cxx": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
     "julia": "julia version 1.13.1",
