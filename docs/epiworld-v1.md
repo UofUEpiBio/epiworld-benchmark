@@ -623,5 +623,5 @@ epiworld 0.17.1. The runners are unchanged; the reports are re-rendered.
   same 16,525 recoveries. The fix goes in with Phase 6b
   (UofUEpiBio/epiworld, branch `phase-6b`), and the next rerun will show it.
 - **Against 3d-3b**, the last stage at parity, the simulate ratios are now
-  between +12% and +53%. Part of that is the larger outbreaks, which
+  between +9% and +52%. Part of that is the larger outbreaks, which
   independent exposures cause by design.
