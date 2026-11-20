@@ -600,9 +600,9 @@ epiworld 0.17.1. The runners are unchanged; the reports are re-rendered.
   rates move up where agents have several infectious contacts a day. The
   largest move is scenario_00 at 10,000 (0.385 to 0.397). scenario_03 goes
   from 0.0062 to 0.0067; the rest move by 0.001 or less. Each stays within
-  the range of the other engines' medians. scenario_00 at 10,000 is at the
-  top of that range: epydemic, uncalibrated, is at 0.396, and the others
-  span 0.378 to 0.392.
+  the range of the other engines' medians except scenario_00 at 10,000,
+  which is just above it: 0.39695 against epydemic's 0.39575 (uncalibrated),
+  with the others between 0.378 and 0.392.
 - **No calibration factor.** The protocol gives a factor to an engine that
   leaves the agreement the others meet with epiworldR. epiworld-v1 is about
   as far from epiworldR as epydemic, which needs none (scenario_00 at
